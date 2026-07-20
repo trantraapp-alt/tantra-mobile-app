@@ -8,6 +8,15 @@
     "scheme": "tantra",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "updates": {
+      "url": "https://u.expo.dev/9147f3fe-dcc9-44fb-9aa2-8b44b72c9e6a",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "splash": {
       "image": "./src/assets/images/splash.png",
       "resizeMode": "contain",

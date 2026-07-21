@@ -86,8 +86,13 @@ export const endpoints = {
   listings: {
     // Creates a new marketplace listing.
     create: '/listings',
-    // The user's own listings.
+    // The user's own listings (paginated).
     mine: '/listings/mine',
+    // A single listing by id — used for read, update (PUT), inline edit (PATCH)
+    // and soft delete (DELETE).
+    detail: (id: number) => `/listings/${id}`,
+    // Public listings within a category (paginated).
+    category: (categoryId: number) => `/listings/category/${categoryId}`,
     // Uploads image files; returns relative `/files/...` URLs.
     uploads: '/uploads',
   },

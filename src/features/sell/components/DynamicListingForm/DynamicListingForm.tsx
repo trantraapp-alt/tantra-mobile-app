@@ -3,6 +3,11 @@
 // visibility (`visibleWhen`), shows computed (auto-calc) values, validates from
 // the field rules, and keeps the primary action in a sticky footer. Feeding it
 // a different schema renders a different form with no code changes.
+//
+// The same renderer powers both create and edit: pass `initialValues` to
+// pre-fill, `mode="update"` to lock fields the backend marks non-editable, and
+// `onSubmit` to override the default create call (e.g. to PUT an update).
+import { Lock } from 'lucide-react-native';
 import { memo, useCallback, useMemo } from 'react';
 import {
   type Control,
@@ -25,30 +30,27 @@ import {
 import { Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
-import { useToast } from '@/providers';
+import { useTheme, useToast } from '@/providers';
 import type { PreferredLanguage } from '@/types';
 
 import { modulesApi } from '../../api';
-import {
-  type AddressValue,
-  emptyAddress,
-  isAddressValue,
-} from '../../forms/address';
+import { emptyAddress, isAddressValue } from '../../forms/address';
 import {
   type ListingField,
   type ListingForm,
   localize,
 } from '../../forms/listingForm.types';
-import { buildListingPayload } from '../../forms/listingPayload';
+import {
+  buildListingPayload,
+  type CreateListingPayload,
+  type ListingValues,
+} from '../../forms/listingPayload';
 import { AddressField } from '../AddressField';
 import { ImageUploadField } from '../ImageUploadField';
 import { createDynamicListingFormStyles } from './DynamicListingForm.styles';
 
-// Form values keyed by field key; strings, booleans, image lists or an address.
-type ListingValues = Record<
-  string,
-  string | boolean | string[] | AddressValue
->;
+// Whether the form is creating a new listing or editing an existing one.
+export type ListingFormMode = 'create' | 'update';
 
 // Props for the DynamicListingForm component.
 export interface DynamicListingFormProps {
@@ -56,6 +58,18 @@ export interface DynamicListingFormProps {
   form: ListingForm;
   // Active app language controlling all labels.
   language: PreferredLanguage;
+  // Pre-filled values (edit flow); merged over the schema-derived blanks.
+  initialValues?: ListingValues;
+  // Whether this is a create or an update (controls field locking).
+  mode?: ListingFormMode;
+  // Label for the primary action button.
+  submitLabel?: string;
+  // Overrides the default create behavior. Receives the assembled payload and
+  // raw values; responsible for its own success/error handling.
+  onSubmit?: (
+    payload: CreateListingPayload,
+    values: ListingValues,
+  ) => Promise<void>;
 }
 
 // Localized {value,label} options for dropdown/radio fields.
@@ -66,26 +80,50 @@ function toItems(field: ListingField, language: PreferredLanguage) {
   }));
 }
 
+// A read-only display of a field value (used for locked fields).
+function displayValue(
+  field: ListingField,
+  value: unknown,
+  language: PreferredLanguage,
+): string {
+  if (field.type === 'BOOLEAN') {
+    return value ? 'Yes' : 'No';
+  }
+  if (
+    (field.type === 'DROPDOWN' || field.type === 'RADIO') &&
+    typeof value === 'string'
+  ) {
+    const option = field.options?.find((item) => item.value === value);
+    return option ? localize(option.label, language) : value;
+  }
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+  return typeof value === 'string' ? value : String(value ?? '');
+}
+
+// Whether a field must be locked (non-editable) in the current mode.
+function isLocked(field: ListingField, mode: ListingFormMode): boolean {
+  return (
+    field.readOnly === true ||
+    (mode === 'update' && field.editableOnUpdate === false)
+  );
+}
+
 // Text-input props for text-like field types.
 function textInputProps(field: ListingField): Partial<TextFieldProps> {
+  const maxLength = field.fieldLength ?? field.validation?.maxLength;
   switch (field.type) {
     case 'TEXTAREA':
-      return {
-        multiline: true,
-        numberOfLines: 4,
-        maxLength: field.validation?.maxLength,
-      };
+      return { multiline: true, numberOfLines: 4, maxLength };
     case 'ADDRESS':
       return { multiline: true, numberOfLines: 3 };
     case 'NUMBER':
-      return {
-        keyboardType: 'number-pad',
-        maxLength: field.validation?.maxLength,
-      };
+      return { keyboardType: 'number-pad', maxLength };
     case 'DECIMAL':
       return { keyboardType: 'decimal-pad' };
     default:
-      return { maxLength: field.validation?.maxLength };
+      return { maxLength };
   }
 }
 
@@ -105,10 +143,11 @@ function buildRules(
   if (field.required && validatable) {
     rules.required = `${label} is required`;
   }
-  if (field.validation?.maxLength) {
+  const maxLength = field.fieldLength ?? field.validation?.maxLength;
+  if (maxLength) {
     rules.maxLength = {
-      value: field.validation.maxLength,
-      message: `Use at most ${field.validation.maxLength} characters`,
+      value: maxLength,
+      message: `Use at most ${maxLength} characters`,
     };
   }
   if (
@@ -140,11 +179,14 @@ interface FieldProps {
   field: ListingField;
   control: Control<ListingValues>;
   language: PreferredLanguage;
+  mode: ListingFormMode;
 }
 
 // Renders a single editable field with the control matching its type.
-function InputField({ field, control, language }: FieldProps) {
+function InputField({ field, control, language, mode }: FieldProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useThemedStyles(createDynamicListingFormStyles);
   const label = localize(field.label, language);
   const help = localize(field.help, language) || undefined;
   const placeholder = field.placeholder ?? undefined;
@@ -156,6 +198,25 @@ function InputField({ field, control, language }: FieldProps) {
   });
   const error = fieldState.error?.message;
   const stringValue = typeof rhf.value === 'string' ? rhf.value : '';
+
+  if (isLocked(field, mode)) {
+    return (
+      <View style={styles.readOnly}>
+        <Text variant="label" color="textSecondary">
+          {label}
+        </Text>
+        <View style={styles.lockedBox}>
+          <Text variant="body" color="textSecondary">
+            {displayValue(field, rhf.value, language) || '—'}
+          </Text>
+          <Lock size={theme.sizing.iconSm} color={theme.colors.textTertiary} />
+        </View>
+        <Text variant="caption" color="textTertiary" style={styles.lockedHint}>
+          {t('form.locked')}
+        </Text>
+      </View>
+    );
+  }
 
   if (field.type === 'DROPDOWN') {
     return (
@@ -247,12 +308,19 @@ function InputField({ field, control, language }: FieldProps) {
 }
 
 // Renders a field only when its `visibleWhen` condition is met.
-function ConditionalField({ field, control, language }: FieldProps) {
+function ConditionalField({ field, control, language, mode }: FieldProps) {
   const when = field.visibleWhen;
   const watched = useWatch({ control, name: when?.field ?? field.fieldKey });
 
   if (!when) {
-    return <InputField field={field} control={control} language={language} />;
+    return (
+      <InputField
+        field={field}
+        control={control}
+        language={language}
+        mode={mode}
+      />
+    );
   }
 
   const visible =
@@ -261,7 +329,12 @@ function ConditionalField({ field, control, language }: FieldProps) {
       : watched === when.value;
 
   return visible ? (
-    <InputField field={field} control={control} language={language} />
+    <InputField
+      field={field}
+      control={control}
+      language={language}
+      mode={mode}
+    />
   ) : null;
 }
 
@@ -299,6 +372,7 @@ function renderField(
   field: ListingField,
   control: Control<ListingValues>,
   language: PreferredLanguage,
+  mode: ListingFormMode,
 ) {
   if (field.type === 'AUTO_CALC') {
     return (
@@ -307,6 +381,7 @@ function renderField(
         field={field}
         control={control}
         language={language}
+        mode={mode}
       />
     );
   }
@@ -317,6 +392,7 @@ function renderField(
         field={field}
         control={control}
         language={language}
+        mode={mode}
       />
     );
   }
@@ -326,12 +402,17 @@ function renderField(
       field={field}
       control={control}
       language={language}
+      mode={mode}
     />
   );
 }
 
-// Builds initial values for every field in the schema.
-function buildDefaults(form: ListingForm): ListingValues {
+// Builds initial values for every field in the schema, overlaying any provided
+// pre-filled values (edit flow).
+function buildDefaults(
+  form: ListingForm,
+  initialValues?: ListingValues,
+): ListingValues {
   const values: ListingValues = {};
   for (const section of form.sections) {
     for (const field of section.fields) {
@@ -349,6 +430,13 @@ function buildDefaults(form: ListingForm): ListingValues {
       }
     }
   }
+  if (initialValues) {
+    for (const key of Object.keys(values)) {
+      if (initialValues[key] !== undefined) {
+        values[key] = initialValues[key];
+      }
+    }
+  }
   return values;
 }
 
@@ -356,28 +444,41 @@ function buildDefaults(form: ListingForm): ListingValues {
 function DynamicListingFormComponent({
   form,
   language,
+  initialValues,
+  mode = 'create',
+  submitLabel,
+  onSubmit: onSubmitProp,
 }: DynamicListingFormProps) {
   const styles = useThemedStyles(createDynamicListingFormStyles);
   const { showSuccess, showError } = useToast();
   const { t } = useTranslation();
-  const defaultValues = useMemo(() => buildDefaults(form), [form]);
+  const defaultValues = useMemo(
+    () => buildDefaults(form, initialValues),
+    [form, initialValues],
+  );
   const { control, handleSubmit, formState } = useForm<ListingValues>({
     defaultValues,
     mode: 'onBlur',
   });
 
-  // Submits the collected values to the create-listing API.
+  // Submits the collected values — via the caller's handler (edit) or the
+  // default create call.
   const onSubmit = useCallback(
     async (values: ListingValues) => {
+      const payload = buildListingPayload(form, values);
+      if (onSubmitProp) {
+        await onSubmitProp(payload, values);
+        return;
+      }
       try {
-        await modulesApi.createListing(buildListingPayload(form, values));
+        await modulesApi.createListing(payload);
         showSuccess(t('form.submitSuccess'));
       } catch (error) {
         logger.warn('[Sell] Create listing failed', error);
         showError(t('form.submitError'));
       }
     },
-    [form, showSuccess, showError, t],
+    [form, onSubmitProp, showSuccess, showError, t],
   );
 
   return (
@@ -408,7 +509,9 @@ function DynamicListingFormComponent({
                   {localize(section.title, language).toUpperCase()}
                 </Text>
                 <View style={styles.sectionFields}>
-                  {fields.map((field) => renderField(field, control, language))}
+                  {fields.map((field) =>
+                    renderField(field, control, language, mode),
+                  )}
                 </View>
               </View>
             );
@@ -417,7 +520,7 @@ function DynamicListingFormComponent({
 
         <View style={styles.footer}>
           <Button
-            label={t('form.submit')}
+            label={submitLabel ?? t('form.submit')}
             size="lg"
             loading={formState.isSubmitting}
             onPress={handleSubmit(onSubmit)}

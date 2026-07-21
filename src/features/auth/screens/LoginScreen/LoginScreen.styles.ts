@@ -10,10 +10,15 @@ export function createLoginStyles(theme: AppTheme) {
     form: {
       gap: theme.spacing.lg,
     },
-    // Right-aligned forgot-password action.
+    // Row holding the remember-me checkbox and forgot-password action.
+    optionsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    // Forgot-password action (kept compact within the options row).
     forgot: {
-      alignSelf: 'flex-end',
-      marginTop: -theme.spacing.sm,
+      marginRight: -theme.spacing.sm,
     },
     // Footer row pinned to the bottom of the sheet.
     footer: {

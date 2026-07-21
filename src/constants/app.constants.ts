@@ -40,6 +40,10 @@ export const routes = {
   search: '/search',
   cart: '/cart',
   sell: (moduleId: number) => `/sell/${moduleId}`,
+  // Seller's own listings.
+  listings: '/listings',
+  // Full edit form for a single listing.
+  editListing: (id: number) => `/listings/${id}/edit`,
   checkout: '/checkout',
   orders: '/orders',
   orderDetail: (id: string) => `/orders/${id}`,

@@ -2,12 +2,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Lock, Phone } from 'lucide-react-native';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
 import { Button } from '@/components/buttons';
-import { ControlledTextField } from '@/components/inputs';
+import { Checkbox, ControlledTextField } from '@/components/inputs';
 import { Text } from '@/components/ui';
 import { routes } from '@/constants';
 import { useThemedStyles, useToastError } from '@/hooks';
@@ -16,6 +16,7 @@ import { useTheme, useToast } from '@/providers';
 import { AuthShell } from '../../components';
 import { useLogin } from '../../hooks';
 import { type LoginFormValues, loginSchema } from '../../schemas';
+import { rememberedCredentials } from '../../utils';
 import { createLoginStyles } from './LoginScreen.styles';
 
 // Renders the login screen.
@@ -40,20 +41,50 @@ export function LoginScreen() {
     }
   }, [registeredMobile, showSuccess]);
 
-  const { control, handleSubmit } = useForm<LoginFormValues>({
+  const { control, handleSubmit, reset } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { mobileNumber: registeredMobile ?? '', password: '' },
   });
 
-  // Submits credentials and navigates to the app only on success.
+  // Whether to remember the entered credentials for next time.
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Pre-fill from securely-stored credentials when the user previously chose
+  // "Remember me" (skipped right after a fresh registration).
+  useEffect(() => {
+    if (registeredMobile) {
+      return;
+    }
+    let active = true;
+    void rememberedCredentials.load().then((saved) => {
+      if (active && saved) {
+        reset({ mobileNumber: saved.mobileNumber, password: saved.password });
+        setRememberMe(true);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [registeredMobile, reset]);
+
+  // Submits credentials and navigates to the app only on success. Persists or
+  // clears the remembered credentials based on the checkbox.
   const onSubmit = useCallback(
     async (values: LoginFormValues) => {
       const isSignedIn = await login(values);
       if (isSignedIn) {
+        if (rememberMe) {
+          await rememberedCredentials.save({
+            mobileNumber: values.mobileNumber,
+            password: values.password,
+          });
+        } else {
+          await rememberedCredentials.clear();
+        }
         router.replace(routes.tabs.home);
       }
     },
-    [login, router],
+    [login, router, rememberMe],
   );
 
   return (
@@ -88,14 +119,21 @@ export function LoginScreen() {
           }
         />
 
-        <Button
-          label="Forgot password?"
-          variant="ghost"
-          size="sm"
-          fullWidth={false}
-          style={styles.forgot}
-          onPress={() => router.push(routes.auth.forgotPassword)}
-        />
+        <View style={styles.optionsRow}>
+          <Checkbox
+            label="Remember me"
+            checked={rememberMe}
+            onChange={setRememberMe}
+          />
+          <Button
+            label="Forgot password?"
+            variant="ghost"
+            size="sm"
+            fullWidth={false}
+            style={styles.forgot}
+            onPress={() => router.push(routes.auth.forgotPassword)}
+          />
+        </View>
       </View>
 
       <Button

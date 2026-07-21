@@ -9,8 +9,9 @@ import {
 } from './address';
 import type { ListingField, ListingForm } from './listingForm.types';
 
-// Raw form values keyed by field key.
-type ListingValues = Record<
+// Raw form values keyed by field key (strings, booleans, image/checkbox lists
+// or a structured address). Shared by the form renderer and update builders.
+export type ListingValues = Record<
   string,
   string | boolean | string[] | AddressValue
 >;
@@ -32,7 +33,8 @@ export interface CreateListingPayload {
 }
 
 // Coerces a raw form value to its typed payload value, or undefined to omit.
-function coerce(field: ListingField, raw: unknown): unknown {
+// Exported so partial (PATCH) update builders can reuse the same coercion rules.
+export function coerceFieldValue(field: ListingField, raw: unknown): unknown {
   switch (field.type) {
     case 'AUTO_CALC':
       return undefined;
@@ -78,7 +80,7 @@ export function buildListingPayload(
         continue;
       }
 
-      const value = coerce(field, values[field.fieldKey]);
+      const value = coerceFieldValue(field, values[field.fieldKey]);
       if (value === undefined) {
         continue;
       }

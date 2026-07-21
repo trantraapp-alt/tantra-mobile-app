@@ -95,6 +95,18 @@ export interface ListingField {
   // Whether this is a common field (sent top-level) vs category-specific
   // (nested under `attributes`) when creating a listing.
   common?: boolean;
+  // Whether the field can be edited directly on the listing card (quick PATCH),
+  // without opening the full edit form (e.g. price, quantity, description).
+  inlineEditable?: boolean;
+  // Whether the field may be changed when updating an existing listing. When
+  // false, the field is locked on the edit form (core fields such as the
+  // category type/name); to change it the user must delete and recreate.
+  editableOnUpdate?: boolean;
+  // Whether the field is display-only and never user-editable (e.g. discount %).
+  readOnly?: boolean;
+  // Maximum input length (mirrors validation.maxLength when the backend sends it
+  // as a top-level flag).
+  fieldLength?: number;
 }
 
 // A titled group of fields.

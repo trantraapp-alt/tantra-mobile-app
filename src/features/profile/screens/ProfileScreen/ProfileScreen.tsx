@@ -8,6 +8,7 @@ import {
   Moon,
   Package,
   Settings,
+  Store,
   Ticket,
 } from 'lucide-react-native';
 import { useCallback, useMemo } from 'react';
@@ -48,6 +49,7 @@ export function ProfileScreen() {
   // Navigation menu configuration.
   const menu = useMemo(
     () => [
+      { icon: Store, label: 'My listings', onPress: () => router.push(routes.listings) },
       { icon: Package, label: 'My orders', onPress: () => router.push(routes.orders) },
       { icon: Heart, label: 'Wishlist', onPress: () => router.push(routes.tabs.wishlist) },
       { icon: Ticket, label: 'Coupons', onPress: () => router.push(routes.coupons) },

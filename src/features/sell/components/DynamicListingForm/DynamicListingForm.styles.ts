@@ -55,6 +55,24 @@ export function createDynamicListingFormStyles(theme: AppTheme) {
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.sm,
     },
+    // Locked (not editable on update) value box: value + lock icon.
+    lockedBox: {
+      minHeight: theme.sizing.inputHeightSm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
+      borderRadius: theme.radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surfaceVariant,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
+    },
+    // Hint shown under a locked field.
+    lockedHint: {
+      marginTop: theme.spacing.xxs,
+    },
     // Image upload field wrapper.
     imageUpload: {
       gap: theme.spacing.xs,

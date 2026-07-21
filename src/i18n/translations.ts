@@ -15,6 +15,7 @@ const en = {
   'common.cart': 'Cart',
   'common.notifications': 'Notifications',
   'common.retry': 'Retry',
+  'common.cancel': 'Cancel',
   'common.logout': 'Log out',
   'common.loggingOut': 'Signing out…',
   'common.appearance': 'Appearance: {value}',
@@ -47,6 +48,7 @@ const en = {
   'form.selectDescription': 'Choose a {label} from the list.',
   'form.submitSuccess': 'Listing posted successfully.',
   'form.submitError': "Couldn't post the listing. Please try again.",
+  'form.locked': 'Locked — delete and recreate to change.',
 
   // Chat screen.
   'chat.title': 'Chat',
@@ -65,6 +67,37 @@ const en = {
 
   // Profile screen.
   'profile.title': 'Profile',
+
+  // My Listings.
+  'listing.myListingsTitle': 'My Listings',
+  'listing.editTitle': 'Edit Listing',
+  'listing.emptyTitle': 'No listings yet',
+  'listing.emptyDesc': 'Your posted listings will appear here.',
+  'listing.edit': 'Edit',
+  'listing.quickEdit': 'Quick edit',
+  'listing.markSold': 'Mark as sold',
+  'listing.markActive': 'Mark as active',
+  'listing.markInactive': 'Mark inactive',
+  'listing.delete': 'Delete',
+  'listing.moreActions': 'More actions',
+  'listing.deleteTitle': 'Delete listing?',
+  'listing.deleteMessage':
+    'This listing will be removed. This cannot be undone.',
+  'listing.deleteSuccess': 'Listing deleted.',
+  'listing.deleteError': "Couldn't delete the listing. Please try again.",
+  'listing.updateSuccess': 'Listing updated.',
+  'listing.updateError': "Couldn't update the listing. Please try again.",
+  'listing.statusUpdated': 'Status updated.',
+  'listing.saveChanges': 'Save changes',
+  'listing.quickEditTitle': 'Quick edit',
+  'listing.quickEditSubtitle': 'Update the highlighted fields and save.',
+  'listing.noInlineFields': 'No quick-editable fields for this listing.',
+  'listing.type.sell': 'Sell',
+  'listing.type.rent': 'Rent',
+  'listing.status.all': 'All',
+  'listing.status.active': 'Active',
+  'listing.status.sold': 'Sold',
+  'listing.status.inactive': 'Inactive',
 } as const;
 
 // Supported translation keys.
@@ -80,6 +113,7 @@ const hi: Record<TranslationKey, string> = {
   'common.cart': 'कार्ट',
   'common.notifications': 'सूचनाएं',
   'common.retry': 'पुनः प्रयास करें',
+  'common.cancel': 'रद्द करें',
   'common.logout': 'लॉग आउट',
   'common.loggingOut': 'साइन आउट हो रहा है…',
   'common.appearance': 'रूप: {value}',
@@ -109,6 +143,7 @@ const hi: Record<TranslationKey, string> = {
   'form.selectDescription': 'सूची में से {label} चुनें।',
   'form.submitSuccess': 'लिस्टिंग सफलतापूर्वक पोस्ट हो गई।',
   'form.submitError': 'लिस्टिंग पोस्ट नहीं हो सकी। कृपया फिर से प्रयास करें।',
+  'form.locked': 'लॉक किया गया — बदलने के लिए हटाएं और दोबारा बनाएं।',
 
   'chat.title': 'चैट',
   'chat.emptyTitle': 'अभी कोई बातचीत नहीं',
@@ -123,6 +158,35 @@ const hi: Record<TranslationKey, string> = {
   'cart.emptyTitle': 'आपकी कार्ट खाली है',
 
   'profile.title': 'प्रोफ़ाइल',
+
+  'listing.myListingsTitle': 'मेरी लिस्टिंग',
+  'listing.editTitle': 'लिस्टिंग संपादित करें',
+  'listing.emptyTitle': 'अभी कोई लिस्टिंग नहीं',
+  'listing.emptyDesc': 'आपकी पोस्ट की गई लिस्टिंग यहां दिखाई देंगी।',
+  'listing.edit': 'संपादित करें',
+  'listing.quickEdit': 'त्वरित संपादन',
+  'listing.markSold': 'बिका हुआ चिह्नित करें',
+  'listing.markActive': 'सक्रिय चिह्नित करें',
+  'listing.markInactive': 'निष्क्रिय चिह्नित करें',
+  'listing.delete': 'हटाएं',
+  'listing.moreActions': 'और विकल्प',
+  'listing.deleteTitle': 'लिस्टिंग हटाएं?',
+  'listing.deleteMessage': 'यह लिस्टिंग हटा दी जाएगी। इसे पूर्ववत नहीं किया जा सकता।',
+  'listing.deleteSuccess': 'लिस्टिंग हटा दी गई।',
+  'listing.deleteError': 'लिस्टिंग हटाई नहीं जा सकी। कृपया फिर से प्रयास करें।',
+  'listing.updateSuccess': 'लिस्टिंग अपडेट हो गई।',
+  'listing.updateError': 'लिस्टिंग अपडेट नहीं हो सकी। कृपया फिर से प्रयास करें।',
+  'listing.statusUpdated': 'स्थिति अपडेट हो गई।',
+  'listing.saveChanges': 'बदलाव सहेजें',
+  'listing.quickEditTitle': 'त्वरित संपादन',
+  'listing.quickEditSubtitle': 'चिह्नित फ़ील्ड अपडेट करें और सहेजें।',
+  'listing.noInlineFields': 'इस लिस्टिंग के लिए कोई त्वरित-संपादन फ़ील्ड नहीं।',
+  'listing.type.sell': 'बेचें',
+  'listing.type.rent': 'किराया',
+  'listing.status.all': 'सभी',
+  'listing.status.active': 'सक्रिय',
+  'listing.status.sold': 'बिका हुआ',
+  'listing.status.inactive': 'निष्क्रिय',
 };
 
 // Translation dictionaries by locale code.

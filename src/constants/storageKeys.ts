@@ -2,6 +2,9 @@
 export const secureStorageKeys = {
   accessToken: 'tantra.secure.accessToken',
   refreshToken: 'tantra.secure.refreshToken',
+  // "Remember me" credentials, encrypted at rest via expo-secure-store.
+  rememberedMobile: 'tantra.secure.rememberedMobile',
+  rememberedPassword: 'tantra.secure.rememberedPassword',
 } as const;
 
 // Non-sensitive keys stored in the MMKV / AsyncStorage layer.

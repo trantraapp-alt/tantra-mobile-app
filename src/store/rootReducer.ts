@@ -4,6 +4,7 @@ import { combineReducers } from '@reduxjs/toolkit';
 import {
   authReducer,
   cartReducer,
+  locationReducer,
   modulesReducer,
   uiReducer,
   wishlistReducer,
@@ -16,6 +17,7 @@ export const rootReducer = combineReducers({
   wishlist: wishlistReducer,
   ui: uiReducer,
   modules: modulesReducer,
+  location: locationReducer,
 });
 
 // Inferred state tree produced by the root reducer.

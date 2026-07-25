@@ -2,6 +2,11 @@
 // responses / write results returned by the listings API.
 import type { LocalizedText } from '@/features/sell';
 
+// A listing's identifier. Treated as an opaque value rather than a number: the
+// API is the source of truth for its shape, and coercing it with Number() would
+// silently turn any non-numeric id into 0.
+export type ListingId = string | number;
+
 // Whether a listing is offered for sale or for rent.
 export type ListingType = 'SELL' | 'RENT';
 
@@ -19,9 +24,10 @@ export type ListingImage = string | { url: string };
 // `attributes`; common fields (price, images, address, status…) are top-level.
 // The index signature lets common fields be read by their schema `fieldKey`.
 export interface MyListing {
-  // Primary identifier (the API may expose it as `listingId` or `id`).
-  listingId?: number;
-  id?: number;
+  // Primary identifier. `listingId` is the reference the API returns and the
+  // one shown to the user; `id` is only a fallback for older payload shapes.
+  listingId?: ListingId;
+  id?: ListingId;
   // Owning user.
   userId?: number;
   // Category the listing belongs to (drives its form schema).
@@ -63,8 +69,11 @@ export interface ListingPage<T> {
   totalPages: number;
   // Total number of elements across all pages.
   totalElements: number;
-  // Zero-based index of the current page.
-  number: number;
+  // Zero-based index of the current page (Spring's `number`; the API may also
+  // send it as `page`).
+  number?: number;
+  // Zero-based current page index (alias used by some responses).
+  page?: number;
   // Page size.
   size: number;
   // Whether this is the last page.
@@ -79,7 +88,7 @@ export interface ListingWriteResponse {
   // Whether the operation succeeded.
   success: boolean;
   // The affected listing id.
-  listingId: number;
+  listingId: ListingId;
   // The owning user id.
   userId?: number;
   // Bilingual result message.

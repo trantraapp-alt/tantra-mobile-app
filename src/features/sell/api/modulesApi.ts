@@ -13,10 +13,18 @@ function getModules(): Promise<MarketplaceModule[]> {
   });
 }
 
-// Fetches active categories for a given module.
+// Fetches active top-level categories for a given module.
 function getModuleCategories(moduleId: number): Promise<ModuleCategory[]> {
   return apiClient.get<ModuleCategory[]>(
     endpoints.masters.moduleCategories(moduleId),
+    { params: { onlyActive: true } },
+  );
+}
+
+// Fetches active subcategories (children) of a parent category.
+function getSubcategories(parentId: number): Promise<ModuleCategory[]> {
+  return apiClient.get<ModuleCategory[]>(
+    endpoints.masters.subcategories(parentId),
     { params: { onlyActive: true } },
   );
 }
@@ -43,6 +51,7 @@ function createListing(payload: CreateListingPayload): Promise<unknown> {
 export const modulesApi = {
   getModules,
   getModuleCategories,
+  getSubcategories,
   getListingForm,
   createListing,
 } as const;

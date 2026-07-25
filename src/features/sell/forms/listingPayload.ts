@@ -2,18 +2,21 @@
 // Common fields (`common: true`) go top-level; the rest go under `attributes`.
 // Values are coerced to their proper types and empty optionals are omitted.
 import {
+  type AddressSelection,
   addressToPayload,
   type AddressValue,
   hasAddressValue,
+  isAddressSelection,
   isAddressValue,
 } from './address';
 import type { ListingField, ListingForm } from './listingForm.types';
 
-// Raw form values keyed by field key (strings, booleans, image/checkbox lists
-// or a structured address). Shared by the form renderer and update builders.
+// Raw form values keyed by field key (strings, booleans, image/checkbox lists,
+// a structured address, or an address selection). Shared by the form renderer
+// and update builders.
 export type ListingValues = Record<
   string,
-  string | boolean | string[] | AddressValue
+  string | boolean | string[] | AddressValue | AddressSelection
 >;
 
 // Create-listing request payload.
@@ -24,7 +27,11 @@ export interface CreateListingPayload {
   listingType: string;
   // Uploaded image URLs (common field).
   images?: string[];
-  // Structured address (common field).
+  // Id of a saved address to snapshot onto the listing.
+  addressId?: string;
+  // When true, snapshot the user's default address.
+  useDefaultAddress?: boolean;
+  // A raw structured address (fallback when the address book is not used).
   address?: Record<string, unknown>;
   // Category-specific field values keyed by field key.
   attributes: Record<string, unknown>;
@@ -42,6 +49,7 @@ export function coerceFieldValue(field: ListingField, raw: unknown): unknown {
       return Boolean(raw);
     case 'IMAGE':
     case 'CHECKBOX_GROUP':
+    case 'MULTISELECT':
       return Array.isArray(raw) && raw.length > 0 ? raw : undefined;
     case 'NUMBER':
     case 'DECIMAL': {
@@ -71,7 +79,19 @@ export function buildListingPayload(
     for (const field of section.fields) {
       if (field.type === 'ADDRESS') {
         const raw = values[field.fieldKey];
-        if (isAddressValue(raw)) {
+        if (isAddressSelection(raw)) {
+          if (raw.mode === 'default') {
+            common.useDefaultAddress = true;
+          } else if (raw.mode === 'saved') {
+            common.addressId = raw.addressId;
+          } else {
+            const address = addressToPayload(raw.value);
+            if (hasAddressValue(address)) {
+              common.address = address;
+            }
+          }
+        } else if (isAddressValue(raw)) {
+          // Backward compatibility: a raw address value.
           const address = addressToPayload(raw);
           if (hasAddressValue(address)) {
             common.address = address;

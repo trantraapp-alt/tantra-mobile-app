@@ -1,7 +1,11 @@
 // Public API barrel for the listings feature.
 export { listingsApi } from './api';
 export { useMyListings } from './hooks';
-export { EditListingScreen, MyListingsScreen } from './screens';
+export {
+  EditListingScreen,
+  ListingDetailScreen,
+  MyListingsScreen,
+} from './screens';
 export type {
   ListingStatus,
   ListingStatusFilter,

@@ -1,6 +1,6 @@
 // Home screen: personalized greeting, search entry and featured section.
 import { useRouter } from 'expo-router';
-import { Bell, PackageSearch, ShoppingCart } from 'lucide-react-native';
+import { PackageSearch, ShoppingCart } from 'lucide-react-native';
 import { ScrollView, View } from 'react-native';
 
 import { IconButton } from '@/components/buttons';
@@ -10,6 +10,8 @@ import { LanguageToggle, Logo, SectionHeader } from '@/components/shared';
 import { Screen, Text } from '@/components/ui';
 import { routes } from '@/constants';
 import { useAuth } from '@/features/auth';
+import { LocationChip } from '@/features/location';
+import { NotificationBell } from '@/features/notifications';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 
@@ -50,20 +52,18 @@ export function HomeScreen() {
               accessibilityLabel={t('common.cart')}
               onPress={() => router.push(routes.cart)}
             />
-            <IconButton
-              icon={Bell}
-              filled
-              accessibilityLabel={t('common.notifications')}
-              onPress={() => router.push(routes.notifications)}
-            />
+            <NotificationBell />
           </View>
         </View>
 
-        <View style={styles.greeting}>
-          <Text variant="caption" color="textSecondary">
-            {t('home.greeting', { name: firstName })}
-          </Text>
-          <Text variant="h2">{t('home.prompt')}</Text>
+        <View style={styles.greetingRow}>
+          <View style={styles.greeting}>
+            <Text variant="caption" color="textSecondary">
+              {t('home.greeting', { name: firstName })}
+            </Text>
+            <Text variant="h2">{t('home.prompt')}</Text>
+          </View>
+          <LocationChip />
         </View>
 
         <SearchBar

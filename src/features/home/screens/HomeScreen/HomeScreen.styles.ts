@@ -34,8 +34,16 @@ export function createHomeStyles(theme: AppTheme) {
       alignItems: 'center',
       gap: theme.spacing.sm,
     },
-    // Greeting block.
+    // Greeting row: greeting text on the left, location chip on the right.
+    greetingRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: theme.spacing.md,
+    },
+    // Greeting text block.
     greeting: {
+      flex: 1,
       gap: theme.spacing.xxs,
     },
     // Featured section wrapper with a minimum height for the empty state.

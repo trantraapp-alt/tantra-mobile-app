@@ -63,11 +63,25 @@ export const endpoints = {
     validate: '/coupons/validate',
   },
   addresses: {
+    // The user's saved addresses (default first).
     list: '/addresses',
+    // The user's default address (or null).
+    default: '/addresses/default',
+    // Creates a saved address.
+    create: '/addresses',
+    // A single address by id — used for update (PUT) and delete (DELETE).
     detail: (id: string) => `/addresses/${id}`,
+    // Makes the address the default (PATCH).
+    setDefault: (id: string) => `/addresses/${id}/default`,
+  },
+  optionSets: {
+    // Seeded option-set items (country/state/district…). Pass a `parentItemId`
+    // query param to fetch a cascading child set.
+    items: (setKey: string) => `/option-sets/${setKey}/items`,
   },
   notifications: {
     list: '/notifications',
+    unreadCount: '/notifications/unread-count',
     read: (id: string) => `/notifications/${id}/read`,
     readAll: '/notifications/read-all',
   },
@@ -77,9 +91,12 @@ export const endpoints = {
   masters: {
     // Marketplace modules shown on the Sell sheet.
     modules: '/masters/modules',
-    // Categories within a module.
+    // Top-level categories within a module.
     moduleCategories: (moduleId: number) =>
       `/masters/modules/${moduleId}/categories`,
+    // Subcategories (children) of a parent category.
+    subcategories: (parentId: number) =>
+      `/masters/categories/${parentId}/subcategories`,
     // Server-driven listing form for a category (expects a `listingType` query).
     categoryForm: (categoryId: number) => `/categories/${categoryId}/form`,
   },
@@ -90,7 +107,7 @@ export const endpoints = {
     mine: '/listings/mine',
     // A single listing by id — used for read, update (PUT), inline edit (PATCH)
     // and soft delete (DELETE).
-    detail: (id: number) => `/listings/${id}`,
+    detail: (id: string | number) => `/listings/${id}`,
     // Public listings within a category (paginated).
     category: (categoryId: number) => `/listings/category/${categoryId}`,
     // Uploads image files; returns relative `/files/...` URLs.

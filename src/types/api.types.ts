@@ -42,12 +42,15 @@ export interface PaginatedResponse<TItem> {
 export interface ApiError {
   // Machine-readable error code.
   code: string;
-  // Human-readable error message.
+  // Human-readable error message (already localized to the active language).
   message: string;
   // HTTP status code, when available.
   status?: number;
   // Field-level validation errors keyed by field name.
   fieldErrors?: Record<string, string[]>;
+  // Server-side trace id (from the envelope or the X-Trace-Id header) for
+  // support / diagnostics on error screens.
+  traceId?: string;
   // Whether the failure is network-related (offline / timeout).
   isNetworkError: boolean;
 }

@@ -14,11 +14,13 @@ export interface UploadableFile {
   type: string;
 }
 
-// Shape of the uploads endpoint response.
+// Shape of the uploads endpoint response. Tolerates both the standard envelope
+// ({ success, data: { urls } }) and the legacy flat shape ({ success, urls }).
 interface UploadResponse {
   success?: boolean;
   urls?: string[];
-  message?: string;
+  data?: { urls?: string[] };
+  message?: string | { en?: string; hi?: string };
 }
 
 // Uploads files under the field name "files" and returns their relative URLs.
@@ -47,8 +49,11 @@ export async function uploadImages(files: UploadableFile[]): Promise<string[]> {
   );
 
   const json = (await response.json()) as UploadResponse;
-  if (!response.ok || !json.success || !json.urls) {
-    throw new Error(json.message ?? 'Upload failed');
+  const urls = json.data?.urls ?? json.urls;
+  if (!response.ok || json.success === false || !urls || urls.length === 0) {
+    const message =
+      typeof json.message === 'string' ? json.message : 'Upload failed';
+    throw new Error(message);
   }
-  return json.urls;
+  return urls;
 }

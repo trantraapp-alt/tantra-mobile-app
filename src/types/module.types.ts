@@ -19,12 +19,24 @@ export interface MarketplaceModule {
   createdAt: IsoDateString;
 }
 
-// A category within a marketplace module.
+// What a category opens when tapped: a listing form or the business-profile
+// flow (the latter is a separate workstream — this app hands off to it).
+export type CategoryActionType = 'LISTING' | 'BUSINESS_PROFILE';
+
+// A category within a marketplace module. Categories form a tree via `parentId`:
+// a category with no `parentId` is top-level under its module; its children are
+// subcategories. The leaf category's id feeds the form / listing APIs.
 export interface ModuleCategory {
   // Numeric category identifier.
   id: number;
   // Owning module identifier.
   moduleId: number;
+  // Parent category id, or null/absent for a top-level category.
+  parentId?: number | null;
+  // What tapping the category opens (defaults to LISTING when absent).
+  actionType?: CategoryActionType | string;
+  // Handoff key for BUSINESS_PROFILE categories (e.g. "vet_clinic").
+  linkKey?: string | null;
   // Stable machine key, e.g. "CAT_CROP".
   categoryKey: string;
   // Category name in English.

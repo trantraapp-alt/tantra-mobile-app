@@ -9,6 +9,9 @@ import {
   type ListingValues,
 } from '@/features/sell';
 
+// One form value in the union (string, boolean, list, address or selection).
+type ListingValue = ListingValues[string];
+
 import type { MyListing } from '../types';
 import { imageToUrl } from '../utils/listingDisplay';
 
@@ -22,8 +25,10 @@ function str(value: unknown): string {
   return value === null || value === undefined ? '' : String(value);
 }
 
-// Rebuilds an address form value from the API address object.
-function addressValueFromApi(raw: unknown): AddressValue {
+// Rebuilds an address form value from the API address object. Exported so the
+// detail screen can render the stored address without re-implementing the
+// null/number normalization.
+export function addressValueFromApi(raw: unknown): AddressValue {
   const base = emptyAddress();
   if (!raw || typeof raw !== 'object') {
     return base;
@@ -37,20 +42,20 @@ function addressValueFromApi(raw: unknown): AddressValue {
   return base;
 }
 
-// Maps a stored listing value to the form-state value for a field type.
-function toFormValue(
-  field: ListingField,
-  raw: unknown,
-): string | boolean | string[] | AddressValue {
+// Maps a stored listing value to the form-state value for a field type. A
+// listing's address was snapshotted as a raw object, so it pre-fills as a manual
+// selection (the user can switch to a saved address on edit).
+function toFormValue(field: ListingField, raw: unknown): ListingValue {
   switch (field.type) {
     case 'IMAGE':
       return Array.isArray(raw) ? raw.map(imageToUrl).filter(Boolean) : [];
     case 'CHECKBOX_GROUP':
+    case 'MULTISELECT':
       return Array.isArray(raw) ? raw.map(str) : [];
     case 'BOOLEAN':
       return Boolean(raw);
     case 'ADDRESS':
-      return addressValueFromApi(raw);
+      return { mode: 'manual', value: addressValueFromApi(raw) };
     default:
       return str(raw);
   }

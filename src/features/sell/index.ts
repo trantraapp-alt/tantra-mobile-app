@@ -7,10 +7,13 @@ export {
 } from './components/DynamicListingForm';
 export {
   type AddressPayload,
+  type AddressSelection,
   addressToPayload,
   type AddressValue,
   emptyAddress,
+  emptyManualSelection,
   hasAddressValue,
+  isAddressSelection,
   isAddressValue,
 } from './forms/address';
 export * from './forms/listingForm.types';

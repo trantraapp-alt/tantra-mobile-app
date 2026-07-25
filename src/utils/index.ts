@@ -4,6 +4,7 @@ export {
   formatCompactNumber,
   formatCurrency,
   formatDate,
+  formatNumber,
   formatRelativeTime,
   truncate,
 } from './format';

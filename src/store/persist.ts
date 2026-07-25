@@ -33,7 +33,9 @@ const persistConfig: PersistConfig<RootReducerState> = {
   key: storageKeys.persistRoot,
   version: 2,
   storage: persistStorage,
-  whitelist: ['cart', 'wishlist', 'ui'],
+  // `location` is safe to add without a version bump: absent from older
+  // persisted state, it simply rehydrates to the slice's initial value.
+  whitelist: ['cart', 'wishlist', 'ui', 'location'],
   migrate: createMigrate(migrations),
 };
 

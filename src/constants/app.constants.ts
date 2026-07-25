@@ -40,10 +40,18 @@ export const routes = {
   search: '/search',
   cart: '/cart',
   sell: (moduleId: number) => `/sell/${moduleId}`,
+  // Saved address book.
+  addresses: '/addresses',
+  // Add a new saved address (optionally with a `returnTo` param).
+  addAddress: '/addresses/new',
+  // Edit a saved address.
+  editAddress: (id: string) => `/addresses/${id}`,
   // Seller's own listings.
   listings: '/listings',
-  // Full edit form for a single listing.
-  editListing: (id: number) => `/listings/${id}/edit`,
+  // A single listing (opens the read-only preview).
+  listingDetail: (id: string | number) => `/listings/${id}`,
+  // The full edit form for a listing.
+  editListing: (id: string | number) => `/listings/edit/${id}`,
   checkout: '/checkout',
   orders: '/orders',
   orderDetail: (id: string) => `/orders/${id}`,

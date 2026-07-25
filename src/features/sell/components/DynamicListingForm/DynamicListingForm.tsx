@@ -8,7 +8,7 @@
 // pre-fill, `mode="update"` to lock fields the backend marks non-editable, and
 // `onSubmit` to override the default create call (e.g. to PUT an update).
 import { Lock } from 'lucide-react-native';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo } from 'react';
 import {
   type Control,
   type RegisterOptions,
@@ -21,8 +21,10 @@ import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { Button } from '@/components/buttons';
 import {
   CheckboxGroup,
+  DateField,
   RadioGroup,
   Select,
+  type SelectItem,
   SwitchRow,
   TextField,
   type TextFieldProps,
@@ -34,9 +36,10 @@ import { useTheme, useToast } from '@/providers';
 import type { PreferredLanguage } from '@/types';
 
 import { modulesApi } from '../../api';
-import { emptyAddress, isAddressValue } from '../../forms/address';
+import { emptyManualSelection, isAddressSelection } from '../../forms/address';
 import {
   type ListingField,
+  type ListingFieldVisibleWhen,
   type ListingForm,
   localize,
 } from '../../forms/listingForm.types';
@@ -45,7 +48,7 @@ import {
   type CreateListingPayload,
   type ListingValues,
 } from '../../forms/listingPayload';
-import { AddressField } from '../AddressField';
+import { AddressSelectorField } from '../AddressSelectorField';
 import { ImageUploadField } from '../ImageUploadField';
 import { createDynamicListingFormStyles } from './DynamicListingForm.styles';
 
@@ -72,12 +75,78 @@ export interface DynamicListingFormProps {
   ) => Promise<void>;
 }
 
+// Lookup of every field in the form by its key (for cascade parent resolution).
+type FieldMap = Map<string, ListingField>;
+
+// Sentinel value for the "Other (please specify)" choice.
+const OTHER_VALUE = '__other__';
+
 // Localized {value,label} options for dropdown/radio fields.
-function toItems(field: ListingField, language: PreferredLanguage) {
+function toItems(field: ListingField, language: PreferredLanguage): SelectItem[] {
   return (field.options ?? []).map((option) => ({
     value: option.value,
     label: localize(option.label, language),
   }));
+}
+
+// Resolves the options for a choice field, filtering a cascading child's
+// options by the selected parent option's id and appending an "Other" choice
+// when the field allows it.
+function resolveOptions(
+  field: ListingField,
+  fieldsByKey: FieldMap,
+  parentValue: unknown,
+  language: PreferredLanguage,
+  otherLabel: string,
+): SelectItem[] {
+  let options = field.options ?? [];
+  if (field.parentField) {
+    const parentField = fieldsByKey.get(field.parentField);
+    const selectedParent = parentField?.options?.find(
+      (option) => option.value === parentValue,
+    );
+    const parentId = selectedParent?.id;
+    options =
+      parentId == null
+        ? []
+        : options.filter(
+            (option) =>
+              option.parent != null &&
+              String(option.parent) === String(parentId),
+          );
+  }
+
+  const items: SelectItem[] = options.map((option) => ({
+    value: option.value,
+    label: localize(option.label, language),
+  }));
+  if (field.allowOther) {
+    items.push({ value: OTHER_VALUE, label: otherLabel });
+  }
+  return items;
+}
+
+// Whether a watched value satisfies a single equality against a target.
+function valueEquals(watched: unknown, target: string | boolean): boolean {
+  return typeof target === 'boolean'
+    ? Boolean(watched) === target
+    : watched === target;
+}
+
+// Evaluates a field's `visibleWhen` condition against the watched value.
+function matchesVisibleWhen(
+  when: ListingFieldVisibleWhen,
+  watched: unknown,
+): boolean {
+  const operator = when.operator ?? 'equals';
+  if (operator === 'in' || operator === 'notIn') {
+    const targets = Array.isArray(when.value) ? when.value : [when.value];
+    const isIn = targets.some((target) => valueEquals(watched, target));
+    return operator === 'in' ? isIn : !isIn;
+  }
+  const target = Array.isArray(when.value) ? when.value[0] : when.value;
+  const equal = target !== undefined && valueEquals(watched, target);
+  return operator === 'notEquals' ? !equal : equal;
 }
 
 // A read-only display of a field value (used for locked fields).
@@ -137,6 +206,7 @@ function buildRules(
     field.type !== 'IMAGE' &&
     field.type !== 'BOOLEAN' &&
     field.type !== 'CHECKBOX_GROUP' &&
+    field.type !== 'MULTISELECT' &&
     field.type !== 'ADDRESS' &&
     field.type !== 'AUTO_CALC';
 
@@ -180,10 +250,11 @@ interface FieldProps {
   control: Control<ListingValues>;
   language: PreferredLanguage;
   mode: ListingFormMode;
+  fieldsByKey: FieldMap;
 }
 
 // Renders a single editable field with the control matching its type.
-function InputField({ field, control, language, mode }: FieldProps) {
+function InputField({ field, control, language, mode, fieldsByKey }: FieldProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const styles = useThemedStyles(createDynamicListingFormStyles);
@@ -196,8 +267,33 @@ function InputField({ field, control, language, mode }: FieldProps) {
     name: field.fieldKey,
     rules,
   });
+  const onChange = rhf.onChange;
   const error = fieldState.error?.message;
   const stringValue = typeof rhf.value === 'string' ? rhf.value : '';
+
+  // The value driving a cascading child field (undefined for non-cascades).
+  const parentValue = useWatch({
+    control,
+    name: field.parentField ?? '__no_parent__',
+  });
+  const otherLabel = t('form.otherOption');
+  const options = useMemo(
+    () => resolveOptions(field, fieldsByKey, parentValue, language, otherLabel),
+    [field, fieldsByKey, parentValue, language, otherLabel],
+  );
+
+  // When the parent changes, clear a child selection that no longer belongs to
+  // the new parent (but keep an explicit "Other" choice).
+  useEffect(() => {
+    if (
+      field.parentField &&
+      stringValue &&
+      stringValue !== OTHER_VALUE &&
+      !options.some((option) => option.value === stringValue)
+    ) {
+      onChange('');
+    }
+  }, [field.parentField, stringValue, options, onChange]);
 
   if (isLocked(field, mode)) {
     return (
@@ -225,8 +321,8 @@ function InputField({ field, control, language, mode }: FieldProps) {
         description={help ?? t('form.selectDescription', { label: label.toLowerCase() })}
         placeholder={placeholder}
         value={stringValue}
-        options={toItems(field, language)}
-        onChange={rhf.onChange}
+        options={options}
+        onChange={onChange}
         onBlur={rhf.onBlur}
         error={error}
       />
@@ -237,21 +333,34 @@ function InputField({ field, control, language, mode }: FieldProps) {
     return (
       <RadioGroup
         label={label}
-        options={toItems(field, language)}
+        options={options}
         value={stringValue}
-        onChange={rhf.onChange}
+        onChange={onChange}
         error={error}
       />
     );
   }
 
-  if (field.type === 'CHECKBOX_GROUP') {
+  if (field.type === 'MULTISELECT' || field.type === 'CHECKBOX_GROUP') {
     return (
       <CheckboxGroup
         label={label}
         options={toItems(field, language)}
         value={Array.isArray(rhf.value) ? rhf.value : []}
-        onChange={rhf.onChange}
+        onChange={onChange}
+        error={error}
+      />
+    );
+  }
+
+  if (field.type === 'DATE') {
+    return (
+      <DateField
+        label={label}
+        value={stringValue}
+        onChange={onChange}
+        placeholder={placeholder ?? t('form.selectDate')}
+        helperText={help}
         error={error}
       />
     );
@@ -283,10 +392,11 @@ function InputField({ field, control, language, mode }: FieldProps) {
 
   if (field.type === 'ADDRESS') {
     return (
-      <AddressField
+      <AddressSelectorField
         label={label}
-        value={isAddressValue(rhf.value) ? rhf.value : emptyAddress()}
-        onChange={rhf.onChange}
+        value={isAddressSelection(rhf.value) ? rhf.value : emptyManualSelection()}
+        onChange={onChange}
+        language={language}
         error={error}
       />
     );
@@ -308,7 +418,13 @@ function InputField({ field, control, language, mode }: FieldProps) {
 }
 
 // Renders a field only when its `visibleWhen` condition is met.
-function ConditionalField({ field, control, language, mode }: FieldProps) {
+function ConditionalField({
+  field,
+  control,
+  language,
+  mode,
+  fieldsByKey,
+}: FieldProps) {
   const when = field.visibleWhen;
   const watched = useWatch({ control, name: when?.field ?? field.fieldKey });
 
@@ -319,21 +435,18 @@ function ConditionalField({ field, control, language, mode }: FieldProps) {
         control={control}
         language={language}
         mode={mode}
+        fieldsByKey={fieldsByKey}
       />
     );
   }
 
-  const visible =
-    typeof when.value === 'boolean'
-      ? Boolean(watched) === when.value
-      : watched === when.value;
-
-  return visible ? (
+  return matchesVisibleWhen(when, watched) ? (
     <InputField
       field={field}
       control={control}
       language={language}
       mode={mode}
+      fieldsByKey={fieldsByKey}
     />
   ) : null;
 }
@@ -373,6 +486,7 @@ function renderField(
   control: Control<ListingValues>,
   language: PreferredLanguage,
   mode: ListingFormMode,
+  fieldsByKey: FieldMap,
 ) {
   if (field.type === 'AUTO_CALC') {
     return (
@@ -382,6 +496,7 @@ function renderField(
         control={control}
         language={language}
         mode={mode}
+        fieldsByKey={fieldsByKey}
       />
     );
   }
@@ -393,6 +508,7 @@ function renderField(
         control={control}
         language={language}
         mode={mode}
+        fieldsByKey={fieldsByKey}
       />
     );
   }
@@ -403,6 +519,7 @@ function renderField(
       control={control}
       language={language}
       mode={mode}
+      fieldsByKey={fieldsByKey}
     />
   );
 }
@@ -421,10 +538,14 @@ function buildDefaults(
       }
       if (field.type === 'BOOLEAN') {
         values[field.fieldKey] = false;
-      } else if (field.type === 'IMAGE' || field.type === 'CHECKBOX_GROUP') {
+      } else if (
+        field.type === 'IMAGE' ||
+        field.type === 'CHECKBOX_GROUP' ||
+        field.type === 'MULTISELECT'
+      ) {
         values[field.fieldKey] = [];
       } else if (field.type === 'ADDRESS') {
-        values[field.fieldKey] = emptyAddress();
+        values[field.fieldKey] = emptyManualSelection();
       } else {
         values[field.fieldKey] = '';
       }
@@ -455,6 +576,17 @@ function DynamicListingFormComponent({
   const defaultValues = useMemo(
     () => buildDefaults(form, initialValues),
     [form, initialValues],
+  );
+  // Every field keyed by fieldKey, so a cascading child can resolve its parent
+  // field's selected option id.
+  const fieldsByKey = useMemo<FieldMap>(
+    () =>
+      new Map(
+        form.sections.flatMap((section) =>
+          section.fields.map((field) => [field.fieldKey, field]),
+        ),
+      ),
+    [form],
   );
   const { control, handleSubmit, formState } = useForm<ListingValues>({
     defaultValues,
@@ -510,7 +642,7 @@ function DynamicListingFormComponent({
                 </Text>
                 <View style={styles.sectionFields}>
                   {fields.map((field) =>
-                    renderField(field, control, language, mode),
+                    renderField(field, control, language, mode, fieldsByKey),
                   )}
                 </View>
               </View>

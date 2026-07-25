@@ -15,6 +15,11 @@ export {
 export { Card, type CardProps } from './Card';
 export { Chip, type ChipProps } from './Chip';
 export { Divider, type DividerProps } from './Divider';
+export {
+  type CarouselAutoPlayBehavior,
+  ImageCarousel,
+  type ImageCarouselProps,
+} from './ImageCarousel';
 export { PriceTag, type PriceTagProps } from './PriceTag';
 export { Rating, type RatingProps } from './Rating';
 export { Screen, type ScreenProps } from './Screen';

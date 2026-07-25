@@ -55,7 +55,7 @@ export interface QuickEditSheetProps {
   // Active language for labels.
   language: PreferredLanguage;
   // Called after a successful save with the fields to merge into the list.
-  onSaved: (listingId: number, updated: Partial<MyListing>) => void;
+  onSaved: (listingId: string, updated: Partial<MyListing>) => void;
 }
 
 // Imperative handle to open/close the sheet.
@@ -172,7 +172,7 @@ export const QuickEditSheet = forwardRef<QuickEditSheetRef, QuickEditSheetProps>
       () => (form ? inlineEditableFields(form) : []),
       [form],
     );
-    const listingId = listing ? getListingId(listing) : 0;
+    const listingId = listing ? getListingId(listing) : '';
 
     // Re-seed values whenever the target listing or its form changes.
     useEffect(() => {

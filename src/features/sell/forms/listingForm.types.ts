@@ -12,12 +12,14 @@ export interface LocalizedText {
 
 // A selectable option for dropdown/radio fields.
 export interface ListingFieldOption {
-  // Stored value.
+  // Option id, used as the cascade key a child option's `parent` points to.
+  id?: number | string | null;
+  // Stored value submitted for this option.
   value: string;
   // Bilingual display label.
   label: LocalizedText;
-  // Optional parent value for dependent option sets.
-  parent?: string | null;
+  // Parent option's id for cascading sets (`null` for a top-level option).
+  parent?: number | string | null;
 }
 
 // Validation rules attached to a field.
@@ -32,14 +34,17 @@ export interface ListingFieldValidation {
   acceptedTypes?: string[];
 }
 
+// Comparison operators supported by a field's conditional visibility.
+export type VisibleWhenOperator = 'equals' | 'notEquals' | 'in' | 'notIn';
+
 // Condition controlling whether a field is shown.
 export interface ListingFieldVisibleWhen {
   // The field whose value is compared.
   field: string;
-  // Comparison operator.
-  operator: 'equals';
-  // Value the field must equal for this field to be visible.
-  value: string | boolean;
+  // Comparison operator (defaults to `equals` when omitted).
+  operator?: VisibleWhenOperator;
+  // Value(s) the field is compared against. `in`/`notIn` take an array.
+  value: string | boolean | Array<string | boolean>;
 }
 
 // Computed/auto-calculated field descriptor.
@@ -58,8 +63,10 @@ export type ListingFieldType =
   | 'DECIMAL'
   | 'DROPDOWN'
   | 'RADIO'
+  | 'MULTISELECT'
   | 'CHECKBOX_GROUP'
   | 'BOOLEAN'
+  | 'DATE'
   | 'AUTO_CALC'
   | 'IMAGE'
   | 'ADDRESS';
@@ -86,6 +93,9 @@ export interface ListingField {
   multiple?: boolean;
   // Whether an "other" option reveals a free-text field.
   allowOther?: boolean;
+  // Field key of the parent dropdown this field cascades from. Only options
+  // whose `parent` equals the selected parent option's id are shown.
+  parentField?: string | null;
   // Validation rules.
   validation?: ListingFieldValidation | null;
   // Conditional visibility.

@@ -24,11 +24,14 @@ export function createImageUploadFieldStyles(theme: AppTheme) {
       width: tile,
       height: tile,
     },
-    // Uploaded image thumbnail.
+    // Uploaded image thumbnail. The border keeps photos shot on a white
+    // background visually separated from the light-mode surface behind them.
     thumb: {
       width: '100%',
       height: '100%',
       borderRadius: theme.radius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       backgroundColor: theme.colors.surfaceVariant,
     },
     // Circular remove button on a thumbnail.

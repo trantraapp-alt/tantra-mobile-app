@@ -3,7 +3,7 @@ import { memo } from 'react';
 import { View } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
-import { useThemedStyles } from '@/hooks';
+import { useThemedStyles, useTranslation } from '@/hooks';
 import type { Money } from '@/types';
 import { formatCurrency } from '@/utils';
 
@@ -19,8 +19,9 @@ export interface PriceTagProps {
   discountPercentage?: number;
   // Currency ISO code.
   currency?: string;
-  // Size preset controlling the primary price typography.
-  size?: 'md' | 'lg';
+  // Size preset controlling the primary price typography. `sm` keeps the price
+  // below a card title so the title stays the focal point.
+  size?: 'sm' | 'md' | 'lg';
 }
 
 // Renders a price with optional discount context.
@@ -32,13 +33,14 @@ function PriceTagComponent({
   size = 'md',
 }: PriceTagProps) {
   const styles = useThemedStyles(createPriceTagStyles);
+  const { t } = useTranslation();
   const hasDiscount = compareAtPrice !== undefined && compareAtPrice > price;
+  const priceVariant =
+    size === 'lg' ? 'h3' : size === 'md' ? 'h4' : 'bodyMedium';
 
   return (
     <View style={styles.container}>
-      <Text variant={size === 'lg' ? 'h3' : 'h4'}>
-        {formatCurrency(price, currency)}
-      </Text>
+      <Text variant={priceVariant}>{formatCurrency(price, currency)}</Text>
       {hasDiscount && compareAtPrice !== undefined ? (
         <Text
           variant="caption"
@@ -50,7 +52,7 @@ function PriceTagComponent({
       ) : null}
       {discountPercentage ? (
         <Text variant="label" color="success" style={styles.discount}>
-          {discountPercentage}% off
+          {t('common.percentOff', { value: discountPercentage })}
         </Text>
       ) : null}
     </View>

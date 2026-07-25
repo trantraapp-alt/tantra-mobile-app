@@ -3,6 +3,8 @@
 // delete. Data and mutations come from useMyListings; the card visual is the
 // shared ListingCard; per-card actions open a shared ActionSheet.
 import { FlashList } from '@shopify/flash-list';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import {
   CheckCircle2,
@@ -33,12 +35,12 @@ import { localize } from '@/features/sell';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import type { TranslationKey } from '@/i18n';
 import { logger } from '@/lib';
-import { useToast } from '@/providers';
+import { useTheme, useToast } from '@/providers';
 
 import { listingsApi } from '../../api';
 import type { QuickEditSheetRef } from '../../components';
 import { MyListingsFilters, QuickEditSheet } from '../../components';
-import { useCategoryForm, useMyListings } from '../../hooks';
+import { useCategoryForm, useCategoryForms, useMyListings } from '../../hooks';
 import type {
   ListingStatus,
   ListingStatusFilter,
@@ -46,9 +48,9 @@ import type {
   MyListing,
 } from '../../types';
 import {
+  deriveListingTitle,
   firstImageUri,
   getListingId,
-  resolveListingTitle,
   statusTone,
 } from '../../utils/listingDisplay';
 import { createMyListingsScreenStyles } from './MyListingsScreen.styles';
@@ -67,6 +69,7 @@ function statusLabelKey(status: string): TranslationKey {
 // Renders the My Listings screen.
 export function MyListingsScreen() {
   const styles = useThemedStyles(createMyListingsScreenStyles);
+  const theme = useTheme();
   const router = useRouter();
   const { t, language } = useTranslation();
   const { showSuccess, showError } = useToast();
@@ -97,8 +100,20 @@ export function MyListingsScreen() {
     activeListingType,
   );
 
+  // Form schemas for every category on screen, so each card can resolve its
+  // stored attribute values into a readable name.
+  const categoryIds = useMemo(
+    () => listings.map((item) => item.categoryId),
+    [listings],
+  );
+  const formsByCategory = useCategoryForms(categoryIds, listingType);
+
   const actionSheetRef = useRef<ActionSheetRef>(null);
   const quickEditRef = useRef<QuickEditSheetRef>(null);
+
+  // Reference of the listing whose menu is open, shown under its name in the
+  // action sheet so the sheet names the exact listing being acted on.
+  const activeId = active ? getListingId(active) : '';
 
   const goToEdit = useCallback(
     (listing: MyListing) => {
@@ -107,10 +122,30 @@ export function MyListingsScreen() {
     [router],
   );
 
+  // Tapping the card body opens the read-only preview; the card's own edit
+  // button and the overflow menu still go straight to the form.
+  const goToDetail = useCallback(
+    (listing: MyListing) => {
+      router.push(routes.listingDetail(getListingId(listing)));
+    },
+    [router],
+  );
+
   const openMenu = useCallback((listing: MyListing) => {
     setActive(listing);
     actionSheetRef.current?.present();
   }, []);
+
+  // Copies a listing id — the reference a seller quotes to a buyer — so the ID
+  // chip is a tool rather than a label.
+  const copyId = useCallback(
+    async (id: string) => {
+      await Clipboard.setStringAsync(String(id));
+      void Haptics.selectionAsync();
+      showSuccess(t('listing.idCopied'));
+    },
+    [showSuccess, t],
+  );
 
   // Applies a status change (Mark as sold / active / inactive).
   const changeStatus = useCallback(
@@ -223,7 +258,7 @@ export function MyListingsScreen() {
   }, [active, t, goToEdit, changeStatus, confirmDelete]);
 
   const onQuickSaved = useCallback(
-    (id: number, updated: Partial<MyListing>) => {
+    (id: string, updated: Partial<MyListing>) => {
       patchLocal(id, updated);
     },
     [patchLocal],
@@ -233,35 +268,55 @@ export function MyListingsScreen() {
     ({ item }: { item: MyListing }) => (
       <View style={styles.cell}>
         <ListingCard
-          title={resolveListingTitle(item, language)}
+          title={deriveListingTitle(
+            item,
+            formsByCategory[item.categoryId],
+            language,
+            t('listing.untitled'),
+          )}
+          listingId={getListingId(item)}
+          idLabel={t('listing.idLabel')}
           imageUri={firstImageUri(item)}
+          dimImage={String(item.status) === 'INACTIVE'}
           offeredPrice={item.offeredPrice ?? undefined}
           actualPrice={item.actualPrice ?? undefined}
           discountPct={item.discountPct ?? undefined}
           statusLabel={t(statusLabelKey(String(item.status)))}
           statusTone={statusTone(String(item.status))}
-          onPress={() => goToEdit(item)}
-          footer={
-            <View style={styles.cardActions}>
-              <View style={styles.editWrap}>
-                <Button
-                  label={t('listing.edit')}
-                  variant="outline"
-                  size="sm"
-                  onPress={() => goToEdit(item)}
-                />
-              </View>
-              <IconButton
-                icon={MoreVertical}
-                accessibilityLabel={t('listing.moreActions')}
-                onPress={() => openMenu(item)}
-              />
-            </View>
+          onPress={() => goToDetail(item)}
+          onCopyId={copyId}
+          headerAction={
+            <IconButton
+              icon={MoreVertical}
+              size="sm"
+              color={theme.colors.textSecondary}
+              accessibilityLabel={t('listing.moreActions')}
+              onPress={() => openMenu(item)}
+            />
+          }
+          priceAction={
+            <Button
+              label={t('listing.edit')}
+              variant="outline"
+              size="sm"
+              fullWidth={false}
+              onPress={() => goToEdit(item)}
+            />
           }
         />
       </View>
     ),
-    [styles, language, t, goToEdit, openMenu],
+    [
+      styles,
+      theme,
+      language,
+      t,
+      goToEdit,
+      goToDetail,
+      openMenu,
+      copyId,
+      formsByCategory,
+    ],
   );
 
   // Chooses the body for the current data state.
@@ -328,7 +383,17 @@ export function MyListingsScreen() {
 
       <ActionSheet
         ref={actionSheetRef}
-        title={active ? resolveListingTitle(active, language) : undefined}
+        title={
+          active
+            ? deriveListingTitle(
+                active,
+                activeForm ?? formsByCategory[active.categoryId],
+                language,
+                t('listing.untitled'),
+              )
+            : undefined
+        }
+        subtitle={activeId === '' ? undefined : `#${activeId}`}
         actions={menuActions}
         cancelLabel={t('common.cancel')}
       />

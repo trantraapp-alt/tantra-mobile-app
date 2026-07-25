@@ -15,6 +15,12 @@ const selectWishlistState = (state: RootState) => state.wishlist;
 const selectUiState = (state: RootState) => state.ui;
 // Selects the modules slice.
 const selectModulesState = (state: RootState) => state.modules;
+// Selects the location slice.
+const selectLocationState = (state: RootState) => state.location;
+
+// Selects the user's selected location (null when unset).
+export const selectSelectedLocation = (state: RootState) =>
+  selectLocationState(state).selected;
 
 // Selects the currently authenticated user.
 export const selectCurrentUser = createSelector(

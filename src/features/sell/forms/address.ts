@@ -67,6 +67,28 @@ export function isAddressValue(value: unknown): value is AddressValue {
   );
 }
 
+// How a listing's address is chosen: the user's default, a saved address by id,
+// or a one-off address typed into the form.
+export type AddressSelection =
+  | { mode: 'default' }
+  | { mode: 'saved'; addressId: string }
+  | { mode: 'manual'; value: AddressValue };
+
+// Narrows an unknown form value to an AddressSelection.
+export function isAddressSelection(value: unknown): value is AddressSelection {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'mode' in value &&
+    typeof (value as { mode: unknown }).mode === 'string'
+  );
+}
+
+// A manual selection wrapping a blank address.
+export function emptyManualSelection(): AddressSelection {
+  return { mode: 'manual', value: emptyAddress() };
+}
+
 // Trims a string, returning null when empty.
 function text(value: string): string | null {
   const trimmed = value.trim();

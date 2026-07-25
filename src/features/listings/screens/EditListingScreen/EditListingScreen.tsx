@@ -16,7 +16,7 @@ import {
   localize,
 } from '@/features/sell';
 import { useThemedStyles, useTranslation } from '@/hooks';
-import { logger } from '@/lib';
+import { logger, toApiError } from '@/lib';
 import { useToast } from '@/providers';
 
 import { listingsApi } from '../../api';
@@ -28,7 +28,7 @@ import { createEditListingScreenStyles } from './EditListingScreen.styles';
 // Props for the EditListingScreen component.
 export interface EditListingScreenProps {
   // Id of the listing being edited.
-  listingId: number;
+  listingId: string;
 }
 
 // Renders the edit-listing screen.
@@ -42,15 +42,29 @@ export function EditListingScreen({ listingId }: EditListingScreenProps) {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
     'loading',
   );
+  // Concrete reason the load failed, surfaced on screen so a failure names the
+  // request that broke instead of a generic "something went wrong".
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   const loadListing = useCallback(async () => {
     setStatus('loading');
+    setErrorDetail(null);
     try {
       const result = await listingsApi.getListingById(listingId);
       setListing(result);
       setStatus('success');
     } catch (error) {
-      logger.warn('[Listings] Failed to load listing', { listingId, error });
+      const apiError = toApiError(error);
+      logger.warn('[Listings] Failed to load listing', {
+        listingId,
+        endpoint: `/listings/${listingId}`,
+        status: apiError.status,
+        code: apiError.code,
+        message: apiError.message,
+      });
+      setErrorDetail(
+        `GET /listings/${listingId} → ${apiError.status ?? apiError.code}: ${apiError.message}`,
+      );
       setStatus('error');
     }
   }, [listingId]);
@@ -93,14 +107,22 @@ export function EditListingScreen({ listingId }: EditListingScreenProps) {
     if (status === 'error') {
       return (
         <View style={styles.center}>
-          <ErrorState onRetry={loadListing} retryLabel={t('common.retry')} />
+          <ErrorState
+            description={errorDetail ?? undefined}
+            onRetry={loadListing}
+            retryLabel={t('common.retry')}
+          />
         </View>
       );
     }
     if (isFormError) {
       return (
         <View style={styles.center}>
-          <ErrorState onRetry={refetchForm} retryLabel={t('common.retry')} />
+          <ErrorState
+            description={`GET /categories/${listing?.categoryId}/form?listingType=${listingType}`}
+            onRetry={refetchForm}
+            retryLabel={t('common.retry')}
+          />
         </View>
       );
     }

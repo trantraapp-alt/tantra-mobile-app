@@ -1,12 +1,7 @@
 // Route binding for the notifications screen.
-import { ComingSoonScreen } from '@/components/shared';
+import { NotificationsScreen } from '@/features/notifications';
 
-// Renders the notifications screen at /notifications.
+// Renders the notifications list at /notifications.
 export default function NotificationsRoute() {
-  return (
-    <ComingSoonScreen
-      title="Notifications"
-      description="Order updates and promotions will appear here."
-    />
-  );
+  return <NotificationsScreen />;
 }

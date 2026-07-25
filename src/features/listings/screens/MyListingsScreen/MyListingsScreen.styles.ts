@@ -22,16 +22,6 @@ export function createMyListingsScreenStyles(theme: AppTheme) {
       justifyContent: 'center',
       padding: theme.spacing.xl,
     },
-    // Card footer actions row.
-    cardActions: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    // Wrapper that lets the Edit button flex.
-    editWrap: {
-      flex: 1,
-    },
     // Load-more spinner container.
     footerLoader: {
       paddingVertical: theme.spacing.lg,

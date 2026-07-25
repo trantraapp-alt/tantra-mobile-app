@@ -15,6 +15,7 @@ export {
   ControlledTextField,
   type ControlledTextFieldProps,
 } from './ControlledTextField';
+export { DateField, type DateFieldProps } from './DateField';
 export { PasswordField, type PasswordFieldProps } from './PasswordField';
 export {
   ControlledRadioGroup,

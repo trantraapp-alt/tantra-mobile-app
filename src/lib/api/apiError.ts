@@ -3,10 +3,33 @@ import { AxiosError } from 'axios';
 
 import type { ApiError } from '@/types';
 
-// Error body shapes returned by the backend. Sign-in replies with
-// `{ "error": "Error: Mobile number not registered!" }`, the forgot-password
-// endpoints reply with a plain string such as `Error: Invalid OTP!`, and
-// Spring's default handler may reply with `{ message, error, status }`.
+import { localeStore } from './localeStore';
+
+// A bilingual message as sent by the standard response envelope.
+interface LocalizedText {
+  en?: string;
+  hi?: string;
+}
+
+// The `error` object inside the standard response envelope.
+interface EnvelopeError {
+  code?: string;
+  message?: LocalizedText | string;
+}
+
+// The standard response envelope, in its error form.
+interface ResponseEnvelope {
+  success?: boolean;
+  error?: EnvelopeError;
+  message?: LocalizedText | string;
+  traceId?: string;
+}
+
+// Error body shapes returned by the backend. Besides the standard envelope,
+// sign-in replies with `{ "error": "Error: Mobile number not registered!" }`,
+// the forgot-password endpoints reply with a plain string such as
+// `Error: Invalid OTP!`, and Spring's default handler may reply with
+// `{ message, error, status }`.
 interface BackendErrorObject {
   error?: string;
   message?: string;
@@ -24,6 +47,54 @@ const DEFAULT_MESSAGE = 'Something went wrong. Please try again.';
 // Strips the backend's redundant "Error: " prefix from a message.
 function cleanMessage(message: string): string {
   return message.replace(/^Error:\s*/i, '').trim();
+}
+
+// Picks the string for the active language from a bilingual (or plain) message.
+function pickLocalized(
+  text: LocalizedText | string | undefined,
+): string | undefined {
+  if (!text) {
+    return undefined;
+  }
+  if (typeof text === 'string') {
+    return text;
+  }
+  const language = localeStore.getLanguage();
+  const isHindi =
+    typeof language === 'string' && language.toLowerCase().startsWith('hi');
+  return (isHindi ? text.hi : text.en) ?? text.en ?? text.hi;
+}
+
+// Whether a value looks like the standard response envelope (has `success`).
+function isEnvelope(body: unknown): body is ResponseEnvelope {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'success' in body &&
+    typeof (body as ResponseEnvelope).success === 'boolean'
+  );
+}
+
+// Builds an ApiError from a standard response envelope whose `success` is false.
+// Handles both the wrapped `error: { code, message:{en,hi} }` shape and a
+// top-level bilingual `message`.
+export function apiErrorFromEnvelope(
+  body: unknown,
+  status?: number,
+  traceId?: string,
+): ApiError {
+  const envelope = isEnvelope(body) ? body : {};
+  const message =
+    pickLocalized(envelope.error?.message) ??
+    pickLocalized(envelope.message) ??
+    DEFAULT_MESSAGE;
+  return {
+    code: envelope.error?.code ?? (status ? `HTTP_${status}` : 'APP_ERROR'),
+    message: cleanMessage(message),
+    status,
+    traceId: envelope.traceId ?? traceId,
+    isNetworkError: false,
+  };
 }
 
 // Converts any thrown value into a normalized ApiError.
@@ -58,6 +129,14 @@ function fromAxiosError(error: AxiosError<BackendErrorBody>): ApiError {
   }
 
   const { status, data } = error.response;
+  const headerTraceId = error.response.headers?.['x-trace-id'] as
+    | string
+    | undefined;
+
+  // Standard response envelope with success:false — the new backend contract.
+  if (isEnvelope(data) && data.success === false) {
+    return apiErrorFromEnvelope(data, status, headerTraceId);
+  }
 
   // Some endpoints (forgot-password) return a bare string body.
   if (typeof data === 'string' && data.trim().length > 0) {
@@ -65,6 +144,7 @@ function fromAxiosError(error: AxiosError<BackendErrorBody>): ApiError {
       code: `HTTP_${status}`,
       message: cleanMessage(data),
       status,
+      traceId: headerTraceId,
       isNetworkError: false,
     };
   }
@@ -79,6 +159,7 @@ function fromAxiosError(error: AxiosError<BackendErrorBody>): ApiError {
     message: rawMessage ? cleanMessage(rawMessage) : DEFAULT_MESSAGE,
     status,
     fieldErrors: body?.errors,
+    traceId: headerTraceId,
     isNetworkError: false,
   };
 }

@@ -13,9 +13,30 @@ import axios, {
 
 import { apiConfig } from '@/config';
 
-import { normalizeApiError } from './apiError';
+import { apiErrorFromEnvelope, normalizeApiError } from './apiError';
 import { localeStore } from './localeStore';
 import { tokenStore } from './tokenStore';
+
+// The standard success/error envelope every endpoint now returns. The real
+// payload lives in `data`; a compact write response may instead carry its
+// fields (listingId, message…) at the top level alongside `success`.
+interface ResponseEnvelope {
+  // Application-level success flag.
+  success: boolean;
+  // The unwrapped payload, when the endpoint wraps one.
+  data?: unknown;
+  // Server trace id, mirrored in the X-Trace-Id header.
+  traceId?: string;
+}
+
+// Whether a response body is the standard envelope (has a boolean `success`).
+function isEnvelope(body: unknown): body is ResponseEnvelope {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    typeof (body as ResponseEnvelope).success === 'boolean'
+  );
+}
 
 // Adds an opt-out flag so specific requests (e.g. bootstrap validation) can
 // handle a 401 themselves instead of triggering the global session-expiry flow.
@@ -81,9 +102,25 @@ httpClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor: ends the session on 401 and retries transient failures.
+// Response interceptor: unwraps the standard envelope, ends the session on 401,
+// and retries transient failures.
 httpClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    const body = response.data;
+    if (isEnvelope(body)) {
+      // A 2xx with success:false is still an application-level failure.
+      if (body.success === false) {
+        return Promise.reject(apiErrorFromEnvelope(body, response.status));
+      }
+      // Unwrap the payload when the endpoint wraps one; leave compact write
+      // responses ({ success, listingId, message }) untouched so their
+      // top-level fields survive for the caller.
+      if ('data' in body && body.data !== undefined) {
+        response.data = body.data;
+      }
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const config = error.config as RetryableRequestConfig | undefined;
     if (!config) {

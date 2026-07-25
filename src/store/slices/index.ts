@@ -25,6 +25,13 @@ export {
   updateQuantity,
 } from './cartSlice';
 export {
+  clearLocation,
+  locationReducer,
+  type LocationState,
+  setLocation,
+  type StoredLocation,
+} from './locationSlice';
+export {
   fetchModuleCategoriesThunk,
   fetchModulesThunk,
   modulesReducer,

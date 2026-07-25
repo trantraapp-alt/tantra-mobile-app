@@ -54,7 +54,7 @@ export function ProfileScreen() {
       { icon: Heart, label: 'Wishlist', onPress: () => router.push(routes.tabs.wishlist) },
       { icon: Ticket, label: 'Coupons', onPress: () => router.push(routes.coupons) },
       { icon: Bell, label: 'Notifications', onPress: () => router.push(routes.notifications) },
-      { icon: MapPin, label: 'Addresses', onPress: () => router.push(routes.settings) },
+      { icon: MapPin, label: 'Addresses', onPress: () => router.push(routes.addresses) },
       { icon: Settings, label: 'Settings', onPress: () => router.push(routes.settings) },
     ],
     [router],

@@ -4,7 +4,12 @@ import { endpoints } from '@/config';
 import type { CreateListingPayload } from '@/features/sell';
 import { apiClient } from '@/lib';
 
-import type { ListingPage, ListingWriteResponse, MyListing } from '../types';
+import type {
+  ListingId,
+  ListingPage,
+  ListingWriteResponse,
+  MyListing,
+} from '../types';
 
 // Query parameters for the paginated "my listings" endpoint.
 export interface GetMyListingsParams {
@@ -41,14 +46,14 @@ function getMyListings(
 }
 
 // Fetches a single listing with its current values.
-function getListingById(id: number): Promise<MyListing> {
+function getListingById(id: ListingId): Promise<MyListing> {
   return apiClient.get<MyListing>(endpoints.listings.detail(id));
 }
 
 // Full update from the edit form. Locked fields sent in the body are ignored
 // server-side.
 function updateListing(
-  id: number,
+  id: ListingId,
   payload: CreateListingPayload,
 ): Promise<ListingWriteResponse> {
   return apiClient.put<ListingWriteResponse, CreateListingPayload>(
@@ -60,7 +65,7 @@ function updateListing(
 // Inline update — sends only the changed field(s) or a status change. The
 // backend applies only inline-editable fields and recomputes discount.
 function patchListing(
-  id: number,
+  id: ListingId,
   patch: Record<string, unknown>,
 ): Promise<ListingWriteResponse> {
   return apiClient.patch<ListingWriteResponse, Record<string, unknown>>(
@@ -70,7 +75,7 @@ function patchListing(
 }
 
 // Soft-deletes a listing.
-function deleteListing(id: number): Promise<ListingWriteResponse> {
+function deleteListing(id: ListingId): Promise<ListingWriteResponse> {
   return apiClient.remove<ListingWriteResponse>(endpoints.listings.detail(id));
 }
 

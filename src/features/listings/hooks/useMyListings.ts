@@ -55,7 +55,7 @@ export function useMyListings({ listingType, status }: UseMyListingsArgs) {
         setListings((prev) =>
           mode === 'append' ? [...prev, ...content] : content,
         );
-        setPage(res.number ?? pageToLoad);
+        setPage(res.page ?? res.number ?? pageToLoad);
         setLast(res.last ?? true);
         setPhase('idle');
       } catch (error) {
@@ -95,7 +95,7 @@ export function useMyListings({ listingType, status }: UseMyListingsArgs) {
   }, [fetchPage]);
 
   // Merges updated fields into a listing already in the list.
-  const patchLocal = useCallback((id: number, updated: Partial<MyListing>) => {
+  const patchLocal = useCallback((id: string, updated: Partial<MyListing>) => {
     setListings((prev) =>
       prev.map((item) =>
         getListingId(item) === id ? { ...item, ...updated } : item,
@@ -105,7 +105,7 @@ export function useMyListings({ listingType, status }: UseMyListingsArgs) {
 
   // Removes a listing from the list (after delete, or when it no longer matches
   // the active filter).
-  const removeLocal = useCallback((id: number) => {
+  const removeLocal = useCallback((id: string) => {
     setListings((prev) => prev.filter((item) => getListingId(item) !== id));
   }, []);
 

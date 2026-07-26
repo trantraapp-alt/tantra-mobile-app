@@ -282,6 +282,14 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
     [field, fieldsByKey, parentValue, language, otherLabel],
   );
 
+  // A cascading child (e.g. cropName) stays disabled until its parent (cropType)
+  // has a value.
+  const hasParentValue =
+    typeof parentValue === 'string'
+      ? parentValue.trim().length > 0
+      : Boolean(parentValue);
+  const cascadeLocked = Boolean(field.parentField) && !hasParentValue;
+
   // When the parent changes, clear a child selection that no longer belongs to
   // the new parent (but keep an explicit "Other" choice).
   useEffect(() => {
@@ -325,6 +333,7 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
         onChange={onChange}
         onBlur={rhf.onBlur}
         error={error}
+        disabled={cascadeLocked}
       />
     );
   }

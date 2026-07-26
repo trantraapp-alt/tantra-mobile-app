@@ -1,5 +1,5 @@
-// Left-rail vertical list of selectable module categories (30% pane). Selecting
-// an entry drives which listing form shows in the right pane.
+// Horizontal strip of selectable module categories shown at the top of the
+// screen. Selecting an entry drives which listing form shows below.
 import { Image } from 'expo-image';
 import { memo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
@@ -40,8 +40,9 @@ function SellCategoryRailComponent({
 
   return (
     <ScrollView
+      horizontal
       contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
+      showsHorizontalScrollIndicator={false}
     >
       {categories.map((category) => {
         const selected = category.id === selectedId;

@@ -33,9 +33,8 @@ export const registerSchema = z
         regex.password,
         'Use 8+ characters with upper, lower and a number',
       ),
-    appUsageRole: z.enum(['BUYER', 'SELLER', 'BOTH'], {
-      required_error: 'Select how you want to use Tantra',
-    }),
+    // Role is no longer chosen by the user — the public app always signs up as
+    // USER (see AUTH guide), so it is not part of the form.
     preferredLanguage: z.enum(['HI', 'EN'], {
       required_error: 'Select a preferred language',
     }),

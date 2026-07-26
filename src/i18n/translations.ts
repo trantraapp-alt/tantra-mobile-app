@@ -8,6 +8,7 @@ const en = {
   // Bottom tab bar.
   'tab.home': 'Home',
   'tab.chat': 'Chat',
+  'tab.service': 'Service',
   'tab.wishlist': 'Wishlist',
   'tab.profile': 'Profile',
 
@@ -145,6 +146,25 @@ const en = {
   'listing.field.created': 'Created',
   'listing.field.updated': 'Last updated',
 
+  // Auth — shared field labels.
+  'auth.firstName': 'First name',
+  'auth.lastName': 'Last name',
+  'auth.mobileNumber': 'Mobile number',
+  'auth.password': 'Password',
+  'auth.signIn': 'Sign in',
+
+  // Auth — register screen.
+  'auth.register.title': 'Create account',
+  'auth.register.subtitle': 'Join Tantra and start buying and selling.',
+  'auth.register.firstNamePlaceholder': 'Jane',
+  'auth.register.lastNamePlaceholder': 'Doe',
+  'auth.register.mobilePlaceholder': '9876543210',
+  'auth.register.passwordPlaceholder': 'Create a password',
+  'auth.register.languageLabel': 'Preferred language',
+  'auth.register.submit': 'Create account',
+  'auth.register.haveAccount': 'Already have an account?',
+  'auth.register.success': 'Account created. Please sign in to continue.',
+
   // Home location chip + sheet.
   'location.setLocation': 'Set location',
   'location.deliverTo': 'Location',
@@ -222,6 +242,7 @@ export type TranslationKey = keyof typeof en;
 const hi: Record<TranslationKey, string> = {
   'tab.home': 'होम',
   'tab.chat': 'चैट',
+  'tab.service': 'सेवा',
   'tab.wishlist': 'विशलिस्ट',
   'tab.profile': 'प्रोफ़ाइल',
 
@@ -345,6 +366,23 @@ const hi: Record<TranslationKey, string> = {
   'listing.field.photos': 'तस्वीरें',
   'listing.field.created': 'बनाई गई',
   'listing.field.updated': 'आखिरी अपडेट',
+
+  'auth.firstName': 'पहला नाम',
+  'auth.lastName': 'उपनाम',
+  'auth.mobileNumber': 'मोबाइल नंबर',
+  'auth.password': 'पासवर्ड',
+  'auth.signIn': 'साइन इन करें',
+
+  'auth.register.title': 'खाता बनाएं',
+  'auth.register.subtitle': 'Tantra से जुड़ें और खरीदना-बेचना शुरू करें।',
+  'auth.register.firstNamePlaceholder': 'जैसे राम',
+  'auth.register.lastNamePlaceholder': 'जैसे शर्मा',
+  'auth.register.mobilePlaceholder': '9876543210',
+  'auth.register.passwordPlaceholder': 'पासवर्ड बनाएं',
+  'auth.register.languageLabel': 'पसंदीदा भाषा',
+  'auth.register.submit': 'खाता बनाएं',
+  'auth.register.haveAccount': 'पहले से खाता है?',
+  'auth.register.success': 'खाता बन गया। जारी रखने के लिए साइन इन करें।',
 
   'location.setLocation': 'स्थान सेट करें',
   'location.deliverTo': 'स्थान',

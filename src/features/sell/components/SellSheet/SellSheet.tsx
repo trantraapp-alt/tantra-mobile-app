@@ -54,18 +54,14 @@ export const SellSheet = forwardRef<SellSheetRef>(function SellSheet(_, ref) {
     <BottomSheet ref={sheetRef} title={t('sell.title')} subtitle={t('sell.subtitle')}>
       {isLoading ? (
         <View style={styles.row}>
-          <View style={styles.skeletonItem}>
-            <Skeleton
-              height={theme.sizing.avatarXl * 2}
-              radius={theme.radius.lg}
-            />
-          </View>
-          <View style={styles.skeletonItem}>
-            <Skeleton
-              height={theme.sizing.avatarXl * 2}
-              radius={theme.radius.lg}
-            />
-          </View>
+          {[0, 1, 2].map((item) => (
+            <View key={item} style={styles.skeletonItem}>
+              <Skeleton
+                height={theme.sizing.avatarXl + theme.spacing.huge}
+                radius={theme.radius.lg}
+              />
+            </View>
+          ))}
         </View>
       ) : isError ? (
         <EmptyState

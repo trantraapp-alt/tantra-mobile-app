@@ -2,13 +2,14 @@
 // tree: a BUSINESS_PROFILE category hands off to that flow (a placeholder here,
 // as it is a separate workstream); a category with subcategories shows a picker;
 // a leaf category renders its server-driven listing form via DynamicListingForm.
-import { ChevronLeft, ChevronRight, Store } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { ChevronLeft, Store } from 'lucide-react-native';
 import { memo, useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/buttons';
 import { EmptyState, ErrorState } from '@/components/empty-state';
-import { Spinner } from '@/components/loaders';
+import { Skeleton } from '@/components/loaders';
 import { Card, Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
@@ -16,6 +17,7 @@ import { useTheme } from '@/providers';
 import type { ModuleCategory, PreferredLanguage } from '@/types';
 
 import { useListingForm, useSubcategories } from '../../hooks';
+import { getCategoryImageSource, getCategoryVisual } from '../../utils';
 import { DynamicListingForm } from '../DynamicListingForm';
 import { createSellCategoryFormStyles } from './SellCategoryForm.styles';
 
@@ -35,6 +37,72 @@ function categoryName(
   return language === 'HI'
     ? category.categoryNameHi
     : category.categoryNameEn;
+}
+
+// A form-shaped loading placeholder (a title + a few labeled input rows), shown
+// while a category's listing form is being fetched.
+function FormSkeleton() {
+  const theme = useTheme();
+  const styles = useThemedStyles(createSellCategoryFormStyles);
+  return (
+    <ScrollView
+      contentContainerStyle={styles.formSkeleton}
+      showsVerticalScrollIndicator={false}
+    >
+      <Skeleton width="55%" height={theme.spacing.xl} radius={theme.radius.sm} />
+      {[0, 1, 2, 3, 4].map((row) => (
+        <View key={row} style={styles.fieldSkeleton}>
+          <Skeleton
+            width="35%"
+            height={theme.spacing.md}
+            radius={theme.radius.xs}
+          />
+          <Skeleton
+            width="100%"
+            height={theme.sizing.inputHeightSm}
+            radius={theme.radius.md}
+          />
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
+// A box-grid loading placeholder (title + six icon-box placeholders), shown
+// while a parent category's subcategories load.
+function BoxSkeleton() {
+  const theme = useTheme();
+  const styles = useThemedStyles(createSellCategoryFormStyles);
+  const { t } = useTranslation();
+  return (
+    <ScrollView
+      contentContainerStyle={styles.pickerContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text variant="h4">{t('sell.chooseCategory')}</Text>
+      <View style={styles.pickerGrid}>
+        {[0, 1, 2, 3, 4, 5].map((placeholder) => (
+          <View key={placeholder} style={styles.pickerBox}>
+            <View style={styles.pickerBoxInner}>
+              <Skeleton
+                width={theme.sizing.avatarXl}
+                height={theme.sizing.avatarXl}
+                radius={theme.radius.lg}
+              />
+              <Skeleton width="70%" height={theme.spacing.lg} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+// Whether a top-level category is expected to contain subcategories (so its
+// loading skeleton shows boxes) rather than open a listing form directly.
+function expectsSubcategories(category: ModuleCategory): boolean {
+  const key = `${category.categoryKey} ${category.categoryNameEn}`.toLowerCase();
+  return /market|bazaar|bazar/.test(key);
 }
 
 // Renders the listing form for a leaf category.
@@ -64,11 +132,7 @@ function LeafForm({
     );
   }
   if (!form) {
-    return (
-      <View style={styles.center}>
-        <Spinner />
-      </View>
-    );
+    return <FormSkeleton />;
   }
   return <DynamicListingForm form={form} language={language} />;
 }
@@ -106,23 +170,44 @@ function SubcategoryPicker({
       contentContainerStyle={styles.pickerContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text variant="overline" color="textSecondary">
-        {t('sell.chooseCategory').toUpperCase()}
-      </Text>
+      <Text variant="h4">{t('sell.chooseCategory')}</Text>
       <View style={styles.pickerGrid}>
-        {subcategories.map((sub) => (
-          <Card key={sub.id} radius="lg" onPress={() => onSelect(sub)}>
-            <View style={styles.pickerRow}>
-              <Text variant="bodyMedium" numberOfLines={2}>
-                {categoryName(sub, language)}
-              </Text>
-              <ChevronRight
-                size={theme.sizing.iconMd}
-                color={theme.colors.textTertiary}
-              />
-            </View>
-          </Card>
-        ))}
+        {subcategories.map((sub) => {
+          const name = categoryName(sub, language);
+          const imageSource = getCategoryImageSource(sub.categoryKey);
+          const visual = getCategoryVisual(sub.categoryKey);
+          const Icon = visual.icon;
+          return (
+            <Card
+              key={sub.id}
+              radius="lg"
+              onPress={() => onSelect(sub)}
+              style={styles.pickerBox}
+            >
+              <View style={styles.pickerBoxInner}>
+                <View style={styles.pickerTile}>
+                  {imageSource ? (
+                    <Image
+                      source={imageSource}
+                      style={styles.pickerTileImage}
+                      contentFit="contain"
+                      transition={theme.animation.normal}
+                      accessibilityLabel={name}
+                    />
+                  ) : (
+                    <Icon
+                      size={theme.sizing.avatarMd}
+                      color={theme.colors[visual.accent]}
+                    />
+                  )}
+                </View>
+                <Text variant="bodyMedium" align="center" numberOfLines={2}>
+                  {name}
+                </Text>
+              </View>
+            </Card>
+          );
+        })}
       </View>
     </ScrollView>
   );
@@ -138,12 +223,11 @@ function CategoryResolver({ category, language }: SellCategoryFormProps) {
   );
   const [activeLeaf, setActiveLeaf] = useState<ModuleCategory | null>(null);
 
+  // The children aren't loaded yet, so pick the skeleton from the category type:
+  // a grouping category (marketplace) shows box placeholders; a leaf category
+  // (services, repair) shows a form placeholder.
   if (isLoading) {
-    return (
-      <View style={styles.center}>
-        <Spinner />
-      </View>
-    );
+    return expectsSubcategories(category) ? <BoxSkeleton /> : <FormSkeleton />;
   }
   if (isError) {
     return (

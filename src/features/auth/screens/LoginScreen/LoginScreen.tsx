@@ -11,7 +11,8 @@ import { Checkbox, ControlledTextField } from '@/components/inputs';
 import { Text } from '@/components/ui';
 import { routes } from '@/constants';
 import { useThemedStyles, useToastError } from '@/hooks';
-import { useTheme, useToast } from '@/providers';
+import { logger } from '@/lib';
+import { useTheme } from '@/providers';
 
 import { AuthShell } from '../../components';
 import { useLogin } from '../../hooks';
@@ -25,21 +26,15 @@ export function LoginScreen() {
   const styles = useThemedStyles(createLoginStyles);
   const router = useRouter();
   const { login, isPending, error } = useLogin();
-  const { showSuccess } = useToast();
-  // Set when arriving straight from a successful registration.
+  // Set when arriving straight from a successful registration — used to pre-fill
+  // the mobile field. The success toast is shown by the register screen itself
+  // (from the server's bilingual message).
   const { registeredMobile } = useLocalSearchParams<{
     registeredMobile?: string;
   }>();
 
   // Surface sign-in errors as a top toast.
   useToastError(error);
-
-  // Confirm a fresh registration with a success toast.
-  useEffect(() => {
-    if (registeredMobile) {
-      showSuccess('Account created successfully. Please sign in to continue.');
-    }
-  }, [registeredMobile, showSuccess]);
 
   const { control, handleSubmit, reset } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -71,7 +66,16 @@ export function LoginScreen() {
   // clears the remembered credentials based on the checkbox.
   const onSubmit = useCallback(
     async (values: LoginFormValues) => {
+      // Diagnostics for the sign-in flow. The password is never logged.
+      logger.info('[Auth] Sign in pressed', {
+        mobileNumber: values.mobileNumber,
+        rememberMe,
+      });
       const isSignedIn = await login(values);
+      logger.info('[Auth] Sign in result', {
+        mobileNumber: values.mobileNumber,
+        success: isSignedIn,
+      });
       if (isSignedIn) {
         if (rememberMe) {
           await rememberedCredentials.save({

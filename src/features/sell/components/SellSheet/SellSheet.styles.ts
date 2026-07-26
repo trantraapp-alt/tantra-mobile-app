@@ -6,12 +6,13 @@ import type { AppTheme } from '@/theme';
 // Builds sell sheet styles from the active theme.
 export function createSellSheetStyles(theme: AppTheme) {
   return StyleSheet.create({
-    // Row holding the two option cards.
+    // Single horizontal row holding the module option cards.
     row: {
       flexDirection: 'row',
-      gap: theme.spacing.lg,
+      alignItems: 'flex-start',
+      gap: theme.spacing.sm,
     },
-    // Loading placeholder wrapper (half width).
+    // Loading placeholder wrapper (equal share of the row).
     skeletonItem: {
       flex: 1,
     },

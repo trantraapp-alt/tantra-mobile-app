@@ -1,11 +1,17 @@
 // Authentication and user domain types aligned with the Tantra auth backend.
 import type { ID } from './common.types';
 
-// Role the user intends to use the app for (matches SignUpRequestDTO).
-export type AppUsageRole = 'BUYER' | 'SELLER' | 'BOTH';
+// Account role. The public app signs up as USER (a single role that can buy,
+// sell and rent); ADMIN is staff-only. The backend stores/returns it prefixed
+// as ROLE_USER / ROLE_ADMIN.
+export type AppUsageRole = 'USER' | 'ADMIN';
 
 // Preferred content language (matches SignUpRequestDTO).
 export type PreferredLanguage = 'HI' | 'EN';
+
+// A server status message: plain text (legacy) or a bilingual pair (the new
+// standard-envelope contract). Resolve it with resolveAuthMessage().
+export type AuthMessage = string | { en?: string; hi?: string } | null;
 
 // Authenticated user profile.
 // The backend only returns userId + role on sign-in, so name fields are
@@ -66,12 +72,12 @@ export interface RegisterPayload {
   preferredLanguage: PreferredLanguage;
 }
 
-// Raw sign-in response returned by POST /auth/signin.
+// Raw sign-in response returned by POST /auth/signin (the envelope's `data`).
 export interface SignInResponse {
   // Spring security role, e.g. "ROLE_BUYER".
   role: string;
-  // Human-readable status message.
-  message: string;
+  // Bilingual (or plain) status message, when present.
+  message?: AuthMessage;
   // Backend user identifier.
   userId: string;
   // Issued JWT.
@@ -86,12 +92,12 @@ export interface VerifySessionResponse {
   message: string;
 }
 
-// Raw sign-up response returned by POST /auth/signup.
+// Raw sign-up response returned by POST /auth/signup (the envelope's `data`).
 export interface SignUpResponse {
-  // Human-readable status message.
-  message: string;
+  // Bilingual (or plain) status message, when present.
+  message?: AuthMessage;
   // Newly created user identifier.
-  userId: string;
+  userId?: string;
 }
 
 // Raw profile response returned by GET /auth/profile.

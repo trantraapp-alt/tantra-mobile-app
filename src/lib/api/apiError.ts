@@ -23,6 +23,9 @@ interface ResponseEnvelope {
   error?: EnvelopeError;
   message?: LocalizedText | string;
   traceId?: string;
+  // Auth endpoints are a legacy area: on a 4xx they put a plain (already
+  // localized) error string inside `data` rather than a top-level `error.code`.
+  data?: { error?: unknown; message?: unknown };
 }
 
 // Error body shapes returned by the backend. Besides the standard envelope,
@@ -84,8 +87,16 @@ export function apiErrorFromEnvelope(
   traceId?: string,
 ): ApiError {
   const envelope = isEnvelope(body) ? body : {};
+  // Legacy auth failures put a plain string at data.error (or data.message).
+  const nestedError =
+    typeof envelope.data?.error === 'string'
+      ? envelope.data.error
+      : typeof envelope.data?.message === 'string'
+        ? envelope.data.message
+        : undefined;
   const message =
     pickLocalized(envelope.error?.message) ??
+    nestedError ??
     pickLocalized(envelope.message) ??
     DEFAULT_MESSAGE;
   return {
@@ -133,8 +144,9 @@ function fromAxiosError(error: AxiosError<BackendErrorBody>): ApiError {
     | string
     | undefined;
 
-  // Standard response envelope with success:false — the new backend contract.
-  if (isEnvelope(data) && data.success === false) {
+  // Standard response envelope (success:false with error.code, or the legacy
+  // auth shape with data.error). Any envelope reaching here is a failure.
+  if (isEnvelope(data)) {
     return apiErrorFromEnvelope(data, status, headerTraceId);
   }
 

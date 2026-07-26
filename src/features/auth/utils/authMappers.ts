@@ -8,14 +8,14 @@ import type {
 
 // Spring security role names returned by the backend, mapped to domain roles.
 const ROLE_MAP: Record<string, AppUsageRole> = {
-  ROLE_BUYER: 'BUYER',
-  ROLE_SELLER: 'SELLER',
-  ROLE_BOTH: 'BOTH',
+  ROLE_ADMIN: 'ADMIN',
+  ROLE_USER: 'USER',
 };
 
-// Converts a Spring security role (e.g. "ROLE_BUYER") to an app usage role.
+// Converts a Spring security role (e.g. "ROLE_USER") to an app usage role.
+// Only ADMIN is special; everything else is treated as a normal USER.
 export function mapRoleToAppUsageRole(role: string): AppUsageRole {
-  return ROLE_MAP[role.toUpperCase()] ?? 'BUYER';
+  return ROLE_MAP[role.toUpperCase()] ?? 'USER';
 }
 
 // Builds the domain user from a sign-in response and the submitted mobile

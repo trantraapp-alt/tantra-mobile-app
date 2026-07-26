@@ -11,14 +11,15 @@ import { Button } from '@/components/buttons';
 import { ControlledRadioGroup, ControlledTextField } from '@/components/inputs';
 import { Text } from '@/components/ui';
 import { routes } from '@/constants';
-import { useThemedStyles, useToastError } from '@/hooks';
-import { useTheme } from '@/providers';
-import type { AppUsageRole, PreferredLanguage } from '@/types';
+import { useThemedStyles, useToastError, useTranslation } from '@/hooks';
+import { useTheme, useToast } from '@/providers';
+import type { PreferredLanguage } from '@/types';
 
 import { AuthShell } from '../../components';
-import { languageOptions, roleOptions } from '../../constants';
+import { languageOptions } from '../../constants';
 import { useRegister } from '../../hooks';
 import { type RegisterFormValues, registerSchema } from '../../schemas';
+import { resolveAuthMessage } from '../../utils';
 import { createRegisterStyles } from './RegisterScreen.styles';
 
 // Renders the registration screen.
@@ -26,6 +27,8 @@ export function RegisterScreen() {
   const theme = useTheme();
   const styles = useThemedStyles(createRegisterStyles);
   const router = useRouter();
+  const { t, language } = useTranslation();
+  const { showSuccess } = useToast();
   const { register, isPending, error } = useRegister();
 
   // Surface registration errors as a top toast.
@@ -38,38 +41,41 @@ export function RegisterScreen() {
       lastName: '',
       mobileNumber: '',
       password: '',
-      appUsageRole: 'BUYER',
       preferredLanguage: 'EN',
     },
   });
 
-  // Registers the account then sends the user to sign in, since the backend
-  // issues no token on sign-up.
+  // Registers the account (always as USER), shows the server's (bilingual)
+  // message, then sends the user to sign in — sign-up issues no token.
   const onSubmit = useCallback(
     async (values: RegisterFormValues) => {
-      const isRegistered = await register({
+      const response = await register({
         firstName: values.firstName,
         lastName: values.lastName,
         mobileNumber: values.mobileNumber,
         password: values.password,
-        appUsageRole: values.appUsageRole,
+        appUsageRole: 'USER',
         preferredLanguage: values.preferredLanguage,
       });
-      if (isRegistered) {
+      if (response) {
+        showSuccess(
+          resolveAuthMessage(response.message, language) ||
+            t('auth.register.success'),
+        );
         router.replace({
           pathname: routes.auth.login,
           params: { registeredMobile: values.mobileNumber },
         });
       }
     },
-    [register, router],
+    [register, router, showSuccess, language, t],
   );
 
   return (
     <AuthShell
       compact
-      title="Create account"
-      subtitle="Join Tantra and start buying and selling."
+      title={t('auth.register.title')}
+      subtitle={t('auth.register.subtitle')}
     >
       <View style={styles.form}>
         <View style={styles.row}>
@@ -77,8 +83,8 @@ export function RegisterScreen() {
             <ControlledTextField
               control={control}
               name="firstName"
-              label="First name"
-              placeholder="Jane"
+              label={t('auth.firstName')}
+              placeholder={t('auth.register.firstNamePlaceholder')}
               autoCapitalize="words"
               autoComplete="name-given"
             />
@@ -87,8 +93,8 @@ export function RegisterScreen() {
             <ControlledTextField
               control={control}
               name="lastName"
-              label="Last name"
-              placeholder="Doe"
+              label={t('auth.lastName')}
+              placeholder={t('auth.register.lastNamePlaceholder')}
               autoCapitalize="words"
               autoComplete="name-family"
             />
@@ -98,8 +104,8 @@ export function RegisterScreen() {
         <ControlledTextField
           control={control}
           name="mobileNumber"
-          label="Mobile number"
-          placeholder="9876543210"
+          label={t('auth.mobileNumber')}
+          placeholder={t('auth.register.mobilePlaceholder')}
           keyboardType="number-pad"
           autoComplete="tel"
           maxLength={10}
@@ -110,32 +116,25 @@ export function RegisterScreen() {
         <ControlledTextField
           control={control}
           name="password"
-          label="Password"
-          placeholder="Create a password"
+          label={t('auth.password')}
+          placeholder={t('auth.register.passwordPlaceholder')}
           secure
           leftIcon={
             <Lock size={theme.sizing.iconMd} color={theme.colors.textTertiary} />
           }
         />
 
-        <ControlledRadioGroup<RegisterFormValues, AppUsageRole>
-          control={control}
-          name="appUsageRole"
-          label="I want to"
-          options={roleOptions}
-          inline
-        />
         <ControlledRadioGroup<RegisterFormValues, PreferredLanguage>
           control={control}
           name="preferredLanguage"
-          label="Preferred language"
+          label={t('auth.register.languageLabel')}
           options={languageOptions}
           inline
         />
       </View>
 
       <Button
-        label="Create account"
+        label={t('auth.register.submit')}
         size="lg"
         loading={isPending}
         onPress={handleSubmit(onSubmit)}
@@ -143,10 +142,10 @@ export function RegisterScreen() {
 
       <View style={styles.footer}>
         <Text variant="body" color="textSecondary">
-          Already have an account?{' '}
+          {t('auth.register.haveAccount')}{' '}
         </Text>
         <Button
-          label="Sign in"
+          label={t('auth.signIn')}
           variant="ghost"
           size="sm"
           fullWidth={false}

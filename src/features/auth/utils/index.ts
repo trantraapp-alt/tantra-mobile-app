@@ -4,6 +4,7 @@ export {
   mapRoleToAppUsageRole,
   mapSignInResponseToUser,
 } from './authMappers';
+export { resolveAuthMessage } from './authMessage';
 export {
   type RememberedCredentials,
   rememberedCredentials,

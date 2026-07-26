@@ -12,7 +12,7 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { Text } from '@/components/ui';
-import { useThemedStyles } from '@/hooks';
+import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 
 import { createSellFabStyles, sellFabMetrics } from './SellFab.styles';
@@ -27,6 +27,7 @@ export interface SellFabProps {
 function SellFabComponent({ onPress }: SellFabProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createSellFabStyles);
+  const { t } = useTranslation();
   const rotation = useSharedValue(0);
 
   const { ringSize, ringRadius, ringStroke } = sellFabMetrics(theme);
@@ -74,7 +75,7 @@ function SellFabComponent({ onPress }: SellFabProps) {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Sell"
+          accessibilityLabel={t('tab.service')}
           onPress={onPress}
           style={styles.fab}
         >
@@ -83,7 +84,7 @@ function SellFabComponent({ onPress }: SellFabProps) {
       </View>
 
       <Text variant="overline" color="primary" style={styles.label}>
-        SELL
+        {t('tab.service')}
       </Text>
     </View>
   );

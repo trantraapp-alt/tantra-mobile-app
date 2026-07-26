@@ -8,6 +8,7 @@ export type {
 } from './api.types';
 export type {
   AppUsageRole,
+  AuthMessage,
   AuthSession,
   AuthTokens,
   ForgotPasswordPayload,

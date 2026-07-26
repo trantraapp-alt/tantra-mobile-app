@@ -7,22 +7,23 @@ import type { AppTheme } from '@/theme';
 export function createSellOptionCardStyles(theme: AppTheme) {
   return StyleSheet.create({
     // Layout for the card contents; surface styling comes from the Card.
+    // flex:1 lets the module cards share the row equally.
     container: {
       flex: 1,
       alignItems: 'center',
       gap: theme.spacing.md,
     },
-    // Square image / icon area.
+    // Medium square icon tile — big enough to keep the card roughly square,
+    // without filling the whole card width.
     imageArea: {
-      width: '100%',
-      aspectRatio: 1,
-      maxHeight: theme.sizing.avatarXl + theme.spacing.xl,
-      borderRadius: theme.radius.md,
+      width: theme.sizing.avatarLg + theme.spacing.xxl,
+      height: theme.sizing.avatarLg + theme.spacing.xxl,
+      borderRadius: theme.radius.lg,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.surfaceVariant,
     },
-    // Remote module image filling the image area.
+    // Remote module image filling the icon tile.
     image: {
       width: '80%',
       height: '80%',

@@ -38,6 +38,9 @@ export interface SelectProps {
   onBlur?: () => void;
   // Error message shown below the field.
   error?: string;
+  // When true, the field is greyed out and cannot be opened (e.g. a cascading
+  // child whose parent has no value yet).
+  disabled?: boolean;
 }
 
 // Renders a themed dropdown select.
@@ -50,6 +53,7 @@ export function Select({
   onChange,
   onBlur,
   error,
+  disabled = false,
 }: SelectProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createSelectStyles);
@@ -83,8 +87,14 @@ export function Select({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
+        accessibilityState={{ disabled }}
+        disabled={disabled}
         onPress={() => setOpen(true)}
-        style={[styles.field, !!error && styles.errored]}
+        style={[
+          styles.field,
+          !!error && styles.errored,
+          disabled && { opacity: theme.opacity.disabled },
+        ]}
       >
         <Text
           variant="body"

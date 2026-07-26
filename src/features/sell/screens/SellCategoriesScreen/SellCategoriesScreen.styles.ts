@@ -6,21 +6,20 @@ import type { AppTheme } from '@/theme';
 // Builds sell categories screen styles from the active theme.
 export function createSellCategoriesStyles(theme: AppTheme) {
   return StyleSheet.create({
-    // Horizontal split filling the space below the header.
+    // Vertical stack filling the space below the header: a horizontal category
+    // strip on top, the listing form below.
     split: {
       flex: 1,
-      flexDirection: 'row',
     },
-    // Left category rail occupying 25% of the width.
+    // Top category strip (sizes to its content).
     rail: {
-      flex: 1,
-      borderRightWidth: 1,
-      borderRightColor: theme.colors.divider,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.divider,
       backgroundColor: theme.colors.surface,
     },
-    // Right listing form occupying 75% of the width.
+    // Listing form filling the remaining height.
     form: {
-      flex: 3,
+      flex: 1,
     },
   });
 }

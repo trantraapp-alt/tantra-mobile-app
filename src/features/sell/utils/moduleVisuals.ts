@@ -1,8 +1,9 @@
-// Maps module keys to a representative icon and accent, since the modules API
+// Maps module keys to a relatable icon and accent color, since the modules API
 // provides no image. Categories carry their own iconUrl and do not use this.
 import {
   Briefcase,
   type LucideIcon,
+  PawPrint,
   Sprout,
   Store,
 } from 'lucide-react-native';
@@ -13,17 +14,49 @@ import type { ColorScheme } from '@/theme';
 export interface ModuleVisual {
   // Icon rendered as the card image.
   icon: LucideIcon;
-  // Theme color-scheme key used to tint the icon backdrop.
-  accent: Extract<keyof ColorScheme, 'primary' | 'secondary' | 'success'>;
+  // Theme color-scheme key used to tint the module icon.
+  accent: Extract<
+    keyof ColorScheme,
+    'primary' | 'secondary' | 'success' | 'warning' | 'info'
+  >;
 }
 
-// Per-module-key visuals.
+// Exact module-key visuals (fast path).
 const MODULE_VISUALS: Record<string, ModuleVisual> = {
   MOD_AGRI: { icon: Sprout, accent: 'success' },
+  MOD_ANIMAL_LIVESTOCK: { icon: PawPrint, accent: 'warning' },
   MOD_SERVICE_PROVIDER: { icon: Briefcase, accent: 'secondary' },
 };
 
-// Returns the visual for a module key, falling back to a generic store icon.
+// Substring rules so a renamed or differently-cased module key still resolves
+// to a relatable icon (e.g. "animal_livestock", "MOD_ANIMAL", "livestock").
+const MODULE_RULES: { match: RegExp; visual: ModuleVisual }[] = [
+  {
+    match: /animal|livestock|poultry|fish|dairy|cattle|pashu/,
+    visual: { icon: PawPrint, accent: 'warning' },
+  },
+  {
+    match: /agri|crop|farm|krishi|kheti/,
+    visual: { icon: Sprout, accent: 'success' },
+  },
+  {
+    match: /service|repair|maramat|seva|sevah/,
+    visual: { icon: Briefcase, accent: 'secondary' },
+  },
+  {
+    match: /market|bazaar|bazar|store|shop|dukan/,
+    visual: { icon: Store, accent: 'primary' },
+  },
+];
+
+// Returns the visual for a module key: an exact match first, then a keyword
+// match, then a generic store icon.
 export function getModuleVisual(moduleKey: string): ModuleVisual {
-  return MODULE_VISUALS[moduleKey] ?? { icon: Store, accent: 'primary' };
+  const exact = MODULE_VISUALS[moduleKey];
+  if (exact) {
+    return exact;
+  }
+  const key = moduleKey.toLowerCase();
+  const rule = MODULE_RULES.find((entry) => entry.match.test(key));
+  return rule?.visual ?? { icon: Store, accent: 'primary' };
 }

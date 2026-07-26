@@ -6,22 +6,28 @@ import type { AppTheme } from '@/theme';
 // Builds category rail styles from the active theme.
 export function createSellCategoryRailStyles(theme: AppTheme) {
   return StyleSheet.create({
-    // Scroll content padding.
+    // Horizontal scroll content. flexGrow + space-evenly centers the entries
+    // and gives each equal room when they fit; it scrolls when they don't.
     content: {
+      flexGrow: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-evenly',
+      alignItems: 'flex-start',
+      paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
     },
-    // Single selectable category entry.
+    // Single selectable category entry (fixed width so labels sit on one or two
+    // tidy lines without looking cramped).
     item: {
+      width: theme.sizing.avatarXl,
       alignItems: 'center',
       gap: theme.spacing.xs,
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.xs,
-      borderLeftWidth: theme.spacing.xxs,
-      borderLeftColor: theme.colors.transparent,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.radius.md,
     },
-    // Highlighted state for the active category.
+    // Highlighted state for the active category (soft tint, no accent border).
     itemSelected: {
-      borderLeftColor: theme.colors.primary,
       backgroundColor: theme.colors.primaryLight,
     },
     // Icon container.

@@ -42,12 +42,7 @@ function SellOptionCardComponent({
       onPress={handlePress}
       style={styles.container}
     >
-      <View
-        style={[
-          styles.imageArea,
-          !module.iconUrl && { backgroundColor: theme.colors[visual.accent] },
-        ]}
-      >
+      <View style={styles.imageArea}>
         {module.iconUrl ? (
           <Image
             source={{ uri: module.iconUrl }}
@@ -57,7 +52,11 @@ function SellOptionCardComponent({
             accessibilityLabel={getModuleName(module, language)}
           />
         ) : (
-          <Icon size={theme.sizing.iconXxl} color={theme.colors.onPrimary} />
+          // Accent-colored icon on the soft neutral tile — no solid color box.
+          <Icon
+            size={theme.sizing.avatarMd}
+            color={theme.colors[visual.accent]}
+          />
         )}
       </View>
       <Text variant="bodyMedium" align="center" numberOfLines={2}>

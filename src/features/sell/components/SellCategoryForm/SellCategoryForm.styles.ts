@@ -18,16 +18,43 @@ export function createSellCategoryFormStyles(theme: AppTheme) {
       padding: theme.spacing.lg,
       gap: theme.spacing.md,
     },
-    // Stacked subcategory cards.
+    // Form-shaped loading skeleton content.
+    formSkeleton: {
+      padding: theme.spacing.lg,
+      gap: theme.spacing.lg,
+    },
+    // One labeled input placeholder inside the form skeleton.
+    fieldSkeleton: {
+      gap: theme.spacing.xs,
+    },
+    // Two-column grid of subcategory boxes.
     pickerGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: theme.spacing.md,
+    },
+    // One subcategory box (two per row).
+    pickerBox: {
+      width: '48%',
+    },
+    // Box contents: icon tile above the name.
+    pickerBoxInner: {
+      alignItems: 'center',
       gap: theme.spacing.sm,
     },
-    // One subcategory row inside its card.
-    pickerRow: {
-      flexDirection: 'row',
+    // Square icon tile inside a subcategory box.
+    pickerTile: {
+      width: theme.sizing.avatarXl,
+      height: theme.sizing.avatarXl,
+      borderRadius: theme.radius.lg,
       alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: theme.spacing.sm,
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
+    },
+    // Category image filling the icon tile.
+    pickerTileImage: {
+      width: '64%',
+      height: '64%',
     },
     // Wraps the leaf header + form.
     leafWrap: {

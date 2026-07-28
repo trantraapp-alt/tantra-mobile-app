@@ -44,6 +44,8 @@ export function NotificationsScreen() {
       const { refType, refId } = notification;
       if (refType === 'LISTING' && refId != null) {
         router.push(routes.listingDetail(String(refId)));
+      } else if (refType === 'BUSINESS_PROFILE' && refId != null) {
+        router.push(routes.businessProfile.detail(String(refId)));
       }
     },
     [markRead, router],

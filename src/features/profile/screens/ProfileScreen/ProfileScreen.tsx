@@ -2,12 +2,14 @@
 import { useRouter } from 'expo-router';
 import {
   Bell,
+  Briefcase,
   Heart,
   LogOut,
   MapPin,
   Moon,
   Package,
   Settings,
+  ShieldCheck,
   Store,
   Ticket,
 } from 'lucide-react-native';
@@ -50,14 +52,18 @@ export function ProfileScreen() {
   const menu = useMemo(
     () => [
       { icon: Store, label: 'My listings', onPress: () => router.push(routes.listings) },
+      { icon: Briefcase, label: 'My Business Profiles', onPress: () => router.push(routes.businessProfile.list) },
       { icon: Package, label: 'My orders', onPress: () => router.push(routes.orders) },
       { icon: Heart, label: 'Wishlist', onPress: () => router.push(routes.tabs.wishlist) },
       { icon: Ticket, label: 'Coupons', onPress: () => router.push(routes.coupons) },
       { icon: Bell, label: 'Notifications', onPress: () => router.push(routes.notifications) },
       { icon: MapPin, label: 'Addresses', onPress: () => router.push(routes.addresses) },
       { icon: Settings, label: 'Settings', onPress: () => router.push(routes.settings) },
+      ...((user?.appUsageRole as string) === 'ADMIN'
+        ? [{ icon: ShieldCheck, label: 'Business Profile Admin', onPress: () => router.push(routes.admin.businessProfile) }]
+        : []),
     ],
-    [router],
+    [router, user],
   );
 
   return (

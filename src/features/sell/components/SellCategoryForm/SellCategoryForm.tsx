@@ -1,28 +1,21 @@
 // Right-pane content for a selected top-level category. Resolves the category
-// tree: a BUSINESS_PROFILE category (e.g. Veterinary) opens the business-profile
-// form; a category with subcategories shows a picker; a leaf category renders
+// tree: a BUSINESS_PROFILE category hands off to the Business Profile create
+// flow; a category with subcategories shows a picker; a leaf category renders
 // its server-driven listing form via DynamicListingForm.
 import { Image } from 'expo-image';
-import { Clock, Store } from 'lucide-react-native';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { memo, useEffect } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { EmptyState, ErrorState } from '@/components/empty-state';
+import { ErrorState } from '@/components/empty-state';
 import { Skeleton } from '@/components/loaders';
 import { Card, InfoBanner, Text } from '@/components/ui';
+import { routes } from '@/constants';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
-import { useTheme, useToast } from '@/providers';
+import { useTheme } from '@/providers';
 import type { ModuleCategory, PreferredLanguage } from '@/types';
 
-import { businessProfilesApi } from '../../api';
-import { ensureAddressSection } from '../../forms/address';
-import { buildBusinessProfilePayload } from '../../forms/businessProfilePayload';
-import { type ListingForm, localize } from '../../forms/listingForm.types';
-import type {
-  CreateListingPayload,
-  ListingValues,
-} from '../../forms/listingPayload';
 import { useListingForm, useSubcategories } from '../../hooks';
 import {
   expectsSubcategories,
@@ -161,136 +154,6 @@ function LeafForm({
   );
 }
 
-// Business-profile form (e.g. Veterinary / vet_clinic): a BUSINESS_PROFILE
-// category has no listing form, so it fetches the authenticated profile form,
-// renders it with the shared engine, and submits it — landing in a "pending
-// review" state on success (the backend approves it before it goes live).
-function BusinessProfileForm({
-  category,
-  language,
-}: {
-  category: ModuleCategory;
-  language: PreferredLanguage;
-}) {
-  const styles = useThemedStyles(createSellCategoryFormStyles);
-  const { t } = useTranslation();
-  const { showSuccess, showError } = useToast();
-  const profileType = category.linkKey ?? '';
-  const [form, setForm] = useState<ListingForm | null>(null);
-  const [status, setStatus] = useState<
-    'loading' | 'ready' | 'error' | 'submitted'
-  >('loading');
-  const [pendingMessage, setPendingMessage] = useState('');
-
-  const load = useCallback(async () => {
-    if (!profileType) {
-      setStatus('error');
-      return;
-    }
-    setStatus('loading');
-    try {
-      const raw = await businessProfilesApi.getForm(profileType);
-      // Adapt the profile form to the listing-form shape the renderer expects,
-      // and ensure it carries an address section (a no-op if it already has one)
-      // so the same form drives both rendering and the submit payload.
-      setForm(
-        ensureAddressSection({
-          ...raw,
-          categoryId: category.id,
-          listingType: 'BUSINESS_PROFILE',
-        }),
-      );
-      setStatus('ready');
-    } catch (error) {
-      logger.warn('[BusinessProfile] Failed to load form', {
-        profileType,
-        error,
-      });
-      setStatus('error');
-    }
-  }, [profileType, category.id]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const handleSubmit = useCallback(
-    async (_payload: CreateListingPayload, values: ListingValues) => {
-      if (!form) {
-        return;
-      }
-      try {
-        const result = await businessProfilesApi.create(
-          buildBusinessProfilePayload(form, values, profileType),
-        );
-        const message =
-          typeof result.message === 'string'
-            ? result.message
-            : result.message
-              ? localize(result.message, language)
-              : t('businessProfile.pendingDesc');
-        setPendingMessage(message);
-        setStatus('submitted');
-        showSuccess(t('businessProfile.pendingTitle'));
-      } catch (error) {
-        logger.warn('[BusinessProfile] Submit failed', error);
-        showError(t('businessProfile.submitError'));
-      }
-    },
-    [form, profileType, language, t, showSuccess, showError],
-  );
-
-  if (status === 'loading') {
-    return <FormSkeleton />;
-  }
-  if (status === 'error') {
-    return (
-      <View style={styles.center}>
-        {profileType ? (
-          <ErrorState
-            description={t('businessProfile.loadError')}
-            onRetry={load}
-          />
-        ) : (
-          <EmptyState
-            icon={Store}
-            title={t('sell.businessProfileTitle')}
-            description={t('businessProfile.missingType')}
-          />
-        )}
-      </View>
-    );
-  }
-  if (status === 'submitted') {
-    return (
-      <View style={styles.center}>
-        <EmptyState
-          icon={Clock}
-          title={t('businessProfile.pendingTitle')}
-          description={pendingMessage || t('businessProfile.pendingDesc')}
-        />
-      </View>
-    );
-  }
-  if (!form) {
-    return <FormSkeleton />;
-  }
-  return (
-    <View style={styles.leafFormWrap}>
-      <View style={styles.leafInfo}>
-        <InfoBanner tone="info" message={t('businessProfile.info')} />
-      </View>
-      <DynamicListingForm
-        form={form}
-        language={language}
-        categoryKey={category.categoryKey}
-        submitLabel={t('businessProfile.submit')}
-        onSubmit={handleSubmit}
-      />
-    </View>
-  );
-}
-
 // Lets the user pick a leaf subcategory before the form opens.
 function SubcategoryPicker({
   subcategories,
@@ -361,6 +224,7 @@ function CategoryResolver({
   onLeafTopChange,
 }: SellCategoryFormProps) {
   const styles = useThemedStyles(createSellCategoryFormStyles);
+  const router = useRouter();
   const { subcategories, isLoading, isError, refetch } = useSubcategories(
     category.id,
   );
@@ -378,6 +242,23 @@ function CategoryResolver({
     onLeafTopChange?.(isLeafTop);
   }, [isLeafTop, onLeafTopChange]);
 
+  // Full-screen leaf: a chosen subcategory, or a leaf top category itself.
+  const leaf = activeSub ?? (isLeafTop ? category : null);
+
+  // A BUSINESS_PROFILE leaf has no listing form of its own — hand off to the
+  // Business Profile create flow with its profileType pre-selected, then clear
+  // the local selection so this resolver stops trying to render a form for it.
+  useEffect(() => {
+    if (leaf?.actionType === 'BUSINESS_PROFILE') {
+      const linkKey = leaf.linkKey;
+      const url = linkKey
+        ? `${routes.businessProfile.create}?profileType=${linkKey}`
+        : routes.businessProfile.create;
+      router.push(url as Parameters<typeof router.push>[0]);
+      onActiveSubChange?.(null);
+    }
+  }, [leaf, router, onActiveSubChange]);
+
   // The children aren't loaded yet, so pick the skeleton from the category type:
   // a grouping category (marketplace) shows box placeholders; a leaf category
   // (services, repair) shows a form placeholder.
@@ -393,11 +274,8 @@ function CategoryResolver({
   }
   // Full-screen leaf form: a chosen subcategory or a leaf top category. The
   // screen header owns the back navigation, so no in-form back row is needed.
-  const leaf = activeSub ?? (isLeafTop ? category : null);
   if (leaf) {
-    return leaf.actionType === 'BUSINESS_PROFILE' ? (
-      <BusinessProfileForm category={leaf} language={language} />
-    ) : (
+    return leaf.actionType === 'BUSINESS_PROFILE' ? null : (
       <LeafForm category={leaf} language={language} />
     );
   }
@@ -410,7 +288,26 @@ function CategoryResolver({
   );
 }
 
-// Renders the selected category's content (picker / form / handoff).
+// Handles a top-level BUSINESS_PROFILE category (navigates immediately).
+function BusinessProfileNavigator({
+  category,
+}: {
+  category: ModuleCategory;
+}) {
+  const router = useRouter();
+
+  useEffect(() => {
+    const linkKey = category.linkKey;
+    const url = linkKey
+      ? `${routes.businessProfile.create}?profileType=${linkKey}`
+      : routes.businessProfile.create;
+    router.push(url as Parameters<typeof router.push>[0]);
+  }, [category.linkKey, router]);
+
+  return null;
+}
+
+// Renders the selected category's content (picker / form / business-profile handoff).
 function SellCategoryFormComponent({
   category,
   language,
@@ -419,7 +316,7 @@ function SellCategoryFormComponent({
   onLeafTopChange,
 }: SellCategoryFormProps) {
   if (category.actionType === 'BUSINESS_PROFILE') {
-    return <BusinessProfileForm category={category} language={language} />;
+    return <BusinessProfileNavigator category={category} />;
   }
   return (
     <CategoryResolver

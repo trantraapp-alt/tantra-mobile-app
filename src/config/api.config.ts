@@ -120,6 +120,17 @@ export const endpoints = {
     form: '/business-profiles/form',
     // Creates a business profile; returns PENDING until an admin approves it.
     create: '/business-profiles',
+    // Server-driven form schema for a profile type.
+    optionTypes: '/option-sets/business_profile_type/items',
+    mine: '/business-profiles/mine',
+    detail: (id: string) => `/business-profiles/${id}`,
+    // Admin verification endpoints.
+    adminList: '/admin/business-profiles',
+    adminStats: '/admin/business-profiles/stats',
+    adminHistory: '/admin/business-profiles/history',
+    adminApprove: (id: string) => `/admin/business-profiles/${id}/approve`,
+    adminReject: (id: string) => `/admin/business-profiles/${id}/reject`,
+    adminBlock: (id: string) => `/admin/business-profiles/${id}/block`,
   },
 } as const;
 

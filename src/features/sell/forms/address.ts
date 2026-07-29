@@ -1,6 +1,7 @@
 // Structured address used by the ADDRESS field type. Stored in the form as an
 // all-strings object; converted to the API shape (empty -> null, coords ->
 // numbers) at submit time.
+import type { ListingField, ListingForm } from './listingForm.types';
 
 // Address value held in form state (every field is a string for the inputs).
 export interface AddressValue {
@@ -125,4 +126,42 @@ export function addressToPayload(address: AddressValue): AddressPayload {
 // Whether the address has any user-entered value.
 export function hasAddressValue(address: AddressPayload): boolean {
   return Object.values(address).some((value) => value !== null);
+}
+
+// Stable field key for the injected listing-address field.
+export const LISTING_ADDRESS_FIELD_KEY = 'listingAddress';
+
+// Ensures the form carries an address section. The backend listing forms do not
+// include an ADDRESS field, so every form gets one appended (before the Contact
+// section when present) — giving each listing a location without a schema
+// change. A no-op if the form already has an ADDRESS field.
+export function ensureAddressSection(form: ListingForm): ListingForm {
+  const hasAddress = form.sections.some((section) =>
+    section.fields.some((field) => field.type === 'ADDRESS'),
+  );
+  if (hasAddress) {
+    return form;
+  }
+  const addressField: ListingField = {
+    fieldKey: LISTING_ADDRESS_FIELD_KEY,
+    label: { en: 'Address', hi: 'पता' },
+    type: 'ADDRESS',
+    displayOrder: 0,
+    common: true,
+  };
+  const addressSection = {
+    key: 'address',
+    title: { en: 'Address', hi: 'पता' },
+    fields: [addressField],
+  };
+  const contactIndex = form.sections.findIndex((section) =>
+    /contact/i.test(`${section.key} ${section.title.en}`),
+  );
+  const sections = [...form.sections];
+  if (contactIndex >= 0) {
+    sections.splice(contactIndex, 0, addressSection);
+  } else {
+    sections.push(addressSection);
+  }
+  return { ...form, sections };
 }

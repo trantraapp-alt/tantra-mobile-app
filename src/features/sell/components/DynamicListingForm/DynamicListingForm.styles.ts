@@ -20,8 +20,24 @@ export function createDynamicListingFormStyles(theme: AppTheme) {
       paddingBottom: theme.spacing.xl,
       gap: theme.spacing.xl,
     },
-    // Title / subtitle block.
+    // Title / subtitle block: category icon tile beside the heading text.
     intro: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    // Small tinted tile holding the category icon.
+    introIcon: {
+      width: theme.sizing.avatarSm,
+      height: theme.sizing.avatarSm,
+      borderRadius: theme.radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
+    },
+    // Heading + subtitle column.
+    introText: {
+      flex: 1,
       gap: theme.spacing.xxs,
     },
     // A titled group of fields, drawn as an outlined card with its title sitting

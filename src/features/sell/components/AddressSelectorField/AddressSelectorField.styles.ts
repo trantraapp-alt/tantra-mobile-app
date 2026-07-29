@@ -10,6 +10,10 @@ export function createAddressSelectorStyles(theme: AppTheme) {
     container: {
       gap: theme.spacing.md,
     },
+    // Hint shown when the default checkbox is on but no default address exists.
+    hint: {
+      marginTop: -theme.spacing.xxs,
+    },
     // Read-only preview of the selected saved address (readable line spacing).
     preview: {
       gap: theme.spacing.xs,

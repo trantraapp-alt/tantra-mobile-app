@@ -53,6 +53,7 @@ const en = {
   'sell.formInfo':
     'Add clear photos and accurate details to get more buyer responses.',
   'form.subtitle': 'Fill in the details to post your listing.',
+  'form.showContactHelp': 'Off keeps your contact hidden until you approve a request.',
   'form.submit': 'Post listing',
   'form.addMore': 'Add more details (optional)',
   'form.hideMore': 'Hide extra details',
@@ -124,6 +125,7 @@ const en = {
   'listing.savedAddress': 'Saved address',
   'listing.selectAddress': 'Select a saved address',
   'listing.createNewAddress': 'Create new address',
+  'listing.noDefaultAddress': 'No default address yet. Create one below.',
   'listing.enterAddress': 'Enter address',
 
   // Listing detail / preview screen.
@@ -284,6 +286,7 @@ const hi: Record<TranslationKey, string> = {
   'sell.formInfo':
     'ज़्यादा जवाब पाने के लिए साफ़ फ़ोटो और सही जानकारी डालें।',
   'form.subtitle': 'अपनी लिस्टिंग पोस्ट करने के लिए विवरण भरें।',
+  'form.showContactHelp': 'बंद रखने पर अनुरोध स्वीकार करने तक आपका संपर्क छिपा रहेगा।',
   'form.submit': 'लिस्टिंग पोस्ट करें',
   'form.addMore': 'और विवरण जोड़ें (वैकल्पिक)',
   'form.hideMore': 'अतिरिक्त विवरण छिपाएं',
@@ -348,6 +351,7 @@ const hi: Record<TranslationKey, string> = {
   'listing.savedAddress': 'सहेजा गया पता',
   'listing.selectAddress': 'एक सहेजा गया पता चुनें',
   'listing.createNewAddress': 'नया पता बनाएं',
+  'listing.noDefaultAddress': 'अभी कोई डिफ़ॉल्ट पता नहीं है। नीचे एक बनाएं।',
   'listing.enterAddress': 'पता दर्ज करें',
 
   'listing.previewTitle': 'लिस्टिंग पूर्वावलोकन',

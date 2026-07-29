@@ -3,11 +3,10 @@
 // as it is a separate workstream); a category with subcategories shows a picker;
 // a leaf category renders its server-driven listing form via DynamicListingForm.
 import { Image } from 'expo-image';
-import { ChevronLeft, Store } from 'lucide-react-native';
-import { memo, useEffect, useState } from 'react';
+import { Store } from 'lucide-react-native';
+import { memo, useEffect } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { Button } from '@/components/buttons';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { Skeleton } from '@/components/loaders';
 import { Card, InfoBanner, Text } from '@/components/ui';
@@ -17,7 +16,11 @@ import { useTheme } from '@/providers';
 import type { ModuleCategory, PreferredLanguage } from '@/types';
 
 import { useListingForm, useSubcategories } from '../../hooks';
-import { getCategoryImageSource, getCategoryVisual } from '../../utils';
+import {
+  expectsSubcategories,
+  getCategoryImageSource,
+  getCategoryVisual,
+} from '../../utils';
 import { DynamicListingForm } from '../DynamicListingForm';
 import { createSellCategoryFormStyles } from './SellCategoryForm.styles';
 
@@ -27,6 +30,14 @@ export interface SellCategoryFormProps {
   category: ModuleCategory;
   // Active app language controlling labels.
   language: PreferredLanguage;
+  // The subcategory the user has drilled into (screen-owned), or null on the
+  // grid. Lifting it up lets the single screen header drive the back navigation.
+  activeSub?: ModuleCategory | null;
+  // Called when a subcategory is chosen (or cleared) from the grid.
+  onActiveSubChange?: (sub: ModuleCategory | null) => void;
+  // Reports whether the selected category is itself a leaf (no subcategories),
+  // so the screen can hide the rail and show the form full-screen.
+  onLeafTopChange?: (isLeafTop: boolean) => void;
 }
 
 // Resolves a category's display name for the active language.
@@ -98,13 +109,6 @@ function BoxSkeleton() {
   );
 }
 
-// Whether a top-level category is expected to contain subcategories (so its
-// loading skeleton shows boxes) rather than open a listing form directly.
-function expectsSubcategories(category: ModuleCategory): boolean {
-  const key = `${category.categoryKey} ${category.categoryNameEn}`.toLowerCase();
-  return /market|bazaar|bazar/.test(key);
-}
-
 // Renders the listing form for a leaf category.
 function LeafForm({
   category,
@@ -140,7 +144,11 @@ function LeafForm({
       <View style={styles.leafInfo}>
         <InfoBanner tone="info" message={t('sell.formInfo')} />
       </View>
-      <DynamicListingForm form={form} language={language} />
+      <DynamicListingForm
+        form={form}
+        language={language}
+        categoryKey={category.categoryKey}
+      />
     </View>
   );
 }
@@ -222,14 +230,30 @@ function SubcategoryPicker({
 }
 
 // Resolves a top-level category into a subcategory picker or a leaf form.
-function CategoryResolver({ category, language }: SellCategoryFormProps) {
-  const theme = useTheme();
+function CategoryResolver({
+  category,
+  language,
+  activeSub,
+  onActiveSubChange,
+  onLeafTopChange,
+}: SellCategoryFormProps) {
   const styles = useThemedStyles(createSellCategoryFormStyles);
-  const { t } = useTranslation();
   const { subcategories, isLoading, isError, refetch } = useSubcategories(
     category.id,
   );
-  const [activeLeaf, setActiveLeaf] = useState<ModuleCategory | null>(null);
+
+  // A leaf top category (no children, e.g. Services / Repair) opens its form
+  // full-screen just like a chosen subcategory. Report it so the screen hides
+  // the rail and drives the back navigation from its single header. During load
+  // we don't yet know if there are children, so guess from the category (a
+  // "marketplace" groups; everything else is a leaf) — this keeps the layout,
+  // and its skeleton, correct instead of flashing the browse layout then jumping.
+  const isLeafTop = isLoading
+    ? !expectsSubcategories(category)
+    : !isError && subcategories.length === 0;
+  useEffect(() => {
+    onLeafTopChange?.(isLeafTop);
+  }, [isLeafTop, onLeafTopChange]);
 
   // The children aren't loaded yet, so pick the skeleton from the category type:
   // a grouping category (marketplace) shows box placeholders; a leaf category
@@ -244,54 +268,45 @@ function CategoryResolver({ category, language }: SellCategoryFormProps) {
       </View>
     );
   }
-  // No children — the selected category is itself a leaf.
-  if (subcategories.length === 0) {
-    return <LeafForm category={category} language={language} />;
-  }
-  // A subcategory was chosen — show its form (or hand off a business profile).
-  if (activeLeaf) {
-    if (activeLeaf.actionType === 'BUSINESS_PROFILE') {
-      return <BusinessProfilePlaceholder />;
-    }
-    return (
-      <View style={styles.leafWrap}>
-        <View style={styles.leafHeader}>
-          <Button
-            label={t('sell.back')}
-            variant="ghost"
-            size="sm"
-            fullWidth={false}
-            leftIcon={
-              <ChevronLeft
-                size={theme.sizing.iconSm}
-                color={theme.colors.primary}
-              />
-            }
-            onPress={() => setActiveLeaf(null)}
-          />
-          <Text variant="label" numberOfLines={1}>
-            {categoryName(activeLeaf, language)}
-          </Text>
-        </View>
-        <LeafForm category={activeLeaf} language={language} />
-      </View>
+  // Full-screen leaf form: a chosen subcategory or a leaf top category. The
+  // screen header owns the back navigation, so no in-form back row is needed.
+  const leaf = activeSub ?? (isLeafTop ? category : null);
+  if (leaf) {
+    return leaf.actionType === 'BUSINESS_PROFILE' ? (
+      <BusinessProfilePlaceholder />
+    ) : (
+      <LeafForm category={leaf} language={language} />
     );
   }
   return (
     <SubcategoryPicker
       subcategories={subcategories}
       language={language}
-      onSelect={setActiveLeaf}
+      onSelect={(sub) => onActiveSubChange?.(sub)}
     />
   );
 }
 
 // Renders the selected category's content (picker / form / handoff).
-function SellCategoryFormComponent({ category, language }: SellCategoryFormProps) {
+function SellCategoryFormComponent({
+  category,
+  language,
+  activeSub,
+  onActiveSubChange,
+  onLeafTopChange,
+}: SellCategoryFormProps) {
   if (category.actionType === 'BUSINESS_PROFILE') {
     return <BusinessProfilePlaceholder />;
   }
-  return <CategoryResolver category={category} language={language} />;
+  return (
+    <CategoryResolver
+      category={category}
+      language={language}
+      activeSub={activeSub}
+      onActiveSubChange={onActiveSubChange}
+      onLeafTopChange={onLeafTopChange}
+    />
+  );
 }
 
 // Memoized category resolver.

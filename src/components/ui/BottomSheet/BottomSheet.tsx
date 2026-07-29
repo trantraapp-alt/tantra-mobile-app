@@ -11,9 +11,8 @@ import type { ReactNode } from 'react';
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useThemedStyles } from '@/hooks';
+import { useBottomInset, useThemedStyles } from '@/hooks';
 import { useTheme } from '@/providers';
 
 import { Text } from '../Text';
@@ -49,7 +48,7 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
   ) {
     const theme = useTheme();
     const styles = useThemedStyles(createBottomSheetStyles);
-    const insets = useSafeAreaInsets();
+    const bottomInset = useBottomInset();
     const modalRef = useRef<BottomSheetModal>(null);
 
     useImperativeHandle(
@@ -64,8 +63,8 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
     // Bottom padding always clears the navigation inset plus a base gap so the
     // last row is never hidden behind hardware/software navigation buttons.
     const contentPadding = useMemo<ViewStyle>(
-      () => ({ paddingBottom: insets.bottom + theme.spacing.xl }),
-      [insets.bottom, theme.spacing.xl],
+      () => ({ paddingBottom: bottomInset + theme.spacing.xl }),
+      [bottomInset, theme.spacing.xl],
     );
 
     // Renders the dimmed backdrop behind the sheet.

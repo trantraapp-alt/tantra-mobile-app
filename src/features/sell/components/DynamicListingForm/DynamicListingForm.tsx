@@ -31,12 +31,17 @@ import {
 } from '@/components/inputs';
 import { Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
+import type { TranslationKey } from '@/i18n';
 import { logger } from '@/lib';
 import { useTheme, useToast } from '@/providers';
 import type { PreferredLanguage } from '@/types';
 
 import { modulesApi } from '../../api';
-import { emptyManualSelection, isAddressSelection } from '../../forms/address';
+import {
+  emptyManualSelection,
+  ensureAddressSection,
+  isAddressSelection,
+} from '../../forms/address';
 import {
   type ListingField,
   type ListingFieldVisibleWhen,
@@ -56,6 +61,7 @@ import {
   toPriceNumber,
   validateOfferedNotAboveActual,
 } from '../../forms/pricing';
+import { getCategoryVisual } from '../../utils';
 import { AddressSelectorField } from '../AddressSelectorField';
 import { ImageUploadField } from '../ImageUploadField';
 import { createDynamicListingFormStyles } from './DynamicListingForm.styles';
@@ -69,6 +75,8 @@ export interface DynamicListingFormProps {
   form: ListingForm;
   // Active app language controlling all labels.
   language: PreferredLanguage;
+  // Category key used to pick the heading icon (falls back to the form title).
+  categoryKey?: string;
   // Pre-filled values (edit flow); merged over the schema-derived blanks.
   initialValues?: ListingValues;
   // Whether this is a create or an update (controls field locking).
@@ -88,6 +96,12 @@ type FieldMap = Map<string, ListingField>;
 
 // Sentinel value for the "Other (please specify)" choice.
 const OTHER_VALUE = '__other__';
+
+// Frontend overrides for specific fields' help text — a shorter, simpler line
+// than the backend sends (keyed by fieldKey → translation key).
+const HELP_OVERRIDES: Partial<Record<string, TranslationKey>> = {
+  showContact: 'form.showContactHelp',
+};
 
 // Localized {value,label} options for dropdown/radio fields.
 function toItems(field: ListingField, language: PreferredLanguage): SelectItem[] {
@@ -345,7 +359,10 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
   const theme = useTheme();
   const styles = useThemedStyles(createDynamicListingFormStyles);
   const label = localize(field.label, language);
-  const help = localize(field.help, language) || undefined;
+  const helpOverride = HELP_OVERRIDES[field.fieldKey];
+  const help = helpOverride
+    ? t(helpOverride)
+    : localize(field.help, language) || undefined;
   const placeholder = field.placeholder ?? undefined;
   const rules = useMemo(() => buildRules(field, label), [field, label]);
   const { field: rhf, fieldState } = useController({
@@ -656,11 +673,13 @@ function buildDefaults(
 function DynamicListingFormComponent({
   form,
   language,
+  categoryKey,
   initialValues,
   mode = 'create',
   submitLabel,
   onSubmit: onSubmitProp,
 }: DynamicListingFormProps) {
+  const theme = useTheme();
   const styles = useThemedStyles(createDynamicListingFormStyles);
   const { showSuccess, showError } = useToast();
   const { t } = useTranslation();
@@ -669,9 +688,17 @@ function DynamicListingFormComponent({
   // pricing section, so a rental is priced like a sale.
   const rentField = useMemo(() => findRentField(form), [form]);
   const resolvedForm = useMemo(
-    () => ensureOfferedPriceFields(form, rentField != null),
+    () => ensureAddressSection(ensureOfferedPriceFields(form, rentField != null)),
     [form, rentField],
   );
+
+  // Heading icon: the category's icon (same as the "Choose category" grid),
+  // resolved from the key when known, else keyword-matched from the form title.
+  const headingVisual = useMemo(
+    () => getCategoryVisual(categoryKey ?? resolvedForm.title.en),
+    [categoryKey, resolvedForm.title.en],
+  );
+  const HeadingIcon = headingVisual.icon;
 
   const defaultValues = useMemo(
     () => buildDefaults(resolvedForm, initialValues),
@@ -763,10 +790,18 @@ function DynamicListingFormComponent({
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.intro}>
-            <Text variant="h3">{localize(resolvedForm.title, language)}</Text>
-            <Text variant="caption" color="textSecondary">
-              {t('form.subtitle')}
-            </Text>
+            <View style={styles.introIcon}>
+              <HeadingIcon
+                size={theme.sizing.iconMd}
+                color={theme.colors[headingVisual.accent]}
+              />
+            </View>
+            <View style={styles.introText}>
+              <Text variant="h3">{localize(resolvedForm.title, language)}</Text>
+              <Text variant="caption" color="textSecondary">
+                {t('form.subtitle')}
+              </Text>
+            </View>
           </View>
 
           {resolvedForm.sections.map((section) => {

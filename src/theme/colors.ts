@@ -68,6 +68,9 @@ export interface ColorScheme {
   card: string;
   // Default border color.
   border: string;
+  // Stronger border for interactive controls (inputs, selects) so an editable
+  // field is clearly defined against the page background.
+  borderStrong: string;
   // Divider / hairline color.
   divider: string;
   // Primary text color.
@@ -111,6 +114,7 @@ export const lightColors: ColorScheme = {
   surfaceVariant: palette.neutral100,
   card: palette.white,
   border: palette.neutral200,
+  borderStrong: palette.neutral300,
   divider: palette.neutral200,
   textPrimary: palette.ink900,
   textSecondary: palette.neutral500,
@@ -140,6 +144,7 @@ export const darkColors: ColorScheme = {
   surfaceVariant: palette.ink800,
   card: palette.ink850,
   border: palette.ink700,
+  borderStrong: palette.neutral500,
   divider: palette.ink700,
   textPrimary: palette.neutral50,
   textSecondary: palette.neutral400,

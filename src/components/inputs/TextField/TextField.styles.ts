@@ -15,13 +15,15 @@ export function createTextFieldStyles(theme: AppTheme) {
       marginBottom: theme.spacing.xs,
     },
     // Row wrapping icons and the input (height comes from the size preset).
+    // Sits on the page background (not a filled surface) so an editable field is
+    // never mistaken for a disabled/locked one, which uses `surfaceVariant`.
     inputWrapper: {
       flexDirection: 'row',
       alignItems: 'center',
       borderRadius: theme.radius.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.background,
       paddingHorizontal: theme.spacing.lg,
     },
     // Size presets controlling the field height.

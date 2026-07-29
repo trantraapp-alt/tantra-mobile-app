@@ -10,7 +10,9 @@ export function createDateFieldStyles(theme: AppTheme) {
     container: {
       gap: theme.spacing.xs,
     },
-    // Tappable control that opens the picker; mirrors a small TextField.
+    // Tappable control that opens the picker; mirrors a small TextField. Sits on
+    // the page background (not a filled surface) so an editable field is never
+    // mistaken for a disabled/locked one, which uses `surfaceVariant`.
     box: {
       minHeight: theme.sizing.inputHeightSm,
       flexDirection: 'row',
@@ -19,8 +21,8 @@ export function createDateFieldStyles(theme: AppTheme) {
       gap: theme.spacing.sm,
       borderRadius: theme.radius.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.background,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.sm,
     },

@@ -14,7 +14,9 @@ export function createSelectStyles(theme: AppTheme) {
     label: {
       marginBottom: theme.spacing.xs,
     },
-    // The tappable field showing the current value.
+    // The tappable field showing the current value. Sits on the page background
+    // (not a filled surface) so an editable field is never mistaken for a
+    // disabled/locked one, which uses `surfaceVariant`.
     field: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -23,8 +25,8 @@ export function createSelectStyles(theme: AppTheme) {
       height: theme.sizing.inputHeightSm,
       borderRadius: theme.radius.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.background,
       paddingHorizontal: theme.spacing.lg,
     },
     // Selected value text fills the row.

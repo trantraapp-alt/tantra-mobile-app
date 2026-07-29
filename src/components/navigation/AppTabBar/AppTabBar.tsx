@@ -8,10 +8,9 @@ import {
   MessageCircle,
   User,
 } from 'lucide-react-native';
-import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform, View } from 'react-native';
 
-import { useThemedStyles } from '@/hooks';
+import { useBottomInset, useThemedStyles } from '@/hooks';
 
 import { createAppTabBarStyles } from './AppTabBar.styles';
 import { SellFab } from './SellFab';
@@ -34,7 +33,7 @@ const ROUTE_ICONS: Record<string, LucideIcon> = {
 // Renders the custom bottom tab bar.
 export function AppTabBar({ state, navigation, onSellPress }: AppTabBarProps) {
   const styles = useThemedStyles(createAppTabBarStyles);
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
 
   // Finds a route index by name so layout order is independent of definition order.
   const indexOf = (name: string) =>
@@ -59,7 +58,7 @@ export function AppTabBar({ state, navigation, onSellPress }: AppTabBarProps) {
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingBottom: Platform.OS === 'ios' ? 10 : bottomInset }]}>
       <View style={styles.group}>
         {renderTab('home')}
         {renderTab('chat')}

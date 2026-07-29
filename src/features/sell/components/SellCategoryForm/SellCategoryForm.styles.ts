@@ -56,26 +56,14 @@ export function createSellCategoryFormStyles(theme: AppTheme) {
       width: '64%',
       height: '64%',
     },
-    // Wraps the leaf header + form.
-    leafWrap: {
-      flex: 1,
-    },
     // Wraps the info banner + the leaf listing form.
     leafFormWrap: {
       flex: 1,
     },
-    // Padding around the info banner shown above the form.
+    // Padding around the info banner shown above the form (no top gap — it sits
+    // directly under the header).
     leafInfo: {
       paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.md,
-    },
-    // Back row shown above a drilled-in leaf form.
-    leafHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.sm,
-      paddingTop: theme.spacing.sm,
     },
   });
 }

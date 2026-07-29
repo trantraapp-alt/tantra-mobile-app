@@ -4,10 +4,9 @@
 import { Check, ChevronDown, X } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
-import { useThemedStyles } from '@/hooks';
+import { useBottomInset, useThemedStyles } from '@/hooks';
 import { useTheme } from '@/providers';
 
 import { createSelectStyles } from './Select.styles';
@@ -57,7 +56,7 @@ export function Select({
 }: SelectProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createSelectStyles);
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
   const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
 
@@ -127,7 +126,7 @@ export function Select({
           <Pressable
             style={[
               styles.sheet,
-              { paddingBottom: insets.bottom + theme.spacing.lg },
+              { paddingBottom: bottomInset + theme.spacing.lg },
             ]}
           >
             <View style={styles.handle} />

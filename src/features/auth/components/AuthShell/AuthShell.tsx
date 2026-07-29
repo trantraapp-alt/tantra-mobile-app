@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconButton } from '@/components/buttons';
 import { BrandGradient, Logo } from '@/components/shared';
 import { Text } from '@/components/ui';
-import { useThemedStyles } from '@/hooks';
+import { useBottomInset, useThemedStyles } from '@/hooks';
 import { useTheme } from '@/providers';
 import type { TypographyVariant } from '@/theme';
 
@@ -55,6 +55,7 @@ export function AuthShell({
   const theme = useTheme();
   const styles = useThemedStyles(createAuthShellStyles);
   const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
   const { width, height } = useWindowDimensions();
 
   // Compact mode trades hero size and spacing for a taller form area.
@@ -157,7 +158,7 @@ export function AuthShell({
               {
                 paddingTop: cardPaddingTop,
                 gap: cardGap,
-                paddingBottom: insets.bottom + theme.spacing.xl,
+                paddingBottom: bottomInset + theme.spacing.xl,
               },
             ]}
           >

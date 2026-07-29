@@ -1,7 +1,7 @@
 // Safe-area aware screen container providing consistent themed padding.
 import type { PropsWithChildren } from 'react';
 import type { ViewStyle } from 'react-native';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '@/hooks';
@@ -29,10 +29,14 @@ export function Screen({
   variant = 'background',
 }: ScreenProps) {
   const styles = useThemedStyles(createScreenStyles);
+  // iOS keeps fixed bottom content (footer buttons, CTAs) close to the screen
+  // edge, so drop the bottom safe-area inset there; Android keeps its inset.
+  const resolvedEdges =
+    Platform.OS === 'ios' ? edges.filter((edge) => edge !== 'bottom') : edges;
 
   return (
     <SafeAreaView
-      edges={edges}
+      edges={resolvedEdges}
       style={[
         styles.safeArea,
         variant === 'surface' ? styles.surface : styles.background,

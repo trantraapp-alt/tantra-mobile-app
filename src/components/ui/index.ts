@@ -20,6 +20,11 @@ export {
   ImageCarousel,
   type ImageCarouselProps,
 } from './ImageCarousel';
+export {
+  InfoBanner,
+  type InfoBannerProps,
+  type InfoBannerTone,
+} from './InfoBanner';
 export { PriceTag, type PriceTagProps } from './PriceTag';
 export { Rating, type RatingProps } from './Rating';
 export { Screen, type ScreenProps } from './Screen';

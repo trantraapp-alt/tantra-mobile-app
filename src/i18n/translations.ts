@@ -50,6 +50,8 @@ const en = {
   'sell.businessProfileDesc':
     'This category opens the business profile flow.',
   'sell.formErrorRetry': 'Try again',
+  'sell.formInfo':
+    'Add clear photos and accurate details to get more buyer responses.',
   'form.subtitle': 'Fill in the details to post your listing.',
   'form.submit': 'Post listing',
   'form.addMore': 'Add more details (optional)',
@@ -279,6 +281,8 @@ const hi: Record<TranslationKey, string> = {
   'sell.businessProfileTitle': 'बिज़नेस प्रोफ़ाइल',
   'sell.businessProfileDesc': 'यह श्रेणी बिज़नेस प्रोफ़ाइल फ़्लो खोलती है।',
   'sell.formErrorRetry': 'फिर से प्रयास करें',
+  'sell.formInfo':
+    'ज़्यादा जवाब पाने के लिए साफ़ फ़ोटो और सही जानकारी डालें।',
   'form.subtitle': 'अपनी लिस्टिंग पोस्ट करने के लिए विवरण भरें।',
   'form.submit': 'लिस्टिंग पोस्ट करें',
   'form.addMore': 'और विवरण जोड़ें (वैकल्पिक)',

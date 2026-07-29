@@ -41,6 +41,7 @@ import {
   type ListingField,
   type ListingFieldVisibleWhen,
   type ListingForm,
+  type ListingSection,
   localize,
 } from '../../forms/listingForm.types';
 import {
@@ -48,6 +49,13 @@ import {
   type CreateListingPayload,
   type ListingValues,
 } from '../../forms/listingPayload';
+import {
+  computeDiscountPercent,
+  ensureOfferedPriceFields,
+  isOfferedPriceField,
+  toPriceNumber,
+  validateOfferedNotAboveActual,
+} from '../../forms/pricing';
 import { AddressSelectorField } from '../AddressSelectorField';
 import { ImageUploadField } from '../ImageUploadField';
 import { createDynamicListingFormStyles } from './DynamicListingForm.styles';
@@ -149,6 +157,43 @@ function matchesVisibleWhen(
   return operator === 'notEquals' ? !equal : equal;
 }
 
+// Section title/key patterns hidden when a rental (not a sale) is chosen: a
+// rented item is not sold per unit and its lister's seller details are not
+// collected the same way. Matches "Seller Details" and "Quantity and Unit".
+const RENT_HIDDEN_SECTIONS = /seller|quantity/i;
+
+// Finds the field that selects the sale-vs-rent transaction type: a choice field
+// (dropdown/radio) offering a "rent" option. Returns null when the form has no
+// such toggle (e.g. a sell-only category), so nothing is hidden.
+function findRentField(form: ListingForm): ListingField | null {
+  for (const section of form.sections) {
+    for (const field of section.fields) {
+      if (field.type !== 'DROPDOWN' && field.type !== 'RADIO') {
+        continue;
+      }
+      const hasRent = (field.options ?? []).some(
+        (option) => /rent/i.test(option.value) || /rent/i.test(option.label.en),
+      );
+      if (hasRent) {
+        return field;
+      }
+    }
+  }
+  return null;
+}
+
+// The value on the transaction-type field that represents "rent".
+function rentOptionValue(field: ListingField): string | undefined {
+  return (field.options ?? []).find(
+    (option) => /rent/i.test(option.value) || /rent/i.test(option.label.en),
+  )?.value;
+}
+
+// Whether a section is one hidden while a rental is being listed.
+function isRentHiddenSection(section: ListingSection): boolean {
+  return RENT_HIDDEN_SECTIONS.test(`${section.key} ${section.title.en}`);
+}
+
 // A read-only display of a field value (used for locked fields).
 function displayValue(
   field: ListingField,
@@ -179,14 +224,19 @@ function isLocked(field: ListingField, mode: ListingFormMode): boolean {
   );
 }
 
+// Whether a field is a free-text description (rendered as a 4-line textarea).
+function isDescriptionField(field: ListingField): boolean {
+  return /description/i.test(field.fieldKey);
+}
+
 // Text-input props for text-like field types.
 function textInputProps(field: ListingField): Partial<TextFieldProps> {
   const maxLength = field.fieldLength ?? field.validation?.maxLength;
+  // Textareas and any description field render multi-line (4 rows).
+  if (field.type === 'TEXTAREA' || isDescriptionField(field)) {
+    return { multiline: true, numberOfLines: 4, maxLength };
+  }
   switch (field.type) {
-    case 'TEXTAREA':
-      return { multiline: true, numberOfLines: 4, maxLength };
-    case 'ADDRESS':
-      return { multiline: true, numberOfLines: 3 };
     case 'NUMBER':
       return { keyboardType: 'number-pad', maxLength };
     case 'DECIMAL':
@@ -220,12 +270,19 @@ function buildRules(
       message: `Use at most ${maxLength} characters`,
     };
   }
+  // Named validators, combined so a field can carry more than one rule (e.g. an
+  // offered-price field validates both its minimum and that it stays at or below
+  // the actual price).
+  const validators: Record<
+    string,
+    (value: unknown, values: ListingValues) => true | string
+  > = {};
   if (
     (field.type === 'NUMBER' || field.type === 'DECIMAL') &&
     field.validation?.min != null
   ) {
     const minValue = field.validation.min;
-    rules.validate = (value) => {
+    validators.min = (value) => {
       const text = typeof value === 'string' ? value : '';
       if (text === '') {
         return true;
@@ -233,7 +290,36 @@ function buildRules(
       return Number(text) >= minValue || `Must be at least ${minValue}`;
     };
   }
+  // The offered price must never exceed the actual price — shared across every
+  // category form via the pricing util.
+  if (isOfferedPriceField(field)) {
+    validators.offeredNotAboveActual = (value, values) =>
+      validateOfferedNotAboveActual(value, values);
+  }
+  if (Object.keys(validators).length > 0) {
+    rules.validate = validators;
+  }
   return rules;
+}
+
+// Orders a section's fields by displayOrder, then moves any description field to
+// sit right after the primary name field so the description always follows it.
+function orderFields(fields: ListingField[]): ListingField[] {
+  const sorted = [...fields].sort((a, b) => a.displayOrder - b.displayOrder);
+  const descIndex = sorted.findIndex(isDescriptionField);
+  if (descIndex < 0) {
+    return sorted;
+  }
+  const [description] = sorted.splice(descIndex, 1);
+  if (!description) {
+    return sorted;
+  }
+  const nameIndex = sorted.findIndex((field) =>
+    /name|variety|breed|model|title/i.test(field.fieldKey),
+  );
+  const insertAt = nameIndex < 0 ? descIndex : nameIndex + 1;
+  sorted.splice(insertAt, 0, description);
+  return sorted;
 }
 
 // Human hint for an image field (count + accepted types).
@@ -467,15 +553,11 @@ function ComputedField({ field, control, language }: FieldProps) {
   const actual = useWatch({ control, name: 'actualPrice' });
   const offered = useWatch({ control, name: 'offeredPrice' });
 
-  const actualNumber = typeof actual === 'string' ? Number(actual) : NaN;
-  const offeredNumber = typeof offered === 'string' ? Number(offered) : NaN;
-  const hasValues =
-    actualNumber > 0 &&
-    !Number.isNaN(actualNumber) &&
-    !Number.isNaN(offeredNumber);
-  const display = hasValues
-    ? `${Math.max(0, Math.round(((actualNumber - offeredNumber) / actualNumber) * 100))}%`
-    : '—';
+  const percent = computeDiscountPercent(
+    toPriceNumber(actual),
+    toPriceNumber(offered),
+  );
+  const display = percent != null ? `${percent}%` : '—';
 
   return (
     <View style={styles.readOnly}>
@@ -582,33 +664,80 @@ function DynamicListingFormComponent({
   const styles = useThemedStyles(createDynamicListingFormStyles);
   const { showSuccess, showError } = useToast();
   const { t } = useTranslation();
+  // The transaction-type toggle (sell vs. rent), if the form has one. A form
+  // that offers rent gets the offered-price + discount fields ensured on its
+  // pricing section, so a rental is priced like a sale.
+  const rentField = useMemo(() => findRentField(form), [form]);
+  const resolvedForm = useMemo(
+    () => ensureOfferedPriceFields(form, rentField != null),
+    [form, rentField],
+  );
+
   const defaultValues = useMemo(
-    () => buildDefaults(form, initialValues),
-    [form, initialValues],
+    () => buildDefaults(resolvedForm, initialValues),
+    [resolvedForm, initialValues],
   );
   // Every field keyed by fieldKey, so a cascading child can resolve its parent
   // field's selected option id.
   const fieldsByKey = useMemo<FieldMap>(
     () =>
       new Map(
-        form.sections.flatMap((section) =>
+        resolvedForm.sections.flatMap((section) =>
           section.fields.map((field) => [field.fieldKey, field]),
         ),
       ),
-    [form],
+    [resolvedForm],
   );
   const { control, handleSubmit, formState } = useForm<ListingValues>({
     defaultValues,
     mode: 'onBlur',
   });
 
+  // The "rent" value on the transaction toggle. Watch only that field so typing
+  // elsewhere does not re-render the whole form.
+  const rentTarget = useMemo(
+    () => (rentField ? rentOptionValue(rentField) : undefined),
+    [rentField],
+  );
+  const rentSelection = useWatch({
+    control,
+    name: rentField?.fieldKey ?? '__no_rent_field__',
+  });
+  const isRent = rentTarget != null && rentSelection === rentTarget;
+
+  // While renting, the seller-details and quantity/unit sections are hidden;
+  // collect their field keys so a value entered before switching to rent is
+  // dropped from the payload rather than silently submitted.
+  const hiddenFieldKeys = useMemo(() => {
+    const keys = new Set<string>();
+    if (!isRent) {
+      return keys;
+    }
+    for (const section of resolvedForm.sections) {
+      if (isRentHiddenSection(section)) {
+        for (const field of section.fields) {
+          keys.add(field.fieldKey);
+        }
+      }
+    }
+    return keys;
+  }, [resolvedForm, isRent]);
+
   // Submits the collected values — via the caller's handler (edit) or the
   // default create call.
   const onSubmit = useCallback(
     async (values: ListingValues) => {
-      const payload = buildListingPayload(form, values);
+      const submitValues =
+        hiddenFieldKeys.size > 0
+          ? (Object.fromEntries(
+              Object.entries(values).filter(
+                ([key]) => !hiddenFieldKeys.has(key),
+              ),
+            ) as ListingValues)
+          : values;
+      const payload = buildListingPayload(resolvedForm, submitValues);
       if (onSubmitProp) {
-        await onSubmitProp(payload, values);
+        await onSubmitProp(payload, submitValues);
         return;
       }
       try {
@@ -619,7 +748,7 @@ function DynamicListingFormComponent({
         showError(t('form.submitError'));
       }
     },
-    [form, onSubmitProp, showSuccess, showError, t],
+    [resolvedForm, hiddenFieldKeys, onSubmitProp, showSuccess, showError, t],
   );
 
   return (
@@ -634,20 +763,26 @@ function DynamicListingFormComponent({
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.intro}>
-            <Text variant="h3">{localize(form.title, language)}</Text>
+            <Text variant="h3">{localize(resolvedForm.title, language)}</Text>
             <Text variant="caption" color="textSecondary">
               {t('form.subtitle')}
             </Text>
           </View>
 
-          {form.sections.map((section) => {
-            const fields = [...section.fields].sort(
-              (a, b) => a.displayOrder - b.displayOrder,
-            );
+          {resolvedForm.sections.map((section) => {
+            // Hidden for a rental listing (seller details / quantity & unit).
+            if (isRent && isRentHiddenSection(section)) {
+              return null;
+            }
+            const fields = orderFields(section.fields);
             return (
               <View key={section.key} style={styles.section}>
-                <Text variant="overline" color="textSecondary">
-                  {localize(section.title, language).toUpperCase()}
+                <Text
+                  variant="h4"
+                  color="textPrimary"
+                  style={styles.sectionLegend}
+                >
+                  {localize(section.title, language)}
                 </Text>
                 <View style={styles.sectionFields}>
                   {fields.map((field) =>

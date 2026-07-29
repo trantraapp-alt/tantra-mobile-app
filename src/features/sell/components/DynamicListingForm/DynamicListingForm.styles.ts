@@ -24,9 +24,23 @@ export function createDynamicListingFormStyles(theme: AppTheme) {
     intro: {
       gap: theme.spacing.xxs,
     },
-    // A titled group of fields.
+    // A titled group of fields, drawn as an outlined card with its title sitting
+    // on the top-left border (a fieldset legend).
     section: {
-      gap: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radius.lg,
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.xxl,
+      paddingBottom: theme.spacing.lg,
+    },
+    // Section title chip straddling the card's top-left border.
+    sectionLegend: {
+      position: 'absolute',
+      top: -theme.spacing.md,
+      left: theme.spacing.md,
+      paddingHorizontal: theme.spacing.xs,
+      backgroundColor: theme.colors.background,
     },
     // Fields stacked within a section.
     sectionFields: {

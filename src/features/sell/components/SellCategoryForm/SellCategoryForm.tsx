@@ -10,7 +10,7 @@ import { ScrollView, View } from 'react-native';
 import { Button } from '@/components/buttons';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { Skeleton } from '@/components/loaders';
-import { Card, Text } from '@/components/ui';
+import { Card, InfoBanner, Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
 import { useTheme } from '@/providers';
@@ -114,6 +114,7 @@ function LeafForm({
   language: PreferredLanguage;
 }) {
   const styles = useThemedStyles(createSellCategoryFormStyles);
+  const { t } = useTranslation();
   const { form, isError, refetch } = useListingForm(category.id);
 
   useEffect(() => {
@@ -134,7 +135,14 @@ function LeafForm({
   if (!form) {
     return <FormSkeleton />;
   }
-  return <DynamicListingForm form={form} language={language} />;
+  return (
+    <View style={styles.leafFormWrap}>
+      <View style={styles.leafInfo}>
+        <InfoBanner tone="info" message={t('sell.formInfo')} />
+      </View>
+      <DynamicListingForm form={form} language={language} />
+    </View>
+  );
 }
 
 // Placeholder for BUSINESS_PROFILE categories (handled by a separate workstream).

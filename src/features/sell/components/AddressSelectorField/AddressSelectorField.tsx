@@ -1,15 +1,14 @@
-// Address selection for the listing form. Replaces the raw inline address form
-// with: use-my-default, pick a saved address, or enter one manually — plus a
-// "Create new address" action that round-trips to the address form and returns
-// the created address auto-selected. Falls back to manual entry when the user
-// has no saved addresses (a raw address is still a valid listing payload).
+// Address selection for the listing form: pick a saved address (its full
+// details are previewed) or create a new one. Creating opens the address form
+// and returns with the new address auto-selected. There is no inline manual
+// entry and no default toggle — all address entry happens on the address form.
 import { useFocusEffect, usePathname, useRouter } from 'expo-router';
-import { Plus } from 'lucide-react-native';
+import { Phone, Plus } from 'lucide-react-native';
 import { memo, useCallback } from 'react';
 import { View } from 'react-native';
 
 import { Button } from '@/components/buttons';
-import { Checkbox, Select } from '@/components/inputs';
+import { Select } from '@/components/inputs';
 import { Card, Text } from '@/components/ui';
 import { routes } from '@/constants';
 // Deep imports (not the feature barrel) so this does not pull the address
@@ -21,8 +20,7 @@ import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 import type { PreferredLanguage } from '@/types';
 
-import { type AddressSelection, emptyAddress } from '../../forms/address';
-import { AddressField } from '../AddressField';
+import type { AddressSelection } from '../../forms/address';
 import { createAddressSelectorStyles } from './AddressSelectorField.styles';
 
 // Props for the AddressSelectorField component.
@@ -39,9 +37,40 @@ export interface AddressSelectorFieldProps {
   error?: string;
 }
 
+// The address fields shared by a saved address and a listing's snapshot.
+interface AddressParts {
+  fullAddress?: string | null;
+  village?: string | null;
+  district?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pinCode?: string | null;
+  country?: string | null;
+  mobileNumber?: string | null;
+}
+
+// Trims a value to a clean string.
+function clean(value?: string | null): string {
+  return (value ?? '').toString().trim();
+}
+
+// Builds the display lines for a complete address preview.
+function addressPreviewLines(parts: AddressParts): string[] {
+  const join = (values: (string | null | undefined)[], sep = ', ') =>
+    values
+      .map(clean)
+      .filter((entry) => entry.length > 0)
+      .join(sep);
+  return [
+    join([parts.fullAddress, parts.village]),
+    join([parts.district, parts.city]),
+    join([parts.state, parts.pinCode], ' - '),
+    clean(parts.country),
+  ].filter((line) => line.length > 0);
+}
+
 // Renders the listing address selector.
 function AddressSelectorFieldComponent({
-  label,
   value,
   onChange,
   error,
@@ -52,8 +81,6 @@ function AddressSelectorFieldComponent({
   const router = useRouter();
   const pathname = usePathname();
   const { addresses, refresh } = useAddresses();
-
-  const defaultAddress = addresses.find((item) => item.isDefault);
 
   // On focus, refresh the list and auto-select any address just created via the
   // "Create new address" round trip.
@@ -67,10 +94,17 @@ function AddressSelectorFieldComponent({
     }, [refresh, onChange]),
   );
 
-  const usingDefault = value.mode === 'default';
   const selectedId = value.mode === 'saved' ? value.addressId : '';
-  const manualValue = value.mode === 'manual' ? value.value : emptyAddress();
-  const showManual = value.mode === 'manual' || addresses.length === 0;
+  const selectedAddress = addresses.find(
+    (item) => item.addressId === selectedId,
+  );
+
+  // Preview the selected saved address, or the snapshotted address on an edit.
+  const previewParts: AddressParts | null =
+    selectedAddress ??
+    (value.mode === 'manual' && addressPreviewLines(value.value).length > 0
+      ? value.value
+      : null);
 
   const savedOptions = addresses.map((item) => ({
     value: item.addressId,
@@ -86,68 +120,60 @@ function AddressSelectorFieldComponent({
 
   return (
     <View style={styles.container}>
-      <Text variant="label" color="textSecondary">
-        {label}
-      </Text>
-
-      {defaultAddress ? (
-        <Checkbox
-          label={t('listing.useDefaultAddress')}
-          checked={usingDefault}
-          onChange={(checked) =>
-            onChange(checked ? { mode: 'default' } : { mode: 'saved', addressId: '' })
-          }
+      {savedOptions.length > 0 ? (
+        <Select
+          label={t('listing.savedAddress')}
+          placeholder={t('listing.selectAddress')}
+          value={selectedId}
+          options={savedOptions}
+          onChange={(addressId) => onChange({ mode: 'saved', addressId })}
         />
       ) : null}
 
-      {usingDefault && defaultAddress ? (
+      {previewParts ? (
         <Card radius="md">
           <View style={styles.preview}>
-            <Text variant="bodyMedium">
-              {defaultAddress.label || t('address.default')}
-            </Text>
-            <Text variant="caption" color="textSecondary">
-              {addressSummary(defaultAddress)}
-            </Text>
+            {selectedAddress?.label ? (
+              <Text variant="bodyMedium">{selectedAddress.label}</Text>
+            ) : null}
+            {addressPreviewLines(previewParts).map((line, index) => (
+              <Text
+                key={`line-${index}`}
+                variant="caption"
+                color="textSecondary"
+              >
+                {line}
+              </Text>
+            ))}
+            {clean(previewParts.mobileNumber) ? (
+              <View style={styles.mobileRow}>
+                <Phone
+                  size={theme.sizing.iconXs}
+                  color={theme.colors.textTertiary}
+                />
+                <Text variant="caption" color="textSecondary">
+                  {clean(previewParts.mobileNumber)}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </Card>
-      ) : (
-        <>
-          {savedOptions.length > 0 ? (
-            <Select
-              label={t('listing.savedAddress')}
-              placeholder={t('listing.selectAddress')}
-              value={selectedId}
-              options={savedOptions}
-              onChange={(addressId) => onChange({ mode: 'saved', addressId })}
-            />
-          ) : null}
+      ) : null}
 
-          <View style={styles.actions}>
-            <Button
-              label={t('listing.createNewAddress')}
-              variant="outline"
-              size="sm"
-              fullWidth={false}
-              leftIcon={
-                <Plus size={theme.sizing.iconSm} color={theme.colors.primary} />
-              }
-              onPress={openCreate}
-            />
-          </View>
+      <View style={styles.actions}>
+        <Button
+          label={t('listing.createNewAddress')}
+          variant="outline"
+          size="sm"
+          fullWidth={false}
+          leftIcon={
+            <Plus size={theme.sizing.iconSm} color={theme.colors.primary} />
+          }
+          onPress={openCreate}
+        />
+      </View>
 
-          {showManual ? (
-            <AddressField
-              label={t('listing.enterAddress')}
-              value={manualValue}
-              onChange={(next) => onChange({ mode: 'manual', value: next })}
-              error={error}
-            />
-          ) : null}
-        </>
-      )}
-
-      {error && !showManual ? (
+      {error ? (
         <Text variant="caption" color="danger">
           {error}
         </Text>

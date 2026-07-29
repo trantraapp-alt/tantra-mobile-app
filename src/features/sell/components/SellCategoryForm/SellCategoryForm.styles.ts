@@ -60,6 +60,15 @@ export function createSellCategoryFormStyles(theme: AppTheme) {
     leafWrap: {
       flex: 1,
     },
+    // Wraps the info banner + the leaf listing form.
+    leafFormWrap: {
+      flex: 1,
+    },
+    // Padding around the info banner shown above the form.
+    leafInfo: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.md,
+    },
     // Back row shown above a drilled-in leaf form.
     leafHeader: {
       flexDirection: 'row',

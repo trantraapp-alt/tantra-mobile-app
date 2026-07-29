@@ -16,6 +16,7 @@ import {
   ShoppingBasket,
   SprayCan,
   Sprout,
+  Stethoscope,
   Store,
   Tag,
   Tractor,
@@ -55,6 +56,10 @@ const CATEGORY_VISUALS: Record<string, CategoryVisual> = {
 // Keyword rules so top-level and differently-keyed categories still resolve to
 // a relatable, distinct visual (order matters: more specific groups first).
 const CATEGORY_RULES: { match: RegExp; visual: CategoryVisual }[] = [
+  {
+    match: /vet|veterin|clinic|pashu-chikitsa/,
+    visual: { icon: Stethoscope, accent: 'info' },
+  },
   { match: /repair|mainten|maramat/, visual: { icon: Wrench, accent: 'info' } },
   {
     match: /service|labour|labor|seva|sevah/,

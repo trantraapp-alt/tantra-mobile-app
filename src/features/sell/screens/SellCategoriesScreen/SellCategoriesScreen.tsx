@@ -33,21 +33,24 @@ export function SellCategoriesScreen() {
   const [activeSub, setActiveSub] = useState<ModuleCategory | null>(null);
   const [isLeafTop, setIsLeafTop] = useState(false);
 
-  // Whether selecting a category opens a full-screen leaf form (a listing leaf),
-  // versus showing the rail with a grid (marketplace) or a business-profile
-  // placeholder. Guessed from the category so the layout — and its skeleton — is
-  // right the instant it's selected, before children load.
+  // Whether selecting a category opens a full-screen form (a listing leaf or a
+  // business profile like Veterinary) versus showing the rail with a grid (a
+  // marketplace grouping). Guessed from the category so the layout — and its
+  // skeleton — is right the instant it's selected, before children load.
   const opensFullScreen = useCallback(
-    (category: ModuleCategory) =>
-      category.actionType !== 'BUSINESS_PROFILE' &&
-      !expectsSubcategories(category),
+    (category: ModuleCategory) => !expectsSubcategories(category),
     [],
   );
 
-  // Default to the first category once the list has loaded.
+  // Default to the first browse (grid) category so we land on a rail view rather
+  // than straight into a full-screen form; fall back to the first category.
   useEffect(() => {
-    const first = categories[0];
-    if (selectedId === null && first) {
+    if (selectedId !== null) {
+      return;
+    }
+    const first =
+      categories.find((category) => !opensFullScreen(category)) ?? categories[0];
+    if (first) {
       setSelectedId(first.id);
       setIsLeafTop(opensFullScreen(first));
     }
@@ -76,18 +79,22 @@ export function SellCategoriesScreen() {
     [opensFullScreen],
   );
 
-  // Backing out of a leaf top category's full-screen form has no grid to return
-  // to, so switch to another category (the first that isn't the current one) —
-  // typically the marketplace grid — bringing the rail back.
+  // Backing out of a full-screen top category (leaf or business profile) has no
+  // grid to return to, so switch to a browse (grid) category — bringing the rail
+  // back — preferring one that isn't the current category.
   const exitToBrowse = useCallback(() => {
-    const fallback =
-      categories.find((category) => category.id !== selectedId) ?? categories[0];
+    const target =
+      categories.find(
+        (category) => category.id !== selectedId && !opensFullScreen(category),
+      ) ??
+      categories.find((category) => category.id !== selectedId) ??
+      categories[0];
     setActiveSub(null);
-    setIsLeafTop(false);
-    if (fallback) {
-      setSelectedId(fallback.id);
+    if (target) {
+      setSelectedId(target.id);
+      setIsLeafTop(opensFullScreen(target));
     }
-  }, [categories, selectedId]);
+  }, [categories, selectedId, opensFullScreen]);
 
   // Single header back: leave the module when browsing; step up one level when
   // drilled — a subcategory returns to its grid, a leaf top to the browser.

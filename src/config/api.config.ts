@@ -113,6 +113,14 @@ export const endpoints = {
     // Uploads image files; returns relative `/files/...` URLs.
     uploads: '/uploads',
   },
+  businessProfiles: {
+    // Authenticated metadata form for a business-profile type (e.g. vet_clinic);
+    // expects a `profileType` query param. Unlike the listing form, this is NOT
+    // public — the bearer token must be attached.
+    form: '/business-profiles/form',
+    // Creates a business profile; returns PENDING until an admin approves it.
+    create: '/business-profiles',
+  },
 } as const;
 
 // Resolves a relative server path (e.g. an uploaded `/files/..` URL) to an

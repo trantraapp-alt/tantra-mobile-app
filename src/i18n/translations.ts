@@ -50,6 +50,16 @@ const en = {
   'sell.businessProfileDesc':
     'This category opens the business profile flow.',
   'sell.formErrorRetry': 'Try again',
+  'businessProfile.info':
+    'Register your business. It goes live once an admin approves it.',
+  'businessProfile.submit': 'Submit for review',
+  'businessProfile.submitError': "Couldn't submit. Please try again.",
+  'businessProfile.loadError':
+    "Couldn't load the form. Make sure you're signed in and try again.",
+  'businessProfile.missingType': 'This profile is not available yet.',
+  'businessProfile.pendingTitle': 'Submitted for review',
+  'businessProfile.pendingDesc':
+    'Your business profile is pending admin approval. We will notify you once it is live.',
   'sell.formInfo':
     'Add clear photos and accurate details to get more buyer responses.',
   'form.subtitle': 'Fill in the details to post your listing.',
@@ -283,6 +293,16 @@ const hi: Record<TranslationKey, string> = {
   'sell.businessProfileTitle': 'बिज़नेस प्रोफ़ाइल',
   'sell.businessProfileDesc': 'यह श्रेणी बिज़नेस प्रोफ़ाइल फ़्लो खोलती है।',
   'sell.formErrorRetry': 'फिर से प्रयास करें',
+  'businessProfile.info':
+    'अपना व्यवसाय पंजीकृत करें। एडमिन की स्वीकृति के बाद यह लाइव हो जाएगा।',
+  'businessProfile.submit': 'समीक्षा के लिए भेजें',
+  'businessProfile.submitError': 'भेजा नहीं जा सका। कृपया फिर से प्रयास करें।',
+  'businessProfile.loadError':
+    'फ़ॉर्म लोड नहीं हो सका। सुनिश्चित करें कि आप साइन इन हैं और फिर से प्रयास करें।',
+  'businessProfile.missingType': 'यह प्रोफ़ाइल अभी उपलब्ध नहीं है।',
+  'businessProfile.pendingTitle': 'समीक्षा के लिए भेजा गया',
+  'businessProfile.pendingDesc':
+    'आपकी बिज़नेस प्रोफ़ाइल एडमिन की स्वीकृति के लिए लंबित है। लाइव होने पर हम आपको सूचित करेंगे।',
   'sell.formInfo':
     'ज़्यादा जवाब पाने के लिए साफ़ फ़ोटो और सही जानकारी डालें।',
   'form.subtitle': 'अपनी लिस्टिंग पोस्ट करने के लिए विवरण भरें।',

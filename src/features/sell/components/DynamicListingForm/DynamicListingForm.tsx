@@ -246,9 +246,14 @@ function isDescriptionField(field: ListingField): boolean {
 // Text-input props for text-like field types.
 function textInputProps(field: ListingField): Partial<TextFieldProps> {
   const maxLength = field.fieldLength ?? field.validation?.maxLength;
-  // Textareas and any description field render multi-line (4 rows).
+  // Textareas render multi-line; a description gets extra rows so the seller can
+  // write — and read back — more at a glance.
   if (field.type === 'TEXTAREA' || isDescriptionField(field)) {
-    return { multiline: true, numberOfLines: 4, maxLength };
+    return {
+      multiline: true,
+      numberOfLines: isDescriptionField(field) ? 5 : 4,
+      maxLength,
+    };
   }
   switch (field.type) {
     case 'NUMBER':

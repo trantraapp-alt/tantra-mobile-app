@@ -58,6 +58,14 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(
     const styles = useThemedStyles(createTextFieldStyles);
     const [isFocused, setIsFocused] = useState(false);
 
+    // A multiline field (e.g. a description) grows to fit its lines instead of
+    // the fixed single-line size preset, so it reads as a taller text area.
+    const isMultiline = rest.multiline === true;
+    const lines =
+      rest.numberOfLines && rest.numberOfLines > 0 ? rest.numberOfLines : 4;
+    const multilineMinHeight =
+      lines * theme.typography.body.lineHeight + theme.spacing.sm * 2;
+
     // Pixel size for each icon-size preset, resolved from the theme.
     const iconPixels: Record<TextFieldIconSize, number> = {
       xxs: theme.sizing.iconXxs,
@@ -102,7 +110,9 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(
         <View
           style={[
             styles.inputWrapper,
-            styles[`size_${size}`],
+            isMultiline
+              ? [styles.multiline, { minHeight: multilineMinHeight }]
+              : styles[`size_${size}`],
             isFocused && styles.focused,
             !!error && styles.errored,
             !editable && styles.disabled,
@@ -113,7 +123,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(
           ) : null}
           <TextInput
             ref={ref}
-            style={styles.input}
+            style={[styles.input, isMultiline && styles.multilineInput]}
             placeholderTextColor={theme.colors.textTertiary}
             editable={editable}
             onFocus={handleFocus}

@@ -39,6 +39,18 @@ export function createTextFieldStyles(theme: AppTheme) {
     size_lg: {
       height: theme.sizing.inputHeightLg,
     },
+    // Multiline wrapper: top-aligned and padded, its height driven by a
+    // minHeight (set inline from numberOfLines) instead of a fixed size preset,
+    // so a description field grows to several lines.
+    multiline: {
+      alignItems: 'flex-start',
+      paddingVertical: theme.spacing.sm,
+    },
+    // The input inside a multiline field fills the height and reads top-down.
+    multilineInput: {
+      alignSelf: 'stretch',
+      textAlignVertical: 'top',
+    },
     // Focused border treatment.
     focused: {
       borderColor: theme.colors.primary,

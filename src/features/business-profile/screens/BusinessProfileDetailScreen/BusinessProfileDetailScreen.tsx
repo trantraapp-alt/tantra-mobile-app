@@ -1,29 +1,51 @@
-// Business Profile detail view. Owners see it for any status; others only if
-// the profile is APPROVED + visible.
+// Business Profile detail: renders the shared BusinessProfileView body plus a
+// sticky Edit / Edit & Resubmit footer. Owners see it for any status; others
+// only if the profile is APPROVED + visible. Any edit resubmits the profile
+// for admin approval (BLOCKED profiles cannot be edited).
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { BadgeCheck } from 'lucide-react-native';
-import { ScrollView, View } from 'react-native';
+import { SquarePen } from 'lucide-react-native';
+import { useMemo } from 'react';
+import { View } from 'react-native';
 
+import { Button } from '@/components/buttons';
 import { ErrorState } from '@/components/empty-state';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
-import { Badge, Screen, Text } from '@/components/ui';
+import { Screen, Text } from '@/components/ui';
+import { routes } from '@/constants';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 
+import { BusinessProfileView } from '../../components/BusinessProfileView';
 import { useBusinessProfile } from '../../hooks/useBusinessProfile';
+import { useBusinessProfileForm } from '../../hooks/useBusinessProfileForm';
+import { buildBusinessProfileDetailModel } from '../../utils/businessProfileDetailFields';
+import { getProfileTypeLabel } from '../../utils/profileTypeLabels';
 import { createBPDetailScreenStyles } from './BusinessProfileDetailScreen.styles';
 
 export function BusinessProfileDetailScreen() {
   const styles = useThemedStyles(createBPDetailScreenStyles);
   const theme = useTheme();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { profileId } = useLocalSearchParams<{ profileId: string }>();
 
   const { profile, isLoading, isError, refetch } = useBusinessProfile(
     profileId ?? '',
   );
+  const { form, profileTypes } = useBusinessProfileForm(profile?.profileType);
+
+  const model = useMemo(
+    () =>
+      profile ? buildBusinessProfileDetailModel(form, profile, language) : null,
+    [form, profile, language],
+  );
+
+  const goToEdit = () => {
+    if (profileId) {
+      router.push(routes.businessProfile.edit(profileId));
+    }
+  };
 
   const renderBody = () => {
     if (isLoading) {
@@ -34,7 +56,7 @@ export function BusinessProfileDetailScreen() {
       );
     }
 
-    if (isError || !profile) {
+    if (isError || !profile || !model) {
       return (
         <View style={styles.center}>
           <ErrorState onRetry={refetch} retryLabel={t('common.retry')} />
@@ -42,114 +64,46 @@ export function BusinessProfileDetailScreen() {
       );
     }
 
-    const statusLabel =
-      profile.status === 'APPROVED'
-        ? t('businessProfile.status.approved')
-        : profile.status === 'PENDING'
-          ? t('businessProfile.status.pending')
-          : profile.status === 'REJECTED'
-            ? t('businessProfile.status.rejected')
-            : t('businessProfile.status.blocked');
-
-    const statusTone =
-      profile.status === 'APPROVED'
-        ? ('success' as const)
-        : profile.status === 'PENDING'
-          ? ('warning' as const)
-          : ('danger' as const);
+    const profileTypeLabel = getProfileTypeLabel(
+      profile.profileType,
+      profileTypes,
+      language,
+    );
 
     return (
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Status */}
-        <View style={styles.statusRow}>
-          <Badge label={statusLabel} tone={statusTone} />
-        </View>
+      <>
+        <BusinessProfileView
+          profile={profile}
+          model={model}
+          profileTypeLabel={profileTypeLabel}
+        />
 
-        {/* Verified banner */}
-        {profile.status === 'APPROVED' && (
-          <View style={styles.verifiedBanner}>
-            <BadgeCheck size={theme.sizing.iconMd} color={theme.colors.success} />
-            <Text variant="bodyMedium" color="success">
-              {t('businessProfile.verifiedBadge')}
+        <View style={styles.footer}>
+          {profile.status === 'BLOCKED' ? (
+            <Text variant="caption" color="textSecondary" style={styles.footerHint}>
+              {t('businessProfile.blockedEditHint')}
             </Text>
-          </View>
-        )}
-
-        {/* Reason boxes */}
-        {profile.rejectReason ? (
-          <View style={styles.reasonBox}>
-            <Text variant="caption" color="textSecondary">
-              {t('businessProfile.rejectReason')}
-            </Text>
-            <Text variant="body">{profile.rejectReason}</Text>
-          </View>
-        ) : null}
-        {profile.blockReason ? (
-          <View style={styles.reasonBox}>
-            <Text variant="caption" color="textSecondary">
-              {t('businessProfile.blockReason')}
-            </Text>
-            <Text variant="body">{profile.blockReason}</Text>
-          </View>
-        ) : null}
-
-        {/* Business details */}
-        <View style={styles.section}>
-          <Text variant="overline" color="textSecondary" style={styles.sectionTitle}>
-            {t('businessProfile.profileDetails').toUpperCase()}
-          </Text>
-          <View style={styles.field}>
-            <Text variant="caption" color="textSecondary">
-              {t('businessProfile.myProfiles')}
-            </Text>
-            <Text variant="bodyMedium">{profile.businessName}</Text>
-          </View>
-          <View style={styles.field}>
-            <Text variant="caption" color="textSecondary">
-              {t('businessProfile.selectType')}
-            </Text>
-            <Text variant="body">{profile.profileType}</Text>
-          </View>
-
-          {/* Attributes */}
-          {Object.entries(profile.attributes ?? {}).map(([key, value]) =>
-            value != null ? (
-              <View key={key} style={styles.field}>
-                <Text variant="caption" color="textSecondary">
-                  {key}
-                </Text>
-                <Text variant="body">{String(value)}</Text>
-              </View>
-            ) : null,
+          ) : (
+            <>
+              <Button
+                label={
+                  profile.status === 'REJECTED'
+                    ? t('businessProfile.editResubmit')
+                    : t('businessProfile.editProfile')
+                }
+                size="lg"
+                leftIcon={
+                  <SquarePen size={theme.sizing.iconMd} color={theme.colors.onPrimary} />
+                }
+                onPress={goToEdit}
+              />
+              <Text variant="caption" color="textTertiary" style={styles.footerHint}>
+                {t('businessProfile.editHint')}
+              </Text>
+            </>
           )}
         </View>
-
-        {/* Address */}
-        {profile.address && Object.keys(profile.address).length > 0 && (
-          <View style={styles.section}>
-            <Text
-              variant="overline"
-              color="textSecondary"
-              style={styles.sectionTitle}
-            >
-              {t('address.title').toUpperCase()}
-            </Text>
-            {Object.entries(profile.address).map(([key, value]) =>
-              value != null ? (
-                <View key={key} style={styles.field}>
-                  <Text variant="caption" color="textSecondary">
-                    {key}
-                  </Text>
-                  <Text variant="body">{String(value)}</Text>
-                </View>
-              ) : null,
-            )}
-          </View>
-        )}
-      </ScrollView>
+      </>
     );
   };
 

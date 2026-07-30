@@ -1,3 +1,5 @@
+// Screen-level styles for BusinessProfileDetailScreen — the shared profile
+// body's styles live in BusinessProfileView.styles.ts.
 import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
@@ -8,44 +10,19 @@ export function createBPDetailScreenStyles(theme: AppTheme) {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      padding: theme.spacing.xl,
     },
-    content: {
-      padding: theme.spacing.lg,
-      paddingBottom: theme.spacing.xxxl,
-    },
-    statusRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
+    // Sticky action shelf — Edit / Edit & Resubmit, or the blocked notice.
+    footer: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
       gap: theme.spacing.sm,
-      marginBottom: theme.spacing.md,
     },
-    section: {
-      marginBottom: theme.spacing.lg,
-    },
-    sectionTitle: {
-      marginBottom: theme.spacing.sm,
-    },
-    field: {
-      marginBottom: theme.spacing.sm,
-    },
-    reasonBox: {
-      backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: theme.radius.sm,
-      padding: theme.spacing.md,
-      marginBottom: theme.spacing.md,
-    },
-    verifiedBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-      backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: theme.radius.md,
-      padding: theme.spacing.md,
-      marginBottom: theme.spacing.md,
-    },
-    actions: {
-      gap: theme.spacing.sm,
-      marginTop: theme.spacing.md,
+    footerHint: {
+      textAlign: 'center',
     },
   });
 }

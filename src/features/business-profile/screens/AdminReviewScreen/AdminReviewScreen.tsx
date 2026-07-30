@@ -1,27 +1,25 @@
-// Admin review screen: read-only profile view + Approve / Reject / Block actions.
+// Admin review screen: renders the shared BusinessProfileView body (photo
+// gallery, formatted fields, address) plus Approve / Reject / Block actions.
 // Reject and Block open a bottom sheet to collect the mandatory reason.
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View } from 'react-native';
 
 import { Button } from '@/components/buttons';
 import { ErrorState } from '@/components/empty-state';
 import { TextField } from '@/components/inputs';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
-import {
-  Badge,
-  BottomSheet,
-  type BottomSheetRef,
-  Screen,
-  Text,
-} from '@/components/ui';
+import { BottomSheet, type BottomSheetRef, Screen } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
 import { useToast } from '@/providers';
 
 import { businessProfileApi } from '../../api/businessProfileApi';
-import type { BusinessProfile, ProfileTypeOption } from '../../types/businessProfile.types';
+import { BusinessProfileView } from '../../components/BusinessProfileView';
+import { useBusinessProfileForm } from '../../hooks/useBusinessProfileForm';
+import type { BusinessProfile } from '../../types/businessProfile.types';
+import { buildBusinessProfileDetailModel } from '../../utils/businessProfileDetailFields';
 import { getProfileTypeLabel } from '../../utils/profileTypeLabels';
 import { createAdminReviewStyles } from './AdminReviewScreen.styles';
 
@@ -73,21 +71,18 @@ export function AdminReviewScreen() {
     void refetch();
   }, [refetch]);
 
+  const { form, profileTypes } = useBusinessProfileForm(profile?.profileType);
+
+  const model = useMemo(
+    () =>
+      profile ? buildBusinessProfileDetailModel(form, profile, language) : null,
+    [form, profile, language],
+  );
+
   const [submitting, setSubmitting] = useState(false);
   const [reason, setReason] = useState('');
   const [reasonAction, setReasonAction] = useState<ReasonAction | null>(null);
-  const [profileTypes, setProfileTypes] = useState<ProfileTypeOption[]>([]);
   const reasonSheetRef = useRef<BottomSheetRef>(null);
-
-  // Fetch profile types for label mapping
-  useEffect(() => {
-    businessProfileApi
-      .getProfileTypes()
-      .then(setProfileTypes)
-      .catch(() => {
-        /* fallback: use keys as labels */
-      });
-  }, []);
 
   const openReasonSheet = useCallback((action: ReasonAction) => {
     setReason('');
@@ -148,7 +143,7 @@ export function AdminReviewScreen() {
       );
     }
 
-    if (isError || !profile) {
+    if (isError || !profile || !model) {
       return (
         <View style={styles.center}>
           <ErrorState onRetry={refetch} retryLabel={t('common.retry')} />
@@ -156,91 +151,20 @@ export function AdminReviewScreen() {
       );
     }
 
-    const statusTone =
-      profile.status === 'APPROVED'
-        ? ('success' as const)
-        : profile.status === 'PENDING'
-          ? ('warning' as const)
-          : ('danger' as const);
-
-    const statusLabel =
-      profile.status === 'APPROVED'
-        ? t('businessProfile.status.approved')
-        : profile.status === 'PENDING'
-          ? t('businessProfile.status.pending')
-          : profile.status === 'REJECTED'
-            ? t('businessProfile.status.rejected')
-            : t('businessProfile.status.blocked');
+    const profileTypeLabel = getProfileTypeLabel(
+      profile.profileType,
+      profileTypes,
+      language,
+    );
 
     return (
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Status */}
-        <View style={styles.statusRow}>
-          <Badge label={statusLabel} tone={statusTone} />
-        </View>
+      <>
+        <BusinessProfileView
+          profile={profile}
+          model={model}
+          profileTypeLabel={profileTypeLabel}
+        />
 
-        {/* Core fields */}
-        <View style={styles.section}>
-          <Text
-            variant="overline"
-            color="textSecondary"
-            style={styles.sectionTitle}
-          >
-            {t('businessProfile.profileDetails').toUpperCase()}
-          </Text>
-          <View style={styles.field}>
-            <Text variant="caption" color="textSecondary">
-              Business Name
-            </Text>
-            <Text variant="bodyMedium">{profile.businessName}</Text>
-          </View>
-          <View style={styles.field}>
-            <Text variant="caption" color="textSecondary">
-              Profile Type
-            </Text>
-            <Text variant="body">
-              {getProfileTypeLabel(profile.profileType, profileTypes, language)}
-            </Text>
-          </View>
-          {Object.entries(profile.attributes ?? {}).map(([key, value]) =>
-            value != null ? (
-              <View key={key} style={styles.field}>
-                <Text variant="caption" color="textSecondary">
-                  {key}
-                </Text>
-                <Text variant="body">{String(value)}</Text>
-              </View>
-            ) : null,
-          )}
-        </View>
-
-        {/* Address */}
-        {profile.address && Object.keys(profile.address).length > 0 && (
-          <View style={styles.section}>
-            <Text
-              variant="overline"
-              color="textSecondary"
-              style={styles.sectionTitle}
-            >
-              {t('address.title').toUpperCase()}
-            </Text>
-            {Object.entries(profile.address).map(([key, value]) =>
-              value != null ? (
-                <View key={key} style={styles.field}>
-                  <Text variant="caption" color="textSecondary">
-                    {key}
-                  </Text>
-                  <Text variant="body">{String(value)}</Text>
-                </View>
-              ) : null,
-            )}
-          </View>
-        )}
-
-        {/* Admin actions */}
         <View style={styles.actionButtons}>
           <Button
             label={t('businessProfile.admin.approve')}
@@ -263,7 +187,7 @@ export function AdminReviewScreen() {
             onPress={() => openReasonSheet('block')}
           />
         </View>
-      </ScrollView>
+      </>
     );
   };
 

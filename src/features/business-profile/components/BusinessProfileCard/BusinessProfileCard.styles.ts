@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+
 import type { AppTheme } from '@/theme';
 
 export function createBusinessProfileCardStyles(theme: AppTheme) {

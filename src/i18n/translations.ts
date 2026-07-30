@@ -266,6 +266,9 @@ const en = {
   'businessProfile.verifiedBadge': 'Verified Business',
   'businessProfile.profileDetails': 'Profile Details',
   'businessProfile.blockedEditHint': 'This profile has been permanently blocked and cannot be edited.',
+  'businessProfile.description': 'About the Business',
+  'businessProfile.businessAddress': 'Business Address',
+  'businessProfile.editHint': 'Editing any detail sends this profile back for admin review.',
 
   // Business Profile — admin screens.
   'businessProfile.admin.title': 'Business Profile Admin',
@@ -552,6 +555,9 @@ const hi: Record<TranslationKey, string> = {
   'businessProfile.verifiedBadge': 'सत्यापित व्यवसाय',
   'businessProfile.profileDetails': 'प्रोफ़ाइल विवरण',
   'businessProfile.blockedEditHint': 'यह प्रोफ़ाइल स्थायी रूप से अवरुद्ध है और संपादित नहीं की जा सकती।',
+  'businessProfile.description': 'व्यवसाय के बारे में',
+  'businessProfile.businessAddress': 'व्यवसाय का पता',
+  'businessProfile.editHint': 'कोई भी विवरण संपादित करने पर यह प्रोफ़ाइल फिर से एडमिन समीक्षा के लिए भेज दी जाएगी।',
 
   'businessProfile.admin.title': 'बिज़नेस प्रोफ़ाइल एडमिन',
   'businessProfile.admin.tracker': 'अनुमोदन ट्रैकर',

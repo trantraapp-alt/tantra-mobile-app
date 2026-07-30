@@ -58,4 +58,17 @@ export const routes = {
   notifications: '/notifications',
   coupons: '/coupons',
   settings: '/settings',
+  // Business Profile — owner screens.
+  businessProfile: {
+    list: '/business-profile',
+    create: '/business-profile/create',
+    detail: (id: string) => `/business-profile/${id}`,
+    edit: (id: string) => `/business-profile/edit/${id}`,
+  },
+  // Admin-only screens.
+  admin: {
+    businessProfile: '/admin/business-profile',
+    businessProfileList: '/admin/business-profile/list',
+    businessProfileReview: (id: string) => `/admin/business-profile/${id}`,
+  },
 } as const;

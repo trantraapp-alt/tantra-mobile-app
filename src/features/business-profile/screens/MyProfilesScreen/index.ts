@@ -1,0 +1,1 @@
+export { MyProfilesScreen } from './MyProfilesScreen';

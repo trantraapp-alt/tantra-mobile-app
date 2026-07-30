@@ -1,0 +1,1 @@
+export { BusinessProfileDetailScreen } from './BusinessProfileDetailScreen';

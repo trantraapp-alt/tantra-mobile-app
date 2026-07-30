@@ -89,6 +89,9 @@ export interface DynamicListingFormProps {
     payload: CreateListingPayload,
     values: ListingValues,
   ) => Promise<void>;
+  // Called after the default create succeeds (the form has been reset by then).
+  // Lets the caller navigate away — e.g. back to the module's category screen.
+  onSubmitSuccess?: () => void;
 }
 
 // Lookup of every field in the form by its key (for cascade parent resolution).
@@ -315,6 +318,22 @@ function buildRules(
     validators.offeredNotAboveActual = (value, values) =>
       validateOfferedNotAboveActual(value, values);
   }
+  // Required validation for array-valued fields the plain `required` rule can't
+  // catch (an empty array is truthy): photos and multi-select groups.
+  if (field.required) {
+    if (field.type === 'IMAGE') {
+      const minPhotos = field.validation?.min ?? 1;
+      validators.requiredImages = (value) =>
+        (Array.isArray(value) && value.length >= minPhotos) ||
+        `Add at least ${minPhotos} photo${minPhotos > 1 ? 's' : ''}`;
+    } else if (
+      field.type === 'MULTISELECT' ||
+      field.type === 'CHECKBOX_GROUP'
+    ) {
+      validators.requiredSelection = (value) =>
+        (Array.isArray(value) && value.length > 0) || `${label} is required`;
+    }
+  }
   if (Object.keys(validators).length > 0) {
     rules.validate = validators;
   }
@@ -434,6 +453,7 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
     return (
       <Select
         label={label}
+        required={field.required}
         description={help ?? t('form.selectDescription', { label: label.toLowerCase() })}
         placeholder={placeholder}
         value={stringValue}
@@ -450,6 +470,7 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
     return (
       <RadioGroup
         label={label}
+        required={field.required}
         options={options}
         value={stringValue}
         onChange={onChange}
@@ -462,6 +483,7 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
     return (
       <CheckboxGroup
         label={label}
+        required={field.required}
         options={toItems(field, language)}
         value={Array.isArray(rhf.value) ? rhf.value : []}
         onChange={onChange}
@@ -474,6 +496,7 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
     return (
       <DateField
         label={label}
+        required={field.required}
         value={stringValue}
         onChange={onChange}
         placeholder={placeholder ?? t('form.selectDate')}
@@ -487,6 +510,7 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
     return (
       <SwitchRow
         label={label}
+        required={field.required}
         help={help}
         value={typeof rhf.value === 'boolean' ? rhf.value : false}
         onValueChange={rhf.onChange}
@@ -498,6 +522,7 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
     return (
       <ImageUploadField
         label={label}
+        required={field.required}
         help={imageHint(field)}
         value={Array.isArray(rhf.value) ? rhf.value : []}
         onChange={rhf.onChange}
@@ -522,6 +547,7 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
   return (
     <TextField
       label={label}
+      required={field.required}
       placeholder={placeholder}
       helperText={help}
       value={stringValue}
@@ -683,6 +709,7 @@ function DynamicListingFormComponent({
   mode = 'create',
   submitLabel,
   onSubmit: onSubmitProp,
+  onSubmitSuccess,
 }: DynamicListingFormProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createDynamicListingFormStyles);
@@ -720,7 +747,7 @@ function DynamicListingFormComponent({
       ),
     [resolvedForm],
   );
-  const { control, handleSubmit, formState } = useForm<ListingValues>({
+  const { control, handleSubmit, formState, reset } = useForm<ListingValues>({
     defaultValues,
     mode: 'onBlur',
   });
@@ -775,12 +802,25 @@ function DynamicListingFormComponent({
       try {
         await modulesApi.createListing(payload);
         showSuccess(t('form.submitSuccess'));
+        // Clear the form, then let the caller leave (back to the module screen).
+        reset(defaultValues);
+        onSubmitSuccess?.();
       } catch (error) {
         logger.warn('[Sell] Create listing failed', error);
         showError(t('form.submitError'));
       }
     },
-    [resolvedForm, hiddenFieldKeys, onSubmitProp, showSuccess, showError, t],
+    [
+      resolvedForm,
+      hiddenFieldKeys,
+      onSubmitProp,
+      showSuccess,
+      showError,
+      t,
+      reset,
+      defaultValues,
+      onSubmitSuccess,
+    ],
   );
 
   return (

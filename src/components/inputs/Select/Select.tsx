@@ -9,6 +9,7 @@ import { Text } from '@/components/ui';
 import { useBottomInset, useThemedStyles } from '@/hooks';
 import { useTheme } from '@/providers';
 
+import { FieldLabel } from '../FieldLabel';
 import { createSelectStyles } from './Select.styles';
 
 // An option in a select.
@@ -23,6 +24,8 @@ export interface SelectItem {
 export interface SelectProps {
   // Optional label above the field.
   label?: string;
+  // Marks the label with a red asterisk.
+  required?: boolean;
   // Optional description shown under the title inside the dropdown sheet.
   description?: string;
   // Placeholder shown when nothing is selected.
@@ -45,6 +48,7 @@ export interface SelectProps {
 // Renders a themed dropdown select.
 export function Select({
   label,
+  required,
   description,
   placeholder = 'Select',
   value,
@@ -78,9 +82,7 @@ export function Select({
   return (
     <View style={styles.container}>
       {label ? (
-        <Text variant="label" color="textSecondary" style={styles.label}>
-          {label}
-        </Text>
+        <FieldLabel label={label} required={required} style={styles.label} />
       ) : null}
 
       <Pressable

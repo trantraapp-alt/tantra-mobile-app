@@ -1,32 +1,97 @@
-// A card representing one business profile in the "My Profiles" list.
-// Shows business name, type, status badge, reason text, and per-status actions.
-import { BadgeCheck, MoreVertical } from 'lucide-react-native';
+// A business-profile card, laid out like the listing card: a bordered status
+// tile on the left, then the business name, category and a colored status
+// dot/label, with per-status actions on the bottom row. Status color: approved
+// green, pending amber, rejected / blocked red.
+import { Image } from 'expo-image';
+import {
+  BadgeCheck,
+  Ban,
+  Clock,
+  Eye,
+  EyeOff,
+  type LucideIcon,
+  MoreVertical,
+  XCircle,
+} from 'lucide-react-native';
 import { memo } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { Button, IconButton } from '@/components/buttons';
-import { Badge, type BadgeTone, Card, Text } from '@/components/ui';
+import { Card, Text } from '@/components/ui';
+import { fileUrl } from '@/config';
 import { useThemedStyles, useTranslation } from '@/hooks';
+import type { TranslationKey } from '@/i18n';
 import { useTheme } from '@/providers';
+import type { ColorScheme } from '@/theme';
 
-import type { BusinessProfile, BusinessProfileStatus, ProfileTypeOption } from '../../types/businessProfile.types';
+import type {
+  BusinessProfile,
+  BusinessProfileStatus,
+  ProfileTypeOption,
+} from '../../types/businessProfile.types';
 import { getProfileTypeLabel } from '../../utils/profileTypeLabels';
+import { resolveProfileStatus } from '../../utils/status';
 import { createBusinessProfileCardStyles } from './BusinessProfileCard.styles';
 
-// Maps a profile status to a badge tone.
-function statusTone(status: BusinessProfileStatus): BadgeTone {
+// Semantic color keys used for a status accent.
+type StatusColor = Extract<keyof ColorScheme, 'success' | 'warning' | 'danger'>;
+
+// Visual treatment (icon, accent color, label) for each status.
+interface StatusVisual {
+  icon: LucideIcon;
+  color: StatusColor;
+  labelKey: TranslationKey;
+}
+
+// Maps a profile status to its icon and accent color.
+function statusVisual(status: BusinessProfileStatus): StatusVisual {
   switch (status) {
     case 'APPROVED':
-      return 'success';
+      return {
+        icon: BadgeCheck,
+        color: 'success',
+        labelKey: 'businessProfile.status.approved',
+      };
     case 'PENDING':
-      return 'warning';
+      return {
+        icon: Clock,
+        color: 'warning',
+        labelKey: 'businessProfile.status.pending',
+      };
     case 'REJECTED':
-      return 'danger';
+      return {
+        icon: XCircle,
+        color: 'danger',
+        labelKey: 'businessProfile.status.rejected',
+      };
     case 'BLOCKED':
-      return 'danger';
     default:
-      return 'neutral';
+      return {
+        icon: Ban,
+        color: 'danger',
+        labelKey: 'businessProfile.status.blocked',
+      };
   }
+}
+
+// Resolves the profile's first uploaded photo (from attributes.photos / images,
+// or any string array) to an absolute URL, or undefined when there is none.
+function firstImageUrl(
+  attributes: Record<string, unknown> | undefined,
+): string | undefined {
+  if (!attributes) {
+    return undefined;
+  }
+  const candidates = [attributes.photos, attributes.images, ...Object.values(attributes)];
+  for (const list of candidates) {
+    if (Array.isArray(list)) {
+      const first = list.find((item) => typeof item === 'string' && item);
+      if (typeof first === 'string') {
+        return fileUrl(first);
+      }
+    }
+  }
+  return undefined;
 }
 
 // Props for the BusinessProfileCard component.
@@ -51,116 +116,166 @@ function BusinessProfileCardComponent({
   const theme = useTheme();
   const { t, language } = useTranslation();
 
-  const statusKey =
-    profile.status === 'APPROVED'
-      ? 'businessProfile.status.approved'
-      : profile.status === 'PENDING'
-        ? 'businessProfile.status.pending'
-        : profile.status === 'REJECTED'
-          ? 'businessProfile.status.rejected'
-          : 'businessProfile.status.blocked';
+  const status = resolveProfileStatus(profile);
+  const visual = statusVisual(status);
+  const StatusIcon = visual.icon;
+  const statusColor = theme.colors[visual.color];
+  const statusLabel = t(visual.labelKey);
+  const category = getProfileTypeLabel(
+    profile.profileType,
+    profileTypes,
+    language,
+  );
+  const imageUri = firstImageUrl(profile.attributes);
 
   const reason =
-    profile.status === 'REJECTED'
+    status === 'REJECTED'
       ? profile.rejectReason
-      : profile.status === 'BLOCKED'
+      : status === 'BLOCKED'
         ? profile.blockReason
         : null;
-
   const reasonLabel =
-    profile.status === 'REJECTED'
+    status === 'REJECTED'
       ? t('businessProfile.rejectReason')
       : t('businessProfile.blockReason');
 
+  const accessibilityLabel = [profile.businessName, category, statusLabel]
+    .filter(Boolean)
+    .join(', ');
+
   return (
-    <Card style={styles.card} onPress={onPress}>
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text variant="bodyMedium" numberOfLines={2}>
-            {profile.businessName}
-          </Text>
-          <Text variant="caption" color="textSecondary" numberOfLines={1}>
-            {getProfileTypeLabel(profile.profileType, profileTypes, language)}
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}>
-          <Badge label={t(statusKey)} tone={statusTone(profile.status)} />
-          <IconButton
-            icon={MoreVertical}
-            size="sm"
-            color={theme.colors.textSecondary}
-            accessibilityLabel={t('businessProfile.moreActions')}
-            onPress={onMenu}
-          />
-        </View>
-      </View>
+    <Card padded={false} radius="lg" style={styles.card}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        onPress={onPress}
+      >
+        {({ pressed }) => (
+          <View style={[styles.content, pressed ? styles.contentPressed : null]}>
+            <View style={styles.iconWrap}>
+              {imageUri ? (
+                <Image
+                  source={{ uri: imageUri }}
+                  style={styles.iconImage}
+                  contentFit="cover"
+                  transition={theme.animation.normal}
+                  accessibilityLabel={profile.businessName}
+                />
+              ) : (
+                <StatusIcon size={theme.sizing.iconXl} color={statusColor} />
+              )}
+            </View>
 
-      {profile.status === 'APPROVED' && (
-        <View style={styles.verifiedRow}>
-          <BadgeCheck
-            size={theme.sizing.iconSm}
-            color={theme.colors.success}
-          />
-          <Text variant="caption" color="success">
-            {t('businessProfile.verifiedBadge')}
-          </Text>
-        </View>
-      )}
+            <View style={styles.body}>
+              <View style={styles.identity}>
+                <View style={styles.titleRow}>
+                  <Text variant="h4" numberOfLines={1} style={styles.title}>
+                    {profile.businessName}
+                  </Text>
+                  <View style={styles.headerActionSlot}>
+                    <IconButton
+                      icon={MoreVertical}
+                      size="sm"
+                      color={theme.colors.textSecondary}
+                      accessibilityLabel={t('businessProfile.moreActions')}
+                      onPress={onMenu}
+                    />
+                  </View>
+                </View>
 
-      {reason ? (
-        <View style={styles.reasonBox}>
-          <Text variant="caption" color="textSecondary">
-            {reasonLabel}
-          </Text>
-          <Text variant="body">{reason}</Text>
-        </View>
-      ) : null}
+                <View style={styles.metaRow}>
+                  {category ? (
+                    <Text
+                      variant="label"
+                      color="textSecondary"
+                      numberOfLines={1}
+                      style={styles.category}
+                    >
+                      {category}
+                    </Text>
+                  ) : null}
+                  <View style={styles.statusGroup}>
+                    <View
+                      style={[styles.statusDot, { backgroundColor: statusColor }]}
+                    />
+                    <Text
+                      variant="label"
+                      numberOfLines={1}
+                      style={{ color: statusColor }}
+                    >
+                      {statusLabel}
+                    </Text>
+                  </View>
+                </View>
 
-      <View style={styles.actions}>
-        {profile.status === 'APPROVED' && (
-          <Button
-            label={
-              profile.isVisible
-                ? t('businessProfile.showToBuyers')
-                : t('businessProfile.showToBuyers')
-            }
-            variant={profile.isVisible ? 'outline' : 'ghost'}
-            size="sm"
-            fullWidth={false}
-            onPress={onToggleVisibility}
-          />
+                {reason ? (
+                  <Text
+                    variant="caption"
+                    color="textSecondary"
+                    numberOfLines={2}
+                    style={styles.reason}
+                  >
+                    {reasonLabel}: {reason}
+                  </Text>
+                ) : null}
+              </View>
+
+              <View style={styles.valueRow}>
+                {status === 'BLOCKED' ? (
+                  <Text
+                    variant="caption"
+                    color="textTertiary"
+                    numberOfLines={2}
+                    style={styles.blockedHint}
+                  >
+                    {t('businessProfile.blockedEditHint')}
+                  </Text>
+                ) : (
+                  <>
+                    {status === 'APPROVED' ? (
+                      <Button
+                        label={
+                          profile.isVisible
+                            ? t('businessProfile.visible')
+                            : t('businessProfile.hidden')
+                        }
+                        variant="ghost"
+                        size="sm"
+                        fullWidth={false}
+                        leftIcon={
+                          profile.isVisible ? (
+                            <Eye
+                              size={theme.sizing.iconSm}
+                              color={theme.colors.textSecondary}
+                            />
+                          ) : (
+                            <EyeOff
+                              size={theme.sizing.iconSm}
+                              color={theme.colors.textTertiary}
+                            />
+                          )
+                        }
+                        onPress={onToggleVisibility}
+                      />
+                    ) : null}
+                    <Button
+                      label={
+                        status === 'REJECTED'
+                          ? t('businessProfile.editResubmit')
+                          : t('businessProfile.editProfile')
+                      }
+                      variant={status === 'REJECTED' ? 'primary' : 'outline'}
+                      size="sm"
+                      fullWidth={false}
+                      onPress={onEdit}
+                    />
+                  </>
+                )}
+              </View>
+            </View>
+          </View>
         )}
-
-        {profile.status === 'REJECTED' && (
-          <Button
-            label={t('businessProfile.editResubmit')}
-            variant="outline"
-            size="sm"
-            fullWidth={false}
-            onPress={onEdit}
-          />
-        )}
-
-        {profile.status === 'BLOCKED' && (
-          <Text
-            variant="caption"
-            color="textTertiary"
-            style={styles.blockedHint}
-          >
-            {t('businessProfile.blockedEditHint')}
-          </Text>
-        )}
-
-        {profile.status !== 'BLOCKED' && profile.status !== 'REJECTED' && (
-          <Button
-            label={t('businessProfile.editProfile')}
-            variant="ghost"
-            size="sm"
-            fullWidth={false}
-            onPress={onEdit}
-          />
-        )}
-      </View>
+      </Pressable>
     </Card>
   );
 }

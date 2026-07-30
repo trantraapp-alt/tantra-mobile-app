@@ -7,12 +7,15 @@ import { Text } from '@/components/ui';
 import { useThemedStyles } from '@/hooks';
 import type { SelectOption } from '@/types';
 
+import { FieldLabel } from '../FieldLabel';
 import { createRadioGroupStyles } from './RadioGroup.styles';
 
 // Props for the RadioGroup component.
 export interface RadioGroupProps<TValue extends string> {
   // Optional field label.
   label?: string;
+  // Marks the label with a red asterisk.
+  required?: boolean;
   // Available options.
   options: SelectOption<TValue>[];
   // Currently selected value.
@@ -28,6 +31,7 @@ export interface RadioGroupProps<TValue extends string> {
 // Renders a themed single-select radio group.
 export function RadioGroup<TValue extends string>({
   label,
+  required,
   options,
   value,
   onChange,
@@ -40,13 +44,11 @@ export function RadioGroup<TValue extends string>({
     <View style={styles.container}>
       <View style={inline ? styles.inlineRow : undefined}>
         {label ? (
-          <Text
-            variant="label"
-            color="textSecondary"
+          <FieldLabel
+            label={label}
+            required={required}
             style={inline ? styles.labelInline : styles.label}
-          >
-            {label}
-          </Text>
+          />
         ) : null}
 
         <View style={styles.options}>

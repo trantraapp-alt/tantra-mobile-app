@@ -5,6 +5,7 @@ export {
   type ButtonSize,
   type ButtonVariant,
 } from './Button';
+export { Fab, type FabProps } from './Fab';
 export {
   IconButton,
   type IconButtonProps,

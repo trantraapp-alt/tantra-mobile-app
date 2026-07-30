@@ -39,6 +39,9 @@ export interface SellCategoryFormProps {
   // Reports whether the selected category is itself a leaf (no subcategories),
   // so the screen can hide the rail and show the form full-screen.
   onLeafTopChange?: (isLeafTop: boolean) => void;
+  // Called after a listing is created, so the screen can reset back to the
+  // module's category browse.
+  onListingCreated?: () => void;
 }
 
 // Resolves a category's display name for the active language.
@@ -114,9 +117,11 @@ function BoxSkeleton() {
 function LeafForm({
   category,
   language,
+  onSubmitSuccess,
 }: {
   category: ModuleCategory;
   language: PreferredLanguage;
+  onSubmitSuccess?: () => void;
 }) {
   const styles = useThemedStyles(createSellCategoryFormStyles);
   const { t } = useTranslation();
@@ -149,6 +154,7 @@ function LeafForm({
         form={form}
         language={language}
         categoryKey={category.categoryKey}
+        onSubmitSuccess={onSubmitSuccess}
       />
     </View>
   );
@@ -222,6 +228,7 @@ function CategoryResolver({
   activeSub,
   onActiveSubChange,
   onLeafTopChange,
+  onListingCreated,
 }: SellCategoryFormProps) {
   const styles = useThemedStyles(createSellCategoryFormStyles);
   const router = useRouter();
@@ -276,7 +283,11 @@ function CategoryResolver({
   // screen header owns the back navigation, so no in-form back row is needed.
   if (leaf) {
     return leaf.actionType === 'BUSINESS_PROFILE' ? null : (
-      <LeafForm category={leaf} language={language} />
+      <LeafForm
+        category={leaf}
+        language={language}
+        onSubmitSuccess={onListingCreated}
+      />
     );
   }
   return (
@@ -314,6 +325,7 @@ function SellCategoryFormComponent({
   activeSub,
   onActiveSubChange,
   onLeafTopChange,
+  onListingCreated,
 }: SellCategoryFormProps) {
   if (category.actionType === 'BUSINESS_PROFILE') {
     return <BusinessProfileNavigator category={category} />;
@@ -325,6 +337,7 @@ function SellCategoryFormComponent({
       activeSub={activeSub}
       onActiveSubChange={onActiveSubChange}
       onLeafTopChange={onLeafTopChange}
+      onListingCreated={onListingCreated}
     />
   );
 }

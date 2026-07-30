@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { Chip, Text } from '@/components/ui';
 import { useThemedStyles } from '@/hooks';
 
+import { FieldLabel } from '../FieldLabel';
 import { createCheckboxGroupStyles } from './CheckboxGroup.styles';
 
 // An option in a checkbox group.
@@ -19,6 +20,8 @@ export interface CheckboxOption {
 export interface CheckboxGroupProps {
   // Optional field label.
   label?: string;
+  // Marks the label with a red asterisk.
+  required?: boolean;
   // Available options.
   options: CheckboxOption[];
   // Currently selected values.
@@ -32,6 +35,7 @@ export interface CheckboxGroupProps {
 // Renders a themed multi-select chip group.
 export function CheckboxGroup({
   label,
+  required,
   options,
   value,
   onChange,
@@ -51,9 +55,7 @@ export function CheckboxGroup({
   return (
     <View style={styles.container}>
       {label ? (
-        <Text variant="label" color="textSecondary" style={styles.label}>
-          {label}
-        </Text>
+        <FieldLabel label={label} required={required} style={styles.label} />
       ) : null}
 
       <View style={styles.chips}>

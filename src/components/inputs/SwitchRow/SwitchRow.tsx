@@ -5,12 +5,15 @@ import { Text } from '@/components/ui';
 import { useThemedStyles } from '@/hooks';
 import { useTheme } from '@/providers';
 
+import { FieldLabel } from '../FieldLabel';
 import { createSwitchRowStyles } from './SwitchRow.styles';
 
 // Props for the SwitchRow component.
 export interface SwitchRowProps {
   // Row label.
   label: string;
+  // Marks the label with a red asterisk.
+  required?: boolean;
   // Optional helper text below the label.
   help?: string;
   // Current on/off value.
@@ -20,14 +23,25 @@ export interface SwitchRowProps {
 }
 
 // Renders a labeled switch row.
-export function SwitchRow({ label, help, value, onValueChange }: SwitchRowProps) {
+export function SwitchRow({
+  label,
+  required,
+  help,
+  value,
+  onValueChange,
+}: SwitchRowProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createSwitchRowStyles);
 
   return (
     <View style={styles.row}>
       <View style={styles.text}>
-        <Text variant="bodyMedium">{label}</Text>
+        <FieldLabel
+          label={label}
+          required={required}
+          variant="bodyMedium"
+          color="textPrimary"
+        />
         {help ? (
           <Text variant="caption" color="textSecondary">
             {help}

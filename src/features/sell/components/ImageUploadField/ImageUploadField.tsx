@@ -7,6 +7,7 @@ import { Camera, ImagePlus, Images, X } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
+import { FieldLabel } from '@/components/inputs';
 import {
   ActionSheet,
   type ActionSheetAction,
@@ -25,6 +26,8 @@ import { createImageUploadFieldStyles } from './ImageUploadField.styles';
 export interface ImageUploadFieldProps {
   // Field label.
   label: string;
+  // Marks the label with a red asterisk.
+  required?: boolean;
   // Optional helper text.
   help?: string;
   // Current uploaded image URLs.
@@ -40,6 +43,7 @@ export interface ImageUploadFieldProps {
 // Renders the image picker + uploader field.
 export function ImageUploadField({
   label,
+  required,
   help,
   value,
   onChange,
@@ -143,9 +147,7 @@ export function ImageUploadField({
 
   return (
     <View style={styles.container}>
-      <Text variant="label" color="textSecondary">
-        {label}
-      </Text>
+      <FieldLabel label={label} required={required} />
 
       <View style={styles.grid}>
         {value.map((url) => (

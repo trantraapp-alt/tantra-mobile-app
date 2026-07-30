@@ -2,17 +2,15 @@
 // with a custom onSubmit that builds the business-profile payload. In create mode
 // a profile-type picker appears first (skipped when prefilled from route params).
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { ErrorState } from '@/components/empty-state';
-import { Select, type SelectItem } from '@/components/inputs';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
-import { Screen, Text } from '@/components/ui';
+import { Screen } from '@/components/ui';
 import { routes } from '@/constants';
 import { DynamicListingForm } from '@/features/sell/components/DynamicListingForm';
-import { localize } from '@/features/sell/forms/listingForm.types';
 import type { ListingValues } from '@/features/sell/forms/listingPayload';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
@@ -43,22 +41,24 @@ export function BusinessProfileFormScreen() {
   const { form, profileTypes, isLoading: isFormLoading, isError: isFormError, refetch } =
     useBusinessProfileForm(selectedType || undefined);
 
+  // Skip the "what kind of business" picker entirely — auto-select the first
+  // available profile type so the create flow opens the form directly.
+  useEffect(() => {
+    if (isEdit || selectedType) {
+      return;
+    }
+    const first = profileTypes[0];
+    if (first) {
+      setSelectedType(first.value);
+    }
+  }, [isEdit, selectedType, profileTypes]);
+
   // In edit mode, fetch the existing profile to pre-fill.
   const { profile, isLoading: isProfileLoading } = useBusinessProfile(
     params.profileId ?? '',
   );
 
   const isLoading = isFormLoading || (isEdit && isProfileLoading);
-
-  // Convert profile type options to Select items.
-  const typeItems = useMemo<SelectItem[]>(
-    () =>
-      profileTypes.map((opt) => ({
-        value: opt.value,
-        label: localize(opt.label, language),
-      })),
-    [profileTypes, language],
-  );
 
   // Pre-fill values from the existing profile (edit flow).
   const initialValues = useMemo<ListingValues | undefined>(() => {
@@ -116,19 +116,14 @@ export function BusinessProfileFormScreen() {
       );
     }
 
-    // Show type picker in create mode when no type is selected yet.
-    if (!isEdit && !selectedType) {
+    // Create mode: while profile types exist but none is selected yet, show a
+    // brief loader — the first type is auto-selected above, opening the form
+    // directly (no "select business type" dropdown). If the backend sends no
+    // type list, fall through to the default form.
+    if (!isEdit && !selectedType && profileTypes.length > 0) {
       return (
-        <View style={styles.typePicker}>
-          <Text variant="h4" style={styles.typePickerLabel}>
-            {t('businessProfile.pickType')}
-          </Text>
-          <Select
-            label={t('businessProfile.selectType')}
-            options={typeItems}
-            value={selectedType}
-            onChange={setSelectedType}
-          /> 
+        <View style={styles.center}>
+          <Spinner />
         </View>
       );
     }

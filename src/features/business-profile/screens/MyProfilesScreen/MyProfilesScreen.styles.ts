@@ -11,7 +11,8 @@ export function createMyProfilesScreenStyles(theme: AppTheme) {
     },
     list: {
       paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.xxxl,
+      // Extra bottom room so the last card clears the floating action button.
+      paddingBottom: theme.sizing.avatarLg + theme.spacing.xxl,
     },
     footerLoader: {
       paddingVertical: theme.spacing.lg,

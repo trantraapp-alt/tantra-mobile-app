@@ -110,6 +110,16 @@ export function SellCategoriesScreen() {
     exitToBrowse();
   }, [drilled, activeSub, exitToBrowse, router]);
 
+  // After a listing is posted, reset back to the module's category browse (the
+  // module screen) — a subcategory returns to its grid, a leaf top to the rail.
+  const handleListingCreated = useCallback(() => {
+    if (activeSub) {
+      setActiveSub(null);
+    } else {
+      exitToBrowse();
+    }
+  }, [activeSub, exitToBrowse]);
+
   // Header title: the open category when drilled, else the module name.
   const headerTitle = openLeaf
     ? getCategoryName(openLeaf, language)
@@ -151,6 +161,7 @@ export function SellCategoriesScreen() {
                 activeSub={activeSub}
                 onActiveSubChange={setActiveSub}
                 onLeafTopChange={setIsLeafTop}
+                onListingCreated={handleListingCreated}
               />
             ) : null}
           </View>

@@ -6,7 +6,7 @@ import { Plus, Store, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, View } from 'react-native';
 
-import { IconButton } from '@/components/buttons';
+import { Fab } from '@/components/buttons';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
@@ -19,7 +19,7 @@ import {
 import { routes } from '@/constants';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
-import { useTheme, useToast } from '@/providers';
+import { useToast } from '@/providers';
 
 import { businessProfileApi } from '../../api/businessProfileApi';
 import { BusinessProfileCard } from '../../components/BusinessProfileCard';
@@ -29,7 +29,6 @@ import { createMyProfilesScreenStyles } from './MyProfilesScreen.styles';
 
 export function MyProfilesScreen() {
   const styles = useThemedStyles(createMyProfilesScreenStyles);
-  const theme = useTheme();
   const router = useRouter();
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
@@ -231,17 +230,19 @@ export function MyProfilesScreen() {
         title={t('businessProfile.myProfiles')}
         showBack
         onBack={() => router.back()}
-        rightAction={
-          <IconButton
-            icon={Plus}
-            size="md"
-            color={theme.colors.primary}
-            accessibilityLabel={t('businessProfile.create')}
-            onPress={goToCreate}
-          />
-        }
       />
       {renderBody()}
+
+      {/* Primary create action, pinned to the bottom-right. Shown in every
+          state except the initial loading spinner — including the empty and
+          error states — so it is always reachable. */}
+      {!isLoading ? (
+        <Fab
+          icon={Plus}
+          onPress={goToCreate}
+          accessibilityLabel={t('businessProfile.create')}
+        />
+      ) : null}
 
       <ActionSheet
         ref={actionSheetRef}

@@ -10,6 +10,7 @@ import { Text } from '@/components/ui';
 import { useThemedStyles } from '@/hooks';
 import { useTheme } from '@/providers';
 
+import { FieldLabel } from '../FieldLabel';
 import { createTextFieldStyles } from './TextField.styles';
 
 // Height presets for the text field.
@@ -22,6 +23,8 @@ export type TextFieldIconSize = 'xxs' | 'xs' | 'sm' | 'lg';
 export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   // Field label shown above the input.
   label?: string;
+  // Marks the label with a red asterisk (does not itself enforce validation).
+  required?: boolean;
   // Height preset controlling how tall the field is (defaults to 'md').
   size?: TextFieldSize;
   // Sizes the left/right icons; when omitted, each icon keeps its own size.
@@ -41,6 +44,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(
   function TextField(
     {
       label,
+      required,
       size = 'md',
       iconSize,
       error,
@@ -102,9 +106,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(
     return (
       <View style={styles.container}>
         {label ? (
-          <Text variant="label" color="textSecondary" style={styles.label}>
-            {label}
-          </Text>
+          <FieldLabel label={label} required={required} style={styles.label} />
         ) : null}
 
         <View

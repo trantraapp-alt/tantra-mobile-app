@@ -41,6 +41,17 @@ export function useMyProfiles() {
         // Handle both paginated response ({ content, page, last }) and
         // flat array response from backend
         const content = Array.isArray(res) ? res : (res?.content ?? []);
+
+        // Surfaces the raw status shape the API returns, so a "why is every
+        // profile Blocked?" mismatch (wrong case / field name) is visible.
+        logger.info('[BusinessProfile] Loaded profile statuses', {
+          count: content.length,
+          statuses: content.map((p) => ({
+            profileId: p.profileId,
+            status: p.status,
+            verificationStatus: p.verificationStatus,
+          })),
+        });
         const currentPage = typeof res?.page === 'number' ? res.page : pageToLoad;
         const isLast = typeof res?.last === 'boolean' ? res.last : (content.length < appConstants.defaultPageSize);
 

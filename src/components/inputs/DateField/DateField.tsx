@@ -11,12 +11,15 @@ import { Text } from '@/components/ui';
 import { useThemedStyles } from '@/hooks';
 import { useTheme } from '@/providers';
 
+import { FieldLabel } from '../FieldLabel';
 import { createDateFieldStyles } from './DateField.styles';
 
 // Props for the DateField component.
 export interface DateFieldProps {
   // Field label shown above the control.
   label?: string;
+  // Marks the label with a red asterisk.
+  required?: boolean;
   // Current value as an ISO 'YYYY-MM-DD' string (empty when unset).
   value: string;
   // Called with the newly picked ISO date string.
@@ -53,6 +56,7 @@ function toIso(date: Date): string {
 // Renders a labeled date field backed by the native picker.
 export function DateField({
   label,
+  required,
   value,
   onChange,
   placeholder,
@@ -84,11 +88,7 @@ export function DateField({
 
   return (
     <View style={styles.container}>
-      {label ? (
-        <Text variant="label" color="textSecondary">
-          {label}
-        </Text>
-      ) : null}
+      {label ? <FieldLabel label={label} required={required} /> : null}
 
       <Pressable
         accessibilityRole="button"

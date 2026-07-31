@@ -221,6 +221,8 @@ export function AddressFormScreen({
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
           <Button
@@ -246,6 +248,7 @@ export function AddressFormScreen({
           />
           <TextField
             label={t('address.fullAddress')}
+            required
             placeholder={t('address.fullAddressPlaceholder')}
             value={values.fullAddress}
             onChangeText={set('fullAddress')}
@@ -288,6 +291,7 @@ export function AddressFormScreen({
             <View style={styles.rowItem}>
               <TextField
                 label={t('address.pinCode')}
+                required
                 value={values.pinCode}
                 onChangeText={handlePinChange}
                 error={errors.pinCode}
@@ -299,6 +303,7 @@ export function AddressFormScreen({
             <View style={styles.rowItem}>
               <TextField
                 label={t('address.mobileNumber')}
+                required
                 value={values.mobileNumber}
                 onChangeText={set('mobileNumber')}
                 error={errors.mobileNumber}

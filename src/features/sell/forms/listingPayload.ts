@@ -33,6 +33,9 @@ export interface CreateListingPayload {
   useDefaultAddress?: boolean;
   // A raw structured address (fallback when the address book is not used).
   address?: Record<string, unknown>;
+  // Coordinates of the chosen address, surfaced top-level for the listing.
+  latitude?: number | null;
+  longitude?: number | null;
   // Category-specific field values keyed by field key.
   attributes: Record<string, unknown>;
   // Other common fields (price, isNegotiable, etc.).
@@ -67,6 +70,21 @@ export function coerceFieldValue(field: ListingField, raw: unknown): unknown {
   }
 }
 
+// Writes latitude/longitude onto the payload when present, so a listing carries
+// the exact coordinates of the address the user chose.
+function applyCoords(
+  target: Record<string, unknown>,
+  latitude?: number | null,
+  longitude?: number | null,
+): void {
+  if (latitude != null) {
+    target.latitude = latitude;
+  }
+  if (longitude != null) {
+    target.longitude = longitude;
+  }
+}
+
 // Assembles the create-listing payload from a form schema and its values.
 export function buildListingPayload(
   form: ListingForm,
@@ -82,12 +100,15 @@ export function buildListingPayload(
         if (isAddressSelection(raw)) {
           if (raw.mode === 'default') {
             common.useDefaultAddress = true;
+            applyCoords(common, raw.latitude, raw.longitude);
           } else if (raw.mode === 'saved') {
             common.addressId = raw.addressId;
+            applyCoords(common, raw.latitude, raw.longitude);
           } else {
             const address = addressToPayload(raw.value);
             if (hasAddressValue(address)) {
               common.address = address;
+              applyCoords(common, address.latitude, address.longitude);
             }
           }
         } else if (isAddressValue(raw)) {
@@ -95,6 +116,7 @@ export function buildListingPayload(
           const address = addressToPayload(raw);
           if (hasAddressValue(address)) {
             common.address = address;
+            applyCoords(common, address.latitude, address.longitude);
           }
         }
         continue;

@@ -2,12 +2,13 @@
 // delete. The "Add" affordance is hidden once the 10-address limit is reached.
 import { FlashList } from '@shopify/flash-list';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { MapPinOff, Plus } from 'lucide-react-native';
-import { useCallback } from 'react';
-import { Alert, View } from 'react-native';
+import { MapPinOff, Plus, Trash2 } from 'lucide-react-native';
+import { useCallback, useState } from 'react';
+import { View } from 'react-native';
 
 import { Button } from '@/components/buttons';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { ConfirmDialog } from '@/components/feedback';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import { Screen } from '@/components/ui';
@@ -38,7 +39,11 @@ export function AddressListScreen() {
     atLimit,
     refresh,
     removeLocal,
+    setDefaultLocal,
   } = useAddresses();
+  // Address pending delete-confirmation, and whether the delete is in flight.
+  const [pendingDelete, setPendingDelete] = useState<SavedAddress | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Reload whenever the screen regains focus (e.g. after add / edit).
   useFocusEffect(
@@ -62,18 +67,20 @@ export function AddressListScreen() {
     async (address: SavedAddress) => {
       try {
         const res = await addressesApi.setDefault(address.addressId);
+        // Update the default flag in place (no re-fetch) so the card the user
+        // tapped keeps its position instead of jumping to the top of the list.
+        setDefaultLocal(address.addressId);
         showSuccess(
           res.message
             ? localize(res.message, language)
             : t('address.defaultUpdated'),
         );
-        await refresh();
       } catch (error) {
         logger.warn('[Addresses] Set default failed', error);
         showError(t('address.defaultError'));
       }
     },
-    [showSuccess, showError, language, t, refresh],
+    [setDefaultLocal, showSuccess, showError, language, t],
   );
 
   const performDelete = useCallback(
@@ -94,19 +101,21 @@ export function AddressListScreen() {
     [removeLocal, showSuccess, showError, language, t],
   );
 
-  const confirmDelete = useCallback(
-    (address: SavedAddress) => {
-      Alert.alert(t('address.deleteTitle'), t('address.deleteMessage'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('address.delete'),
-          style: 'destructive',
-          onPress: () => void performDelete(address),
-        },
-      ]);
-    },
-    [t, performDelete],
-  );
+  // Opens the delete-confirmation dialog for an address.
+  const confirmDelete = useCallback((address: SavedAddress) => {
+    setPendingDelete(address);
+  }, []);
+
+  // Runs the delete once confirmed, then closes the dialog.
+  const handleConfirmDelete = useCallback(async () => {
+    if (!pendingDelete) {
+      return;
+    }
+    setDeleting(true);
+    await performDelete(pendingDelete);
+    setDeleting(false);
+    setPendingDelete(null);
+  }, [pendingDelete, performDelete]);
 
   const renderItem = useCallback(
     ({ item }: { item: SavedAddress }) => (
@@ -153,13 +162,15 @@ export function AddressListScreen() {
       );
     }
     return (
-      <FlashList
-        data={addresses}
-        keyExtractor={(item) => item.addressId}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-      />
+      <View style={styles.listWrap}>
+        <FlashList
+          data={addresses}
+          keyExtractor={(item) => item.addressId}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
     );
   };
 
@@ -183,6 +194,18 @@ export function AddressListScreen() {
           />
         </View>
       ) : null}
+
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        tone="danger"
+        icon={Trash2}
+        title={t('address.deleteTitle')}
+        message={t('address.deleteMessage')}
+        confirmLabel={t('address.delete')}
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </Screen>
   );
 }

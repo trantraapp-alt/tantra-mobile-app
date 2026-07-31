@@ -17,11 +17,12 @@ import {
   Trash2,
 } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Button, IconButton } from '@/components/buttons';
 import { ListingCard } from '@/components/cards';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { ConfirmDialog } from '@/components/feedback';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import {
@@ -77,6 +78,9 @@ export function MyListingsScreen() {
   const [listingType, setListingType] = useState<ListingType>('SELL');
   const [statusFilter, setStatusFilter] = useState<ListingStatusFilter>('ALL');
   const [active, setActive] = useState<MyListing | null>(null);
+  // Listing pending delete-confirmation, and whether the delete is in flight.
+  const [pendingDelete, setPendingDelete] = useState<MyListing | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const {
     listings,
@@ -188,19 +192,21 @@ export function MyListingsScreen() {
     [removeLocal, showSuccess, showError, language, t],
   );
 
-  const confirmDelete = useCallback(
-    (listing: MyListing) => {
-      Alert.alert(t('listing.deleteTitle'), t('listing.deleteMessage'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('listing.delete'),
-          style: 'destructive',
-          onPress: () => void performDelete(listing),
-        },
-      ]);
-    },
-    [t, performDelete],
-  );
+  // Opens the delete-confirmation dialog for a listing.
+  const confirmDelete = useCallback((listing: MyListing) => {
+    setPendingDelete(listing);
+  }, []);
+
+  // Runs the delete once confirmed, then closes the dialog.
+  const handleConfirmDelete = useCallback(async () => {
+    if (!pendingDelete) {
+      return;
+    }
+    setDeleting(true);
+    await performDelete(pendingDelete);
+    setDeleting(false);
+    setPendingDelete(null);
+  }, [pendingDelete, performDelete]);
 
   // Builds the per-listing action menu from the active listing's status.
   const menuActions = useMemo<ActionSheetAction[]>(() => {
@@ -404,6 +410,18 @@ export function MyListingsScreen() {
         loading={isFormLoading}
         language={language}
         onSaved={onQuickSaved}
+      />
+
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        tone="danger"
+        icon={Trash2}
+        title={t('listing.deleteTitle')}
+        message={t('listing.deleteMessage')}
+        confirmLabel={t('listing.delete')}
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
       />
     </Screen>
   );

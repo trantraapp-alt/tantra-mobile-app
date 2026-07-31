@@ -37,9 +37,13 @@ const palette = {
   // States.
   green500: '#22C55E',
   green600: '#16A34A',
+  // Translucent green for a subtle success tint that works on light and dark.
+  greenTint: '#22C55E1F',
   amber500: '#F59E0B',
   red500: '#EF4444',
   red600: '#DC2626',
+  // Translucent red for a subtle danger tint (e.g. a delete dialog's icon).
+  redTint: '#EF44441F',
   blue500: '#3B82F6',
   yellow400: '#FACC15',
 } as const;
@@ -83,10 +87,14 @@ export interface ColorScheme {
   textInverse: string;
   // Positive / success state color.
   success: string;
+  // Subtle success-tinted surface (e.g. a highlighted default card).
+  successLight: string;
   // Cautionary / warning state color.
   warning: string;
   // Negative / error state color.
   danger: string;
+  // Subtle danger-tinted surface (e.g. a delete dialog's icon circle).
+  dangerLight: string;
   // Informational state color.
   info: string;
   // Modal / backdrop overlay color.
@@ -121,8 +129,10 @@ export const lightColors: ColorScheme = {
   textTertiary: palette.neutral400,
   textInverse: palette.white,
   success: palette.green600,
+  successLight: palette.greenTint,
   warning: palette.amber500,
   danger: palette.red600,
+  dangerLight: palette.redTint,
   info: palette.blue500,
   overlay: 'rgba(20, 16, 38, 0.55)',
   skeletonBase: palette.neutral200,
@@ -151,8 +161,10 @@ export const darkColors: ColorScheme = {
   textTertiary: palette.neutral500,
   textInverse: palette.ink900,
   success: palette.green500,
+  successLight: palette.greenTint,
   warning: palette.amber500,
   danger: palette.red500,
+  dangerLight: palette.redTint,
   info: palette.blue500,
   overlay: 'rgba(0, 0, 0, 0.65)',
   skeletonBase: palette.ink800,

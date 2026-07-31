@@ -6,6 +6,11 @@ import type { AppTheme } from '@/theme';
 // Builds address list styles from the active theme.
 export function createAddressListStyles(theme: AppTheme) {
   return StyleSheet.create({
+    // Bounds the list height between the header and footer so FlashList can
+    // virtualize/scroll internally instead of the whole list scrolling away.
+    listWrap: {
+      flex: 1,
+    },
     // List content padding.
     list: {
       padding: theme.spacing.lg,

@@ -6,7 +6,7 @@
 // fields here.
 import { useFocusEffect, usePathname, useRouter } from 'expo-router';
 import { Phone, Plus } from 'lucide-react-native';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 import { View } from 'react-native';
 
 import { Button } from '@/components/buttons';
@@ -116,13 +116,53 @@ function AddressSelectorFieldComponent({
         : null));
 
   // Toggling the checkbox switches between the default address and a blank
-  // selection.
+  // selection; when turning it on, carry the default address's coordinates.
   const toggleDefault = useCallback(
     (checked: boolean) => {
-      onChange(checked ? { mode: 'default' } : emptyManualSelection());
+      if (!checked) {
+        onChange(emptyManualSelection());
+        return;
+      }
+      onChange({
+        mode: 'default',
+        latitude: defaultAddress?.latitude ?? null,
+        longitude: defaultAddress?.longitude ?? null,
+      });
     },
-    [onChange],
+    [onChange, defaultAddress],
   );
+
+  // Backfill the chosen address's coordinates onto the selection once the
+  // address list has loaded (e.g. a just-created address arrives after the
+  // round trip), so the listing is posted with its exact latitude/longitude.
+  useEffect(() => {
+    if (
+      value.mode === 'saved' &&
+      value.latitude == null &&
+      value.longitude == null &&
+      savedAddress &&
+      (savedAddress.latitude != null || savedAddress.longitude != null)
+    ) {
+      onChange({
+        mode: 'saved',
+        addressId: value.addressId,
+        latitude: savedAddress.latitude,
+        longitude: savedAddress.longitude,
+      });
+    } else if (
+      value.mode === 'default' &&
+      value.latitude == null &&
+      value.longitude == null &&
+      defaultAddress &&
+      (defaultAddress.latitude != null || defaultAddress.longitude != null)
+    ) {
+      onChange({
+        mode: 'default',
+        latitude: defaultAddress.latitude,
+        longitude: defaultAddress.longitude,
+      });
+    }
+  }, [value, savedAddress, defaultAddress, onChange]);
 
   const openCreate = useCallback(() => {
     router.push({

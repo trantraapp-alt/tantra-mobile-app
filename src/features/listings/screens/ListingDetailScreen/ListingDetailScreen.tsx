@@ -23,10 +23,11 @@ import {
 } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { Button, IconButton } from '@/components/buttons';
 import { ErrorState } from '@/components/empty-state';
+import { ConfirmDialog } from '@/components/feedback';
 import { Skeleton } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import {
@@ -409,16 +410,22 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
     }
   }, [listingId, showSuccess, showError, language, t, router]);
 
+  // Delete-confirmation dialog visibility, and whether the delete is in flight.
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Opens the delete-confirmation dialog for the current listing.
   const confirmDelete = useCallback(() => {
-    Alert.alert(t('listing.deleteTitle'), t('listing.deleteMessage'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('listing.delete'),
-        style: 'destructive',
-        onPress: () => void performDelete(),
-      },
-    ]);
-  }, [t, performDelete]);
+    setShowDeleteConfirm(true);
+  }, []);
+
+  // Runs the delete once confirmed (the screen leaves on success).
+  const handleConfirmDelete = useCallback(async () => {
+    setDeleting(true);
+    await performDelete();
+    setDeleting(false);
+    setShowDeleteConfirm(false);
+  }, [performDelete]);
 
   // Overflow menu, mirroring the vocabulary My Listings already uses. Edit is
   // omitted here because it is the pinned footer button.
@@ -847,6 +854,18 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
         loading={isFormLoading}
         language={language}
         onSaved={onQuickSaved}
+      />
+
+      <ConfirmDialog
+        visible={showDeleteConfirm}
+        tone="danger"
+        icon={Trash2}
+        title={t('listing.deleteTitle')}
+        message={t('listing.deleteMessage')}
+        confirmLabel={t('listing.delete')}
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
       />
     </Screen>
   );

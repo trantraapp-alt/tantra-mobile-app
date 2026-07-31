@@ -69,10 +69,17 @@ export function isAddressValue(value: unknown): value is AddressValue {
 }
 
 // How a listing's address is chosen: the user's default, a saved address by id,
-// or a one-off address typed into the form.
+// or a one-off address typed into the form. The default/saved variants also
+// carry the address's coordinates so the listing can be posted with the exact
+// latitude/longitude of the chosen address.
 export type AddressSelection =
-  | { mode: 'default' }
-  | { mode: 'saved'; addressId: string }
+  | { mode: 'default'; latitude?: number | null; longitude?: number | null }
+  | {
+      mode: 'saved';
+      addressId: string;
+      latitude?: number | null;
+      longitude?: number | null;
+    }
   | { mode: 'manual'; value: AddressValue };
 
 // Narrows an unknown form value to an AddressSelection.

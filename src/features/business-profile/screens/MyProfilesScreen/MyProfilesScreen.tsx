@@ -4,10 +4,11 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { Plus, Store, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Fab } from '@/components/buttons';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { ConfirmDialog } from '@/components/feedback';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import {
@@ -35,6 +36,11 @@ export function MyProfilesScreen() {
 
   const [active, setActive] = useState<BusinessProfile | null>(null);
   const [profileTypes, setProfileTypes] = useState<ProfileTypeOption[]>([]);
+  // Profile pending delete-confirmation, and whether the delete is in flight.
+  const [pendingDelete, setPendingDelete] = useState<BusinessProfile | null>(
+    null,
+  );
+  const [deleting, setDeleting] = useState(false);
   const actionSheetRef = useRef<ActionSheetRef>(null);
 
   // Fetch profile types once for label mapping
@@ -117,23 +123,21 @@ export function MyProfilesScreen() {
     [removeLocal, showSuccess, showError, t],
   );
 
-  const confirmDelete = useCallback(
-    (profile: BusinessProfile) => {
-      Alert.alert(
-        t('businessProfile.deleteTitle'),
-        t('businessProfile.deleteMessage'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('businessProfile.delete'),
-            style: 'destructive',
-            onPress: () => void performDelete(profile),
-          },
-        ],
-      );
-    },
-    [t, performDelete],
-  );
+  // Opens the delete-confirmation dialog for a profile.
+  const confirmDelete = useCallback((profile: BusinessProfile) => {
+    setPendingDelete(profile);
+  }, []);
+
+  // Runs the delete once confirmed, then closes the dialog.
+  const handleConfirmDelete = useCallback(async () => {
+    if (!pendingDelete) {
+      return;
+    }
+    setDeleting(true);
+    await performDelete(pendingDelete);
+    setDeleting(false);
+    setPendingDelete(null);
+  }, [pendingDelete, performDelete]);
 
   const menuActions = useMemo<ActionSheetAction[]>(() => {
     if (!active) {
@@ -249,6 +253,18 @@ export function MyProfilesScreen() {
         title={active?.businessName}
         actions={menuActions}
         cancelLabel={t('common.cancel')}
+      />
+
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        tone="danger"
+        icon={Trash2}
+        title={t('businessProfile.deleteTitle')}
+        message={t('businessProfile.deleteMessage')}
+        confirmLabel={t('businessProfile.delete')}
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
       />
     </Screen>
   );

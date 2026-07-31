@@ -38,6 +38,18 @@ export function useAddresses() {
     setAddresses((prev) => prev.filter((item) => item.addressId !== addressId));
   }, []);
 
+  // Marks one address as the default (and clears the rest) IN PLACE — without
+  // reordering — so a just-defaulted card stays where the user tapped it rather
+  // than jumping to the top of the "default first" list.
+  const setDefaultLocal = useCallback((addressId: string) => {
+    setAddresses((prev) =>
+      prev.map((item) => ({
+        ...item,
+        isDefault: item.addressId === addressId,
+      })),
+    );
+  }, []);
+
   return {
     addresses,
     isLoading: status === 'loading',
@@ -46,5 +58,6 @@ export function useAddresses() {
     atLimit: addresses.length >= MAX_ADDRESSES,
     refresh: load,
     removeLocal,
+    setDefaultLocal,
   };
 }

@@ -11,6 +11,25 @@ import type {
   BusinessProfileWriteResult,
   ProfileTypeOption,
 } from '../types/businessProfile.types';
+import { normalizeBusinessProfile, normalizeProfileStatus } from '../utils/profileStatus';
+
+// Normalizes every profile's status in a list response so callers never see
+// an inconsistent-casing or admin-only `verificationStatus` field diverge from
+// `status`. Some endpoints (at least `/business-profiles/mine`) return a bare
+// array instead of the documented `{ content, page, last }` envelope —
+// preserve whichever shape actually comes back rather than assume `.content`
+// exists, since the calling hooks each do their own shape-adaptive parsing.
+function normalizeProfilesResponse<T extends BusinessProfilesPage | BusinessProfile[]>(
+  res: T,
+): T {
+  if (Array.isArray(res)) {
+    return res.map(normalizeBusinessProfile) as T;
+  }
+  return {
+    ...res,
+    content: (res.content ?? []).map(normalizeBusinessProfile),
+  } as T;
+}
 
 // Create / update payload shape.
 export interface BusinessProfilePayload {
@@ -36,34 +55,50 @@ export const businessProfileApi = {
     apiClient.get<ProfileTypeOption[]>(endpoints.businessProfiles.optionTypes),
 
   // Creates a new business profile (status starts at PENDING).
-  create: (payload: BusinessProfilePayload) =>
-    apiClient.post<BusinessProfileWriteResult>(
+  create: async (payload: BusinessProfilePayload) => {
+    const res = await apiClient.post<BusinessProfileWriteResult>(
       endpoints.businessProfiles.create,
       payload,
-    ),
+    );
+    return { ...res, status: normalizeProfileStatus(res.status) };
+  },
 
-  // Returns the current user's own profiles.
-  getMyProfiles: (params?: { page?: number; size?: number }) =>
-    apiClient.get<BusinessProfilesPage>(endpoints.businessProfiles.mine, {
-      params,
-    }),
+  // Returns the current user's own profiles. This endpoint sometimes returns
+  // a bare array instead of the paginated envelope — the return type reflects
+  // that honestly so `normalizeProfilesResponse` and the calling hook both
+  // adapt to whichever shape actually arrives instead of assuming one.
+  getMyProfiles: async (params?: { page?: number; size?: number }) => {
+    const res = await apiClient.get<BusinessProfilesPage | BusinessProfile[]>(
+      endpoints.businessProfiles.mine,
+      { params },
+    );
+    return normalizeProfilesResponse(res);
+  },
 
   // Returns a single profile (owner: any status; others: APPROVED + visible only).
-  getProfile: (profileId: string) =>
-    apiClient.get<BusinessProfile>(endpoints.businessProfiles.detail(profileId)),
+  getProfile: async (profileId: string) => {
+    const res = await apiClient.get<BusinessProfile>(
+      endpoints.businessProfiles.detail(profileId),
+    );
+    return normalizeBusinessProfile(res);
+  },
 
   // Admin endpoint: returns a profile for review (ignores visibility/status rules).
-  getProfileForReview: (profileId: string) =>
-    apiClient.get<BusinessProfile>(
+  getProfileForReview: async (profileId: string) => {
+    const res = await apiClient.get<BusinessProfile>(
       `/admin/business-profiles/${profileId}`,
-    ),
+    );
+    return normalizeBusinessProfile(res);
+  },
 
   // Edits a profile (resets status to PENDING).
-  update: (profileId: string, payload: BusinessProfilePayload) =>
-    apiClient.put<BusinessProfileWriteResult>(
+  update: async (profileId: string, payload: BusinessProfilePayload) => {
+    const res = await apiClient.put<BusinessProfileWriteResult>(
       endpoints.businessProfiles.detail(profileId),
       payload,
-    ),
+    );
+    return { ...res, status: normalizeProfileStatus(res.status) };
+  },
 
   // Soft-deletes a profile.
   remove: (profileId: string) =>
@@ -74,15 +109,18 @@ export const businessProfileApi = {
   // --- Admin ---
 
   // Paginated list filtered by status (omit for all).
-  getAdminList: (params: {
+  getAdminList: async (params: {
     status?: string;
     sort?: string;
     page?: number;
     size?: number;
-  }) =>
-    apiClient.get<BusinessProfilesPage>(endpoints.businessProfiles.adminList, {
-      params,
-    }),
+  }) => {
+    const res = await apiClient.get<BusinessProfilesPage | BusinessProfile[]>(
+      endpoints.businessProfiles.adminList,
+      { params },
+    );
+    return normalizeProfilesResponse(res);
+  },
 
   // Count tiles for the admin dashboard.
   getStats: () =>
@@ -91,29 +129,37 @@ export const businessProfileApi = {
     ),
 
   // History: all reviewed profiles (APPROVED + REJECTED + BLOCKED).
-  getHistory: (params?: { page?: number; size?: number }) =>
-    apiClient.get<BusinessProfilesPage>(
+  getHistory: async (params?: { page?: number; size?: number }) => {
+    const res = await apiClient.get<BusinessProfilesPage | BusinessProfile[]>(
       endpoints.businessProfiles.adminHistory,
       { params },
-    ),
+    );
+    return normalizeProfilesResponse(res);
+  },
 
   // Approves a profile (notifies owner; removes from PENDING queue).
-  approve: (profileId: string) =>
-    apiClient.post<BusinessProfileWriteResult>(
+  approve: async (profileId: string) => {
+    const res = await apiClient.post<BusinessProfileWriteResult>(
       endpoints.businessProfiles.adminApprove(profileId),
-    ),
+    );
+    return { ...res, status: normalizeProfileStatus(res.status) };
+  },
 
   // Rejects a profile (fixable — owner can edit and resubmit).
-  reject: (profileId: string, reason: string) =>
-    apiClient.post<BusinessProfileWriteResult>(
+  reject: async (profileId: string, reason: string) => {
+    const res = await apiClient.post<BusinessProfileWriteResult>(
       endpoints.businessProfiles.adminReject(profileId),
       { reason },
-    ),
+    );
+    return { ...res, status: normalizeProfileStatus(res.status) };
+  },
 
   // Blocks a profile permanently (offensive content — owner cannot resubmit).
-  block: (profileId: string, reason: string) =>
-    apiClient.post<BusinessProfileWriteResult>(
+  block: async (profileId: string, reason: string) => {
+    const res = await apiClient.post<BusinessProfileWriteResult>(
       endpoints.businessProfiles.adminBlock(profileId),
       { reason },
-    ),
+    );
+    return { ...res, status: normalizeProfileStatus(res.status) };
+  },
 };

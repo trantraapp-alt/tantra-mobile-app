@@ -13,11 +13,13 @@ import {
   MoreVertical,
   XCircle,
 } from 'lucide-react-native';
+// A card representing one business profile in the "My Profiles" list.
+// Shows business name, type, status badge, reason text, and per-status actions.
 import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Button, IconButton } from '@/components/buttons';
-import { Card, Text } from '@/components/ui';
+import { Badge, Card, Text } from '@/components/ui';
 import { fileUrl } from '@/config';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import type { TranslationKey } from '@/i18n';
@@ -29,6 +31,7 @@ import type {
   BusinessProfileStatus,
   ProfileTypeOption,
 } from '../../types/businessProfile.types';
+import { getStatusLabelKey, getStatusTone } from '../../utils/profileStatus';
 import { getProfileTypeLabel } from '../../utils/profileTypeLabels';
 import { resolveProfileStatus } from '../../utils/status';
 import { createBusinessProfileCardStyles } from './BusinessProfileCard.styles';
@@ -127,6 +130,7 @@ function BusinessProfileCardComponent({
     language,
   );
   const imageUri = firstImageUrl(profile.attributes);
+  const tone = getStatusTone(profile.status);
 
   const reason =
     status === 'REJECTED'
@@ -165,6 +169,7 @@ function BusinessProfileCardComponent({
                 <StatusIcon size={theme.sizing.iconXl} color={statusColor} />
               )}
             </View>
+           
 
             <View style={styles.body}>
               <View style={styles.identity}>
@@ -182,6 +187,9 @@ function BusinessProfileCardComponent({
                     />
                   </View>
                 </View>
+                   <View style={{position: 'absolute', right: 10, top: -20}}>
+                      <Badge label={t(getStatusLabelKey(profile.status))} tone={tone} />
+                    </View>
 
                 <View style={styles.metaRow}>
                   {category ? (
@@ -194,18 +202,7 @@ function BusinessProfileCardComponent({
                       {category}
                     </Text>
                   ) : null}
-                  <View style={styles.statusGroup}>
-                    <View
-                      style={[styles.statusDot, { backgroundColor: statusColor }]}
-                    />
-                    <Text
-                      variant="label"
-                      numberOfLines={1}
-                      style={{ color: statusColor }}
-                    >
-                      {statusLabel}
-                    </Text>
-                  </View>
+                 
                 </View>
 
                 {reason ? (

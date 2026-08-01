@@ -85,6 +85,15 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         snapPoints={snapPoints}
         enableDynamicSizing={!snapPoints}
         enablePanDownToClose
+        // Without these, a text input inside the sheet gets covered by the
+        // keyboard on open and the sheet snaps shut instead of just losing
+        // focus when the keyboard is dismissed — 'interactive' makes the
+        // sheet track the keyboard as it animates, 'restore' returns it to
+        // its prior snap point (rather than closing) once the keyboard
+        // hides, and adjustResize keeps Android from covering content.
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
         backdropComponent={renderBackdrop}
         backgroundStyle={styles.background}
         handleIndicatorStyle={styles.handleIndicator}

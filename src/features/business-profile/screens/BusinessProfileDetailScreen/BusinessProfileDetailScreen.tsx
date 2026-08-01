@@ -91,7 +91,7 @@ export function BusinessProfileDetailScreen() {
                     ? t('businessProfile.editResubmit')
                     : t('businessProfile.editProfile')
                 }
-                size="lg"
+                size="md"
                 leftIcon={
                   <SquarePen size={theme.sizing.iconMd} color={theme.colors.onPrimary} />
                 }

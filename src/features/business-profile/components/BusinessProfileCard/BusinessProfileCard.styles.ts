@@ -8,7 +8,7 @@ export function createBusinessProfileCardStyles(theme: AppTheme) {
   return StyleSheet.create({
     // Card horizontal margins matching the listing list rhythm.
     card: {
-      marginHorizontal: theme.spacing.lg,
+      marginHorizontal: theme.spacing.md,
       marginBottom: theme.spacing.md,
     },
     // Tappable content row: status tile + details column.
@@ -70,6 +70,41 @@ export function createBusinessProfileCardStyles(theme: AppTheme) {
     },
     // Category + status row.
     metaRow: {
+      gap: theme.spacing.sm,
+    },
+    // Solid tone-colored circle behind the status icon — matches the admin
+    // screens so status reads the same way everywhere in the feature.
+    statusIcon: {
+      width: theme.sizing.avatarSm,
+      height: theme.sizing.avatarSm,
+      borderRadius: theme.radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    titleBlock: {
+      flex: 1,
+      gap: theme.spacing.xxs,
+    },
+    // Reason notice (rejected/blocked) — a left-accented card so it reads as a
+    // flagged notice rather than a plain text block.
+    reasonBox: {
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: theme.radius.sm,
+      borderLeftWidth: 3,
+      padding: theme.spacing.sm,
+      marginTop: theme.spacing.md,
+      gap: theme.spacing.xxs,
+    },
+    actions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: theme.spacing.xs,
+      justifyContent: 'space-between',
+    },
+    blockedHint: {
+      marginTop: theme.spacing.xs,
+    },
+    verifiedRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
@@ -103,9 +138,6 @@ export function createBusinessProfileCardStyles(theme: AppTheme) {
       gap: theme.spacing.sm,
       minHeight: theme.sizing.buttonHeightSm,
     },
-    // Blocked hint fills the row (left-aligned) since it has no action button.
-    blockedHint: {
-      flex: 1,
-    },
+ 
   });
 }

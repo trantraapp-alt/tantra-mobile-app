@@ -76,6 +76,20 @@ export function BusinessProfileFormScreen() {
       if (!form) {
         return;
       }
+      // A business profile must always carry at least one photo — enforced
+      // here regardless of whether the backend's schema marks the IMAGE field
+      // `required`, since a profile admins can't visually verify shouldn't be
+      // submittable.
+      const photosField = form.sections
+        .flatMap((section) => section.fields)
+        .find((field) => field.type === 'IMAGE');
+      if (photosField) {
+        const photos = values[photosField.fieldKey];
+        if (!Array.isArray(photos) || photos.length === 0) {
+          showError(t('businessProfile.photosRequired'));
+          return;
+        }
+      }
       try {
         const payload = buildBusinessProfilePayload(form, values);
         if (isEdit && params.profileId) {

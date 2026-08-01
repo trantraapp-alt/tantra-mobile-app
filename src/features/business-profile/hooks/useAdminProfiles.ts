@@ -52,12 +52,19 @@ export function useAdminProfiles({
         if (id !== requestId.current) {
           return;
         }
-        const content = res.content ?? [];
+        // Handle both paginated response ({ content, page, last }) and a bare
+        // array response from the backend.
+        const isArrayRes = Array.isArray(res);
+        const content = isArrayRes ? res : (res.content ?? []);
         setProfiles((prev) =>
           mode === 'append' ? [...prev, ...content] : content,
         );
-        setPage(res.page ?? pageToLoad);
-        setLast(res.last ?? true);
+        setPage(!isArrayRes && typeof res.page === 'number' ? res.page : pageToLoad);
+        setLast(
+          !isArrayRes && typeof res.last === 'boolean'
+            ? res.last
+            : content.length < appConstants.defaultPageSize,
+        );
         setPhase('idle');
       } catch (error) {
         if (id !== requestId.current) {

@@ -1,8 +1,8 @@
 // Admin profile list: filtered by status from route params. Used by the
 // tracker tiles (PENDING queue) and drill-downs (APPROVED / REJECTED / BLOCKED).
 import { FlashList } from '@shopify/flash-list';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ClipboardList } from 'lucide-react-native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { ChevronRight, ClipboardList, User } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
@@ -12,25 +12,20 @@ import { Header } from '@/components/shared';
 import { Badge, Card, Screen, Text } from '@/components/ui';
 import { routes } from '@/constants';
 import { useThemedStyles, useTranslation } from '@/hooks';
+import { useTheme } from '@/providers';
+import { formatDate } from '@/utils';
 
 import { businessProfileApi } from '../../api/businessProfileApi';
 import { useAdminProfiles } from '../../hooks/useAdminProfiles';
-import type { BusinessProfile, BusinessProfileStatus, ProfileTypeOption } from '../../types/businessProfile.types';
+import type { BusinessProfile, ProfileTypeOption } from '../../types/businessProfile.types';
+import { getStatusIcon, getStatusLabelKey, getStatusTone } from '../../utils/profileStatus';
 import { getProfileTypeLabel } from '../../utils/profileTypeLabels';
+import { withAlpha } from '../../utils/withAlpha';
 import { createAdminProfileListStyles } from './AdminProfileListScreen.styles';
-
-function statusTone(status: BusinessProfileStatus) {
-  if (status === 'APPROVED') {
-    return 'success' as const;
-  }
-  if (status === 'PENDING') {
-    return 'warning' as const;
-  }
-  return 'danger' as const;
-}
 
 export function AdminProfileListScreen() {
   const styles = useThemedStyles(createAdminProfileListStyles);
+  const theme = useTheme();
   const router = useRouter();
   const { t, language } = useTranslation();
   const params = useLocalSearchParams<{ status?: string }>();
@@ -64,6 +59,15 @@ export function AdminProfileListScreen() {
     useHistory,
   });
 
+  // Refresh whenever this list regains focus — e.g. returning from the review
+  // screen after an approve/reject/block action — so it never shows a stale
+  // status or a just-actioned row still sitting in the PENDING queue.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
+
   const title =
     status === 'PENDING'
       ? t('businessProfile.admin.queue')
@@ -86,41 +90,75 @@ export function AdminProfileListScreen() {
       : t('businessProfile.admin.emptyHistory');
 
   const renderItem = useCallback(
-    ({ item }: { item: BusinessProfile }) => (
-      <Card
-        style={styles.card}
-        onPress={() => {
-          router.push({
-            pathname: routes.admin.businessProfileReview(item.profileId),
-            params: { profile: JSON.stringify(item) },
-          });
-        }}
-      >
-        <View style={styles.cardHeader}>
-          <Text variant="bodyMedium" numberOfLines={1} style={{ flex: 1, marginRight: 8 }}>
-            {item.businessName}
-          </Text>
-          <Badge
-            label={item.status}
-            tone={statusTone(item.status)}
-          />
-        </View>
-        <Text variant="caption" color="textSecondary">
-          {getProfileTypeLabel(item.profileType, profileTypes, language)}
-        </Text>
-        {item.verifiedAt ? (
-          <Text variant="caption" color="textTertiary" style={styles.meta}>
-            {t('businessProfile.admin.verifiedAt')}: {item.verifiedAt}
-          </Text>
-        ) : null}
-        {item.verifiedBy ? (
-          <Text variant="caption" color="textTertiary">
-            {t('businessProfile.admin.verifiedBy')}: {item.verifiedBy}
-          </Text>
-        ) : null}
-      </Card>
-    ),
-    [router, styles, t, language, profileTypes],
+    ({ item }: { item: BusinessProfile }) => {
+      const tone = getStatusTone(item.status);
+      const toneColor = theme.colors[tone];
+      const StatusIcon = getStatusIcon(item.status);
+      const reason =
+        item.status === 'REJECTED'
+          ? item.rejectReason
+          : item.status === 'BLOCKED'
+            ? item.blockReason
+            : null;
+      return (
+        <Card
+          style={[
+            styles.card,
+            {
+              backgroundColor: withAlpha(toneColor, theme.opacity.faint),
+              borderColor: withAlpha(toneColor, theme.opacity.subtle),
+            },
+          ]}
+          onPress={() => {
+            router.push({
+              pathname: routes.admin.businessProfileReview(item.profileId),
+              params: { profile: JSON.stringify(item) },
+            });
+          }}
+        >
+          <View style={styles.cardRow}>
+            <View style={[styles.statusIcon, { backgroundColor: toneColor }]}>
+              <StatusIcon size={theme.sizing.iconSm} color={theme.colors.onPrimary} />
+            </View>
+            <View style={styles.cardBody}>
+              <View style={styles.cardHeader}>
+                <Text variant="bodyMedium" numberOfLines={1} style={styles.cardTitle}>
+                  {item.businessName}
+                </Text>
+                <Badge label={t(getStatusLabelKey(item.status))} tone={tone} />
+              </View>
+              <Text variant="caption" color="textSecondary">
+                {getProfileTypeLabel(item.profileType, profileTypes, language)}
+              </Text>
+              {reason ? (
+                <Text variant="caption" color="textTertiary" numberOfLines={1} style={styles.reasonPreview}>
+                  {reason}
+                </Text>
+              ) : null}
+              {item.verifiedAt || item.verifiedBy ? (
+                <View style={styles.metaRow}>
+                  {item.verifiedBy ? (
+                    <View style={styles.metaItem}>
+                      <User size={theme.sizing.iconXs} color={theme.colors.textTertiary} />
+                      <Text variant="caption" color="textTertiary">
+                        {item.verifiedBy}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {item.verifiedAt ? (
+                    <Text variant="caption" color="textTertiary">
+                      {formatDate(item.verifiedAt)}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+            <ChevronRight size={theme.sizing.iconSm} color={theme.colors.textTertiary} />
+          </View>
+        </Card>
+      );
+    },
+    [router, styles, t, theme, language, profileTypes],
   );
 
   const renderBody = () => {

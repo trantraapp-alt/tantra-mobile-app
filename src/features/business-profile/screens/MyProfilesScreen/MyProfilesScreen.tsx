@@ -93,20 +93,31 @@ export function MyProfilesScreen() {
     async (profile: BusinessProfile) => {
       try {
         const next = !profile.isVisible;
-        await businessProfileApi.update(profile.profileId, {
+        const result = await businessProfileApi.update(profile.profileId, {
           profileType: profile.profileType,
           businessName: profile.businessName,
           isVisible: next,
           address: profile.address,
           attributes: profile.attributes,
         });
-        patchLocal(profile.profileId, { isVisible: next });
+        // Trust the server's returned status — editing a profile (including
+        // toggling visibility) can send it back to PENDING for re-approval.
+        patchLocal(profile.profileId, { isVisible: next, status: result.status });
+        if (result.status === 'PENDING' && profile.status !== 'PENDING') {
+          showSuccess(t('businessProfile.editSuccess'));
+        } else {
+          showSuccess(
+            next
+              ? t('businessProfile.visibilityShown')
+              : t('businessProfile.visibilityHidden'),
+          );
+        }
       } catch (error) {
         logger.warn('[BusinessProfile] Toggle visibility failed', error);
         showError(t('businessProfile.submitError'));
       }
     },
-    [patchLocal, showError, t],
+    [patchLocal, showSuccess, showError, t],
   );
 
   const performDelete = useCallback(

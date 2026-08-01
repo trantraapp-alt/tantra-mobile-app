@@ -2,6 +2,7 @@
 // gallery, formatted fields, address) plus Approve / Reject / Block actions.
 // Reject and Block open a bottom sheet to collect the mandatory reason.
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ban, Check, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
@@ -10,10 +11,10 @@ import { ErrorState } from '@/components/empty-state';
 import { TextField } from '@/components/inputs';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
-import { BottomSheet, type BottomSheetRef, Screen } from '@/components/ui';
+import { BottomSheet, type BottomSheetRef, Screen, Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
-import { useToast } from '@/providers';
+import { useTheme, useToast } from '@/providers';
 
 import { businessProfileApi } from '../../api/businessProfileApi';
 import { BusinessProfileView } from '../../components/BusinessProfileView';
@@ -27,6 +28,7 @@ type ReasonAction = 'reject' | 'block';
 
 export function AdminReviewScreen() {
   const styles = useThemedStyles(createAdminReviewStyles);
+  const theme = useTheme();
   const router = useRouter();
   const { t, language } = useTranslation();
   const { showSuccess, showError } = useToast();
@@ -165,28 +167,49 @@ export function AdminReviewScreen() {
           profileTypeLabel={profileTypeLabel}
         />
 
-        <View style={styles.actionButtons}>
-          <Button
-            label={t('businessProfile.admin.approve')}
-            size="lg"
-            loading={submitting}
-            onPress={() => void handleApprove()}
-          />
-          <Button
-            label={t('businessProfile.admin.reject')}
-            variant="outline"
-            size="lg"
-            loading={submitting}
-            onPress={() => openReasonSheet('reject')}
-          />
-          <Button
-            label={t('businessProfile.admin.block')}
-            variant="outline"
-            size="lg"
-            loading={submitting}
-            onPress={() => openReasonSheet('block')}
-          />
-        </View>
+        {profile.status === 'PENDING' || profile.status === 'APPROVED' ? (
+          <View style={styles.actionButtons}>
+            {profile.status === 'PENDING' ? (
+              <Button
+                label={t('businessProfile.admin.approve')}
+                size="md"
+                loading={submitting}
+                leftIcon={<Check size={theme.sizing.iconSm} color={theme.colors.onPrimary} />}
+                onPress={() => void handleApprove()}
+              />
+            ) : null}
+            <View style={styles.secondaryRow}>
+              <Button
+                label={t('businessProfile.admin.reject')}
+                variant="outline"
+                size="md"
+                fullWidth={false}
+                style={styles.secondaryButton}
+                loading={submitting}
+                leftIcon={<X size={theme.sizing.iconSm} color={theme.colors.primary} />}
+                onPress={() => openReasonSheet('reject')}
+              />
+              <Button
+                label={t('businessProfile.admin.block')}
+                variant="danger"
+                size="md"
+                fullWidth={false}
+                style={styles.secondaryButton}
+                loading={submitting}
+                leftIcon={<Ban size={theme.sizing.iconSm} color={theme.colors.onPrimary} />}
+                onPress={() => openReasonSheet('block')}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.actionButtons}>
+            <Text variant="caption" color="textSecondary" style={styles.statusHint}>
+              {profile.status === 'REJECTED'
+                ? t('businessProfile.admin.awaitingResubmitHint')
+                : t('businessProfile.admin.blockedHint')}
+            </Text>
+          </View>
+        )}
       </>
     );
   };
@@ -224,7 +247,7 @@ export function AdminReviewScreen() {
                 ? t('businessProfile.admin.confirmReject')
                 : t('businessProfile.admin.confirmBlock')
             }
-            size="lg"
+            size="md"
             loading={submitting}
             onPress={() => void handleReasonSubmit()}
           />

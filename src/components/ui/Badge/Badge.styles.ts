@@ -10,7 +10,6 @@ export function createBadgeStyles(theme: AppTheme) {
     base: {
       alignSelf: 'flex-start',
       paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xxs,
       borderRadius: theme.radius.xs,
     },
 

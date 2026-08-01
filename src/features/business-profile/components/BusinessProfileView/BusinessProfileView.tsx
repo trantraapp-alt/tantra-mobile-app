@@ -8,40 +8,18 @@ import type { ReactNode } from 'react';
 import { Fragment, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { Badge, type BadgeTone, Divider, ImageCarousel, Text } from '@/components/ui';
+import { Badge, Divider, ImageCarousel, Text } from '@/components/ui';
 import { fileUrl } from '@/config';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 
-import type { BusinessProfile, BusinessProfileStatus } from '../../types/businessProfile.types';
+import type { BusinessProfile } from '../../types/businessProfile.types';
 import {
   type BPDetailRow,
   type BusinessProfileDetailModel,
 } from '../../utils/businessProfileDetailFields';
+import { getStatusLabelKey, getStatusTone } from '../../utils/profileStatus';
 import { createBusinessProfileViewStyles } from './BusinessProfileView.styles';
-
-function statusLabelKey(status: BusinessProfileStatus) {
-  if (status === 'APPROVED') {
-    return 'businessProfile.status.approved' as const;
-  }
-  if (status === 'PENDING') {
-    return 'businessProfile.status.pending' as const;
-  }
-  if (status === 'REJECTED') {
-    return 'businessProfile.status.rejected' as const;
-  }
-  return 'businessProfile.status.blocked' as const;
-}
-
-function statusTone(status: BusinessProfileStatus): BadgeTone {
-  if (status === 'APPROVED') {
-    return 'success';
-  }
-  if (status === 'PENDING') {
-    return 'warning';
-  }
-  return 'danger';
-}
 
 // Props for one rendered field row.
 interface FieldRowProps {
@@ -141,8 +119,8 @@ export function BusinessProfileView({
         <ImageCarousel images={photoUris} aspectRatio={4 / 3} contentFit="cover" />
         <View style={styles.heroBadge} pointerEvents="none">
           <Badge
-            label={t(statusLabelKey(profile.status))}
-            tone={statusTone(profile.status)}
+            label={t(getStatusLabelKey(profile.status))}
+            tone={getStatusTone(profile.status)}
           />
         </View>
       </View>

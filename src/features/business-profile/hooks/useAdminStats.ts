@@ -11,8 +11,13 @@ export function useAdminStats() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
 
-  const load = useCallback(async () => {
-    setIsLoading(true);
+  // `silent` skips the loading flag so a focus-triggered refresh (e.g.
+  // returning from an approve/reject/block action) updates the counts without
+  // flashing the full-screen spinner over the tiles the admin is looking at.
+  const load = useCallback(async (silent = false) => {
+    if (!silent) {
+      setIsLoading(true);
+    }
     setIsError(false);
     try {
       const res = await businessProfileApi.getStats();
@@ -21,7 +26,9 @@ export function useAdminStats() {
       logger.warn('[BusinessProfile] Failed to load stats', error);
       setIsError(true);
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   }, []);
 

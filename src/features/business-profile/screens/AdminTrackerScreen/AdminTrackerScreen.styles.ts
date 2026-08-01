@@ -10,40 +10,59 @@ export function createAdminTrackerStyles(theme: AppTheme) {
       alignItems: 'center',
     },
     content: {
-      padding: theme.spacing.lg,
+      padding: theme.spacing.md,
+    },
+    sectionLabel: {
+      marginTop: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
+      marginLeft: theme.spacing.xxs,
     },
     tilesGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: theme.spacing.md,
-      marginBottom: theme.spacing.lg,
+      gap: theme.spacing.sm,
     },
     tile: {
       flex: 1,
-      minWidth: '45%',
+      minWidth: '46%',
     },
     tileInner: {
       alignItems: 'center',
-      paddingVertical: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      gap: theme.spacing.xxs,
+    },
+    // Solid tone-colored circle behind the status icon, sitting on the
+    // tile's own soft tone-tinted wash — the same solid-on-tint convention
+    // used across the feature so status reads identically everywhere.
+    tileIcon: {
+      width: theme.sizing.avatarSm,
+      height: theme.sizing.avatarSm,
+      borderRadius: theme.radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: theme.spacing.xxs,
     },
     tileCount: {
-      marginBottom: theme.spacing.xs,
+      marginBottom: 0,
     },
-    reviewedByMe: {
-      marginTop: theme.spacing.lg,
+    tileLabel: {
+      textTransform: 'uppercase',
     },
     reviewedRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginTop: theme.spacing.sm,
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.sm,
     },
-    reviewedItem: {
-      alignItems: 'center',
+    // A tone-tinted chip, mirroring the tile treatment above at a smaller
+    // scale — the "reviewed by me" row reads as a family with the tiles
+    // instead of a plain, unrelated stats strip.
+    reviewedChip: {
       flex: 1,
-    },
-    dividerH: {
-      height: 1,
-      backgroundColor: 'transparent',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderRadius: theme.radius.md,
+      paddingVertical: theme.spacing.sm,
+      gap: theme.spacing.xxs,
     },
   });
 }

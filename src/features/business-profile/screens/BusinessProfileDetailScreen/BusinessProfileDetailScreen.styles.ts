@@ -23,6 +23,7 @@ export function createBPDetailScreenStyles(theme: AppTheme) {
     },
     footerHint: {
       textAlign: 'center',
+      fontSize: theme.fontSize.xs,
     },
   });
 }

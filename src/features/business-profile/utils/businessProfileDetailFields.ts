@@ -81,6 +81,14 @@ function resolveOptionLabel(
   return option ? localize(option.label, language) : value;
 }
 
+// Whether a field is a free-text description, regardless of whether the
+// schema types it TEXTAREA or plain TEXT — mirrors DynamicListingForm's own
+// `isDescriptionField` so a description field renders as a full paragraph on
+// the detail screen exactly as it does (as a multi-line textarea) on the form.
+function isDescriptionField(field: ListingField): boolean {
+  return /description/i.test(field.fieldKey);
+}
+
 function isStacked(value: BPDetailValue): boolean {
   if (value.kind === 'tags') {
     return value.items.length >= 3;
@@ -136,7 +144,10 @@ function formatFieldValue(
     }
     default: {
       const text = String(raw).trim();
-      return text === '' ? null : { kind: 'text', text };
+      if (text === '') {
+        return null;
+      }
+      return isDescriptionField(field) ? { kind: 'prose', text } : { kind: 'text', text };
     }
   }
 }

@@ -15,6 +15,18 @@ import { mapProfileResponseToUser, mapSignInResponseToUser } from '../utils';
 // Signs the user in, persists the JWT and hydrates the full profile.
 async function login(credentials: LoginCredentials): Promise<AuthSession> {
   const response = await authApi.signIn(credentials);
+
+  // Guard against a response whose JWT isn't where we expect it (mismatched
+  // backend shape). Storing a non-string token would throw a cryptic
+  // SecureStore error, so fail clearly and log the response keys (never the
+  // token value) so the real field can be pinpointed.
+  if (typeof response?.token !== 'string' || response.token.length === 0) {
+    logger.error('[Auth] Sign-in response has no usable token', {
+      responseKeys: response ? Object.keys(response) : null,
+    });
+    throw new Error('Sign-in response did not include an authentication token.');
+  }
+
   await tokenStore.setAccessToken(response.token);
 
   // Sign-in omits the user's name, so enrich the session from the profile

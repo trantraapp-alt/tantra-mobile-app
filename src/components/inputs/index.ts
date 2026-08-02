@@ -17,6 +17,13 @@ export {
 } from './ControlledTextField';
 export { DateField, type DateFieldProps } from './DateField';
 export { FieldLabel, type FieldLabelProps } from './FieldLabel';
+export {
+  KeyboardAwareContext,
+  type KeyboardAwareContextValue,
+  KeyboardAwareScrollView,
+  type KeyboardAwareScrollViewProps,
+  useKeyboardAware,
+} from './KeyboardAwareScrollView';
 export { PasswordField, type PasswordFieldProps } from './PasswordField';
 export {
   ControlledRadioGroup,

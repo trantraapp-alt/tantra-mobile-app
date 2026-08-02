@@ -38,6 +38,31 @@ export const routes = {
   product: (id: string) => `/product/${id}`,
   category: (id: string) => `/category/${id}`,
   search: '/search',
+  // Browse a marketplace category's listings (optionally carrying its name).
+  browse: (categoryId: number | string, name?: string) =>
+    name
+      ? `/browse/${categoryId}?name=${encodeURIComponent(name)}`
+      : `/browse/${categoryId}`,
+  // Browse a category by its string key (crop/seed/equipment…) from the carousel,
+  // carrying an optional display name and a pre-applied listing type.
+  browseKey: (key: string, name?: string, listingType?: string) => {
+    const parts: string[] = [];
+    if (name) {
+      parts.push(`name=${encodeURIComponent(name)}`);
+    }
+    if (listingType) {
+      parts.push(`type=${encodeURIComponent(listingType)}`);
+    }
+    const qs = parts.length > 0 ? `?${parts.join('&')}` : '';
+    return `/browse/${encodeURIComponent(key)}${qs}`;
+  },
+  // Nearby listings around the user's GPS point.
+  nearby: '/nearby',
+  // A seller's public storefront (optionally carrying their display name).
+  seller: (userId: string, name?: string) =>
+    name
+      ? `/seller/${userId}?name=${encodeURIComponent(name)}`
+      : `/seller/${userId}`,
   cart: '/cart',
   sell: (moduleId: number) => `/sell/${moduleId}`,
   // Saved address book.
@@ -50,6 +75,8 @@ export const routes = {
   listings: '/listings',
   // A single listing (opens the read-only preview).
   listingDetail: (id: string | number) => `/listings/${id}`,
+  // Buyer-facing public listing detail with contact reveal.
+  marketListing: (id: string | number) => `/listing/${id}`,
   // The full edit form for a listing.
   editListing: (id: string | number) => `/listings/edit/${id}`,
   checkout: '/checkout',

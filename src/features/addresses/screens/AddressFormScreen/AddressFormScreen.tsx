@@ -8,13 +8,16 @@ import {
   KeyboardAvoidingView,
   Linking,
   Platform,
-  ScrollView,
   View,
 } from 'react-native';
 
 import { Button } from '@/components/buttons';
 import { ErrorState } from '@/components/empty-state';
-import { Checkbox, TextField } from '@/components/inputs';
+import {
+  Checkbox,
+  KeyboardAwareScrollView,
+  TextField,
+} from '@/components/inputs';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import { Screen } from '@/components/ui';
@@ -218,11 +221,8 @@ export function AddressFormScreen({
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
           <Button
@@ -330,7 +330,7 @@ export function AddressFormScreen({
               setValues((prev) => ({ ...prev, isDefault: checked }))
             }
           />
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         <View style={styles.footer}>
           <Button

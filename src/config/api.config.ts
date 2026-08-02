@@ -88,6 +88,26 @@ export const endpoints = {
   banners: {
     list: '/banners',
   },
+  // Aggregated home feed (public): modules, promo cards, featured / module /
+  // recent listings and featured business profiles in a single call.
+  home: {
+    feed: '/home',
+  },
+  // Unified search across listings and business profiles (public).
+  search: {
+    query: '/search',
+  },
+  // Public marketplace stats for the home trust bar.
+  stats: {
+    public: '/stats/public',
+  },
+  // Backend-driven filter form (public). Optional `categoryId` query for the
+  // category-specific form; omit it for the global form.
+  filters: {
+    form: '/filter-form',
+  },
+  // DB-driven home carousel of category browse buttons (public).
+  carousel: '/carousel',
   masters: {
     // Marketplace modules shown on the Sell sheet.
     modules: '/masters/modules',
@@ -110,6 +130,17 @@ export const endpoints = {
     detail: (id: string | number) => `/listings/${id}`,
     // Public listings within a category (paginated).
     category: (categoryId: number) => `/listings/category/${categoryId}`,
+    // Public listings for a category *key* (crop/seed/equipment…), nearest-first.
+    // Used by the DB-driven carousel; accepts the standard filter query params.
+    browseByKey: (categoryKey: string) => `/listings/browse/${categoryKey}`,
+    // Listings sorted closest-first around a GPS point (requires lat/lng).
+    nearby: '/listings/nearby',
+    // Up to N similar listings from the same category.
+    similar: (id: string | number) => `/listings/${id}/similar`,
+    // Reveals the seller's phone number (auth; deduped per buyer per 24h).
+    contact: (id: string | number) => `/listings/${id}/contact`,
+    // All active listings by a given seller (their public profile page).
+    bySeller: (userId: string) => `/listings/by-seller/${userId}`,
     // Uploads image files; returns relative `/files/...` URLs.
     uploads: '/uploads',
   },

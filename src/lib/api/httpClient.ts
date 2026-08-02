@@ -107,6 +107,19 @@ httpClient.interceptors.request.use((config) => {
 httpClient.interceptors.response.use(
   (response: AxiosResponse) => {
     const body = response.data;
+    // A packaged app hitting a wrong URL or the ngrok browser-warning page gets
+    // HTML (HTTP 200) instead of JSON. Left unchecked this surfaces as cryptic
+    // "undefined field" / SecureStore errors far downstream, so fail clearly and
+    // point at the real cause.
+    if (typeof body === 'string' && /<\s*(!doctype|html)/i.test(body)) {
+      return Promise.reject(
+        new Error(
+          'The API returned an HTML page instead of JSON — the request is likely ' +
+            'hitting the ngrok warning page or a wrong API base URL. Check ' +
+            'apiBaseUrl / the ngrok tunnel.',
+        ),
+      );
+    }
     if (isEnvelope(body)) {
       // A 2xx with success:false is still an application-level failure.
       if (body.success === false) {

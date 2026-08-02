@@ -1,14 +1,26 @@
 // Shared, safe-area-aware bottom sheet modal used across the app so every sheet
 // keeps the same background, handle, backdrop and (critically) bottom inset —
-// content never overlaps hardware/gesture navigation bars.
+// content never overlaps hardware/gesture navigation bars. Sheets whose body has
+// text inputs should pass `scrollable` (with `snapPoints`) so the body scrolls
+// above the keyboard and a tap outside an input dismisses it; they may also pass
+// a sticky `footer` (e.g. an Apply button) that stays pinned above the keyboard.
 import {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
+  BottomSheetFooter,
+  type BottomSheetFooterProps,
   BottomSheetModal,
+  BottomSheetScrollView,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import type { ReactNode } from 'react';
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { View } from 'react-native';
 
@@ -36,6 +48,11 @@ export interface BottomSheetProps {
   subtitle?: string;
   // Explicit snap points; omit to size the sheet to its content.
   snapPoints?: (string | number)[];
+  // Renders the body in a scroll view so it can scroll above the keyboard and a
+  // tap outside an input dismisses the keyboard. Pair with `snapPoints`.
+  scrollable?: boolean;
+  // Sticky footer pinned to the bottom of the sheet (stays above the keyboard).
+  footer?: ReactNode;
   // Additional style applied to the content container.
   contentStyle?: StyleProp<ViewStyle>;
 }
@@ -43,7 +60,7 @@ export interface BottomSheetProps {
 // Renders a themed, safe-area-aware bottom sheet modal.
 export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
   function BottomSheet(
-    { children, title, subtitle, snapPoints, contentStyle },
+    { children, title, subtitle, snapPoints, scrollable, footer, contentStyle },
     ref,
   ) {
     const theme = useTheme();
@@ -60,11 +77,13 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
       [],
     );
 
-    // Bottom padding always clears the navigation inset plus a base gap so the
-    // last row is never hidden behind hardware/software navigation buttons.
+    // Bottom padding always clears the navigation inset plus a base gap; extra
+    // room is added when a sticky footer overlays the content.
     const contentPadding = useMemo<ViewStyle>(
-      () => ({ paddingBottom: bottomInset + theme.spacing.xl }),
-      [bottomInset, theme.spacing.xl],
+      () => ({
+        paddingBottom: bottomInset + theme.spacing.xl + (footer ? 64 : 0),
+      }),
+      [bottomInset, theme.spacing.xl, footer],
     );
 
     // Renders the dimmed backdrop behind the sheet.
@@ -78,6 +97,27 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
       ),
       [],
     );
+
+    // Renders the sticky footer (pinned above the keyboard).
+    const renderFooter = useCallback(
+      (props: BottomSheetFooterProps) => (
+        <BottomSheetFooter {...props} bottomInset={bottomInset}>
+          <View style={styles.footer}>{footer}</View>
+        </BottomSheetFooter>
+      ),
+      [footer, bottomInset, styles.footer],
+    );
+
+    const header = title ? (
+      <View style={styles.header}>
+        <Text variant="h3">{title}</Text>
+        {subtitle ? (
+          <Text variant="body" color="textSecondary">
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+    ) : null;
 
     return (
       <BottomSheetModal
@@ -97,20 +137,28 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         backdropComponent={renderBackdrop}
         backgroundStyle={styles.background}
         handleIndicatorStyle={styles.handleIndicator}
+        footerComponent={footer ? renderFooter : undefined}
       >
-        <BottomSheetView style={[styles.content, contentPadding, contentStyle]}>
-          {title ? (
-            <View style={styles.header}>
-              <Text variant="h3">{title}</Text>
-              {subtitle ? (
-                <Text variant="body" color="textSecondary">
-                  {subtitle}
-                </Text>
-              ) : null}
-            </View>
-          ) : null}
-          {children}
-        </BottomSheetView>
+        {scrollable ? (
+          <BottomSheetScrollView
+            // Fill the sheet only when it has an explicit height (snap points);
+            // with dynamic sizing the sheet hugs the content (no bottom gap).
+            style={snapPoints ? styles.flex : undefined}
+            contentContainerStyle={[styles.content, contentPadding, contentStyle]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {header}
+            {children}
+          </BottomSheetScrollView>
+        ) : (
+          <BottomSheetView
+            style={[styles.content, contentPadding, contentStyle]}
+          >
+            {header}
+            {children}
+          </BottomSheetView>
+        )}
       </BottomSheetModal>
     );
   },

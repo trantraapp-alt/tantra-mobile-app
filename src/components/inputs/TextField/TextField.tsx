@@ -11,6 +11,7 @@ import { useThemedStyles } from '@/hooks';
 import { useTheme } from '@/providers';
 
 import { FieldLabel } from '../FieldLabel';
+import { useKeyboardAware } from '../KeyboardAwareScrollView/KeyboardAwareContext';
 import { createTextFieldStyles } from './TextField.styles';
 
 // Height presets for the text field.
@@ -61,6 +62,9 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(
     const theme = useTheme();
     const styles = useThemedStyles(createTextFieldStyles);
     const [isFocused, setIsFocused] = useState(false);
+    // When inside a KeyboardAwareScrollView, lift this field above the keyboard
+    // on focus (covers moving between fields while the keyboard stays open).
+    const keyboardAware = useKeyboardAware();
 
     // A multiline field (e.g. a description) grows to fit its lines instead of
     // the fixed single-line size preset, so it reads as a taller text area.
@@ -85,13 +89,15 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(
         ? cloneElement(node, { size: iconPixels[iconSize] })
         : node;
 
-    // Tracks focus to drive the focused border style.
+    // Tracks focus to drive the focused border style, and asks the surrounding
+    // keyboard-aware scroll view (if any) to lift this field into view.
     const handleFocus = useCallback(
       (event: FocusEvent) => {
         setIsFocused(true);
+        keyboardAware?.onInputFocus();
         onFocus?.(event);
       },
-      [onFocus],
+      [keyboardAware, onFocus],
     );
 
     // Tracks blur to reset the focused border style.

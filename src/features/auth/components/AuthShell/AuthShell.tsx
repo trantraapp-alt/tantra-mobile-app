@@ -8,7 +8,6 @@ import type { ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StatusBar,
   useWindowDimensions,
   View,
@@ -16,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/buttons';
+import { KeyboardAwareScrollView } from '@/components/inputs';
 import { BrandGradient, Logo } from '@/components/shared';
 import { Text } from '@/components/ui';
 import { useBottomInset, useThemedStyles } from '@/hooks';
@@ -107,11 +107,11 @@ export function AuthShell({
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           bounces={false}
+          automaticallyAdjustKeyboardInsets={false}
         >
           <View
             style={[
@@ -171,7 +171,7 @@ export function AuthShell({
 
             {children}
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </View>
   );

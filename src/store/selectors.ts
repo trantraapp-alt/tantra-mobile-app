@@ -22,6 +22,10 @@ const selectLocationState = (state: RootState) => state.location;
 export const selectSelectedLocation = (state: RootState) =>
   selectLocationState(state).selected;
 
+// Selects the nearby search radius in km (defaults to 25 for legacy state).
+export const selectSearchRadius = (state: RootState): number =>
+  selectLocationState(state).radiusKm ?? 25;
+
 // Selects the currently authenticated user.
 export const selectCurrentUser = createSelector(
   selectAuthState,

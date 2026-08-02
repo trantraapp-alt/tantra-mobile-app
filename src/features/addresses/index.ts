@@ -1,5 +1,10 @@
 // Public API barrel for the addresses feature.
 export { addressesApi, optionSetsApi } from './api';
+export {
+  GeoCascade,
+  type GeoCascadeProps,
+  type GeoSelection,
+} from './components';
 export { useAddresses } from './hooks';
 export {
   AddressFormScreen,

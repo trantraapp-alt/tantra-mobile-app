@@ -25,11 +25,17 @@ export interface StoredLocation {
 export interface LocationState {
   // The user's selected location, or null when unset.
   selected: StoredLocation | null;
+  // Search radius (km) for nearby results; shown on the home header chip.
+  radiusKm: number;
 }
+
+// Default search radius in kilometres.
+export const DEFAULT_RADIUS_KM = 25;
 
 // Initial location state.
 const initialState: LocationState = {
   selected: null,
+  radiusKm: DEFAULT_RADIUS_KM,
 };
 
 // Location slice reducer + actions.
@@ -45,10 +51,14 @@ const locationSlice = createSlice({
     clearLocation: (state) => {
       state.selected = null;
     },
+    // Sets the nearby search radius (km).
+    setRadius: (state, action: PayloadAction<number>) => {
+      state.radiusKm = action.payload;
+    },
   },
 });
 
 // Location actions.
-export const { setLocation, clearLocation } = locationSlice.actions;
+export const { setLocation, clearLocation, setRadius } = locationSlice.actions;
 // Location reducer.
 export const locationReducer = locationSlice.reducer;

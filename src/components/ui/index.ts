@@ -14,6 +14,10 @@ export {
 } from './BottomSheet';
 export { Card, type CardProps } from './Card';
 export { Chip, type ChipProps } from './Chip';
+export {
+  DismissKeyboardView,
+  type DismissKeyboardViewProps,
+} from './DismissKeyboardView';
 export { Divider, type DividerProps } from './Divider';
 export {
   type CarouselAutoPlayBehavior,

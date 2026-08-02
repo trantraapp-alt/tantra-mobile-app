@@ -29,6 +29,7 @@ export {
   locationReducer,
   type LocationState,
   setLocation,
+  setRadius,
   type StoredLocation,
 } from './locationSlice';
 export {

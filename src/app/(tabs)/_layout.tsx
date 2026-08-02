@@ -23,9 +23,10 @@ export default function TabsLayout() {
         )}
       >
         <Tabs.Screen name="home" options={{ title: 'Home' }} />
-        <Tabs.Screen name="chat" options={{ title: 'Chat' }} />
-        <Tabs.Screen name="wishlist" options={{ title: 'Wishlist' }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+        <Tabs.Screen name="nearby" options={{ title: 'Nearby' }} />
+        <Tabs.Screen name="chat" options={{ title: 'Chat', href: null }} />
+        <Tabs.Screen name="wishlist" options={{ title: 'Saved' }} />
+        <Tabs.Screen name="profile" options={{ title: 'Me' }} />
       </Tabs>
 
       <SellSheet ref={sellSheetRef} />

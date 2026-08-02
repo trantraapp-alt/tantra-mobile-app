@@ -3,10 +3,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
 import { Button } from '@/components/buttons';
-import { ControlledTextField } from '@/components/inputs';
+import {
+  ControlledTextField,
+  KeyboardAwareScrollView,
+} from '@/components/inputs';
 import { Header } from '@/components/shared';
 import { Screen, Text } from '@/components/ui';
 import { appConstants, routes } from '@/constants';
@@ -68,10 +71,10 @@ export function ResetPasswordScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets={false}
         >
           <View style={styles.header}>
             <Text variant="h2">Enter the code</Text>
@@ -118,7 +121,7 @@ export function ResetPasswordScreen() {
             loading={isResending}
             onPress={onResend}
           />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </Screen>
   );

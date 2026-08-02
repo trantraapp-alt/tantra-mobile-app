@@ -14,6 +14,7 @@ import { createTabBarButtonStyles } from './TabBarButton.styles';
 // Translation key for each tab's label.
 const TAB_LABEL_KEYS: Record<string, TranslationKey> = {
   home: 'tab.home',
+  nearby: 'tab.nearby',
   chat: 'tab.chat',
   wishlist: 'tab.wishlist',
   profile: 'tab.profile',

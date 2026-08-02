@@ -16,12 +16,13 @@ import {
   useForm,
   useWatch,
 } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
 import { Button } from '@/components/buttons';
 import {
   CheckboxGroup,
   DateField,
+  KeyboardAwareScrollView,
   RadioGroup,
   Select,
   type SelectItem,
@@ -829,11 +830,8 @@ function DynamicListingFormComponent({
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.intro}>
@@ -874,7 +872,7 @@ function DynamicListingFormComponent({
               </View>
             );
           })}
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         <View style={styles.footer}>
           <Button

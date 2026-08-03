@@ -8,7 +8,7 @@ import { Header } from '@/components/shared';
 import { type BottomSheetRef, Screen } from '@/components/ui';
 import { appConstants, routes } from '@/constants';
 import type { FeedListing } from '@/features/home';
-import { useTranslation } from '@/hooks';
+import { useGoBack, useTranslation } from '@/hooks';
 
 import { marketplaceApi } from '../../api';
 import {
@@ -23,6 +23,7 @@ import type { ListingFilters } from '../../types';
 // Renders a seller's public listings.
 export function SellerProfileScreen() {
   const router = useRouter();
+  const goBack = useGoBack();
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ userId?: string; name?: string }>();
   const userId = params.userId?.trim() ?? '';
@@ -63,7 +64,7 @@ export function SellerProfileScreen() {
 
   return (
     <Screen padded={false}>
-      <Header title={title} showBack onBack={() => router.back()} />
+      <Header title={title} showBack onBack={goBack} />
       <ListingResults
         feed={feed}
         onListingPress={openListing}

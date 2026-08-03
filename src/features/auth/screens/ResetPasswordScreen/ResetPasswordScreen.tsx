@@ -13,7 +13,7 @@ import {
 import { Header } from '@/components/shared';
 import { Screen, Text } from '@/components/ui';
 import { appConstants, routes } from '@/constants';
-import { useThemedStyles, useToastError } from '@/hooks';
+import { useGoBack, useThemedStyles, useToastError } from '@/hooks';
 
 import { useForgotPassword, useResetPassword } from '../../hooks';
 import {
@@ -26,6 +26,7 @@ import { createAuthStyles } from '../../styles';
 export function ResetPasswordScreen() {
   const styles = useThemedStyles(createAuthStyles);
   const router = useRouter();
+  const goBack = useGoBack(routes.auth.login);
   const { mobileNumber } = useLocalSearchParams<{ mobileNumber: string }>();
   const { resetPassword, isPending, error } = useResetPassword();
   const { requestReset, isPending: isResending } = useForgotPassword();
@@ -65,7 +66,7 @@ export function ResetPasswordScreen() {
 
   return (
     <Screen edges={['bottom']}>
-      <Header showBack onBack={() => router.back()} title="Reset password" />
+      <Header showBack onBack={goBack} title="Reset password" />
 
       <KeyboardAvoidingView
         style={styles.flex}

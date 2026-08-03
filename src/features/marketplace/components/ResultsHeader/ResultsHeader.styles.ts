@@ -18,6 +18,17 @@ export function createResultsHeaderStyles(theme: AppTheme) {
       paddingHorizontal: theme.spacing.lg,
       gap: theme.spacing.md,
     },
+    left: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+      flexShrink: 1,
+    },
+    right: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
     filterButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -28,9 +39,12 @@ export function createResultsHeaderStyles(theme: AppTheme) {
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.xs,
     },
+    clear: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+    },
     count: {
       flexShrink: 1,
-      textAlign: 'right',
     },
     pressed: {
       opacity: theme.opacity.pressed,

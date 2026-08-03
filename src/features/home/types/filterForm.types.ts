@@ -39,6 +39,11 @@ export interface FilterGroup {
   attributeKey?: string | null;
   // Options for RADIO / DROPDOWN groups.
   options?: FilterOption[] | null;
+  // Numeric bounds for a slider group (PRICE_RANGE): the lowest/highest values
+  // and the drag increment.
+  min?: number | null;
+  max?: number | null;
+  step?: number | null;
 }
 
 // The filter-form response body (unwrapped from the standard envelope).

@@ -1,7 +1,6 @@
 // Edit an existing listing. Loads the listing's current values and its category
 // form schema, pre-fills the shared DynamicListingForm (with locked fields
 // honored), and submits changes via PUT. Reuses the exact create-time renderer.
-import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
@@ -15,7 +14,7 @@ import {
   type ListingValues,
   localize,
 } from '@/features/sell';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { logger, toApiError } from '@/lib';
 import { useToast } from '@/providers';
 
@@ -34,7 +33,7 @@ export interface EditListingScreenProps {
 // Renders the edit-listing screen.
 export function EditListingScreen({ listingId }: EditListingScreenProps) {
   const styles = useThemedStyles(createEditListingScreenStyles);
-  const router = useRouter();
+  const goBack = useGoBack();
   const { t, language } = useTranslation();
   const { showSuccess, showError } = useToast();
 
@@ -93,13 +92,13 @@ export function EditListingScreen({ listingId }: EditListingScreenProps) {
         showSuccess(
           res.message ? localize(res.message, language) : t('listing.updateSuccess'),
         );
-        router.back();
+        goBack();
       } catch (error) {
         logger.warn('[Listings] Update failed', error);
         showError(t('listing.updateError'));
       }
     },
-    [listingId, showSuccess, showError, language, t, router],
+    [listingId, showSuccess, showError, language, t, goBack],
   );
 
   // Chooses the body for the current data state.
@@ -150,7 +149,7 @@ export function EditListingScreen({ listingId }: EditListingScreenProps) {
       <Header
         title={t('listing.editTitle')}
         showBack
-        onBack={() => router.back()}
+        onBack={goBack}
       />
       {renderBody()}
     </Screen>

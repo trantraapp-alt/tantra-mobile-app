@@ -33,10 +33,11 @@ import {
 } from '@/components/ui';
 import { routes } from '@/constants';
 import { localize } from '@/features/sell';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import type { TranslationKey } from '@/i18n';
 import { logger } from '@/lib';
 import { useTheme, useToast } from '@/providers';
+import { commonStyles } from '@/utils';
 
 import { listingsApi } from '../../api';
 import type { QuickEditSheetRef } from '../../components';
@@ -72,6 +73,7 @@ export function MyListingsScreen() {
   const styles = useThemedStyles(createMyListingsScreenStyles);
   const theme = useTheme();
   const router = useRouter();
+  const goBack = useGoBack();
   const { t, language } = useTranslation();
   const { showSuccess, showError } = useToast();
 
@@ -350,25 +352,30 @@ export function MyListingsScreen() {
         />
       );
     }
+    // The flex wrapper bounds the list between the filter bar and the bottom of
+    // the screen, so FlashList scrolls internally instead of growing to its
+    // content height and pushing its own tail out of reach.
     return (
-      <FlashList
-        data={listings}
-        keyExtractor={(item) => String(getListingId(item))}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.4}
-        refreshing={isRefreshing}
-        onRefresh={refresh}
-        showsVerticalScrollIndicator={false}
-        ListFooterComponent={
-          isLoadingMore ? (
-            <View style={styles.footerLoader}>
-              <Spinner />
-            </View>
-          ) : null
-        }
-      />
+      <View style={commonStyles.flexOne}>
+        <FlashList
+          data={listings}
+          keyExtractor={(item) => String(getListingId(item))}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.4}
+          refreshing={isRefreshing}
+          onRefresh={refresh}
+          showsVerticalScrollIndicator={false}
+          ListFooterComponent={
+            isLoadingMore ? (
+              <View style={styles.footerLoader}>
+                <Spinner />
+              </View>
+            ) : null
+          }
+        />
+      </View>
     );
   };
 
@@ -377,7 +384,7 @@ export function MyListingsScreen() {
       <Header
         title={t('listing.myListingsTitle')}
         showBack
-        onBack={() => router.back()}
+        onBack={goBack}
       />
       <MyListingsFilters
         listingType={listingType}

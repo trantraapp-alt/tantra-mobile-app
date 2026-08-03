@@ -38,6 +38,11 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   leftIcon?: React.ReactNode;
   // Optional element rendered inside the field on the right.
   rightIcon?: React.ReactNode;
+  // Underlying input component. Pass gorhom's BottomSheetTextInput for fields
+  // inside a bottom sheet — a plain TextInput there doesn't register with the
+  // sheet's keyboard handling, so typing appears to do nothing. Defaults to
+  // react-native's TextInput.
+  InputComponent?: React.ElementType;
 }
 
 // Renders a themed, accessible text field with validation styling.
@@ -55,6 +60,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(
       onFocus,
       onBlur,
       editable = true,
+      InputComponent = TextInput,
       ...rest
     },
     ref,
@@ -129,7 +135,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(
           {leftIcon ? (
             <View style={styles.leftIcon}>{withIconSize(leftIcon)}</View>
           ) : null}
-          <TextInput
+          <InputComponent
             ref={ref}
             style={[styles.input, isMultiline && styles.multilineInput]}
             placeholderTextColor={theme.colors.textTertiary}

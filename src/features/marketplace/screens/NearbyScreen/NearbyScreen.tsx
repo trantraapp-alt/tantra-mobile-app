@@ -11,7 +11,7 @@ import { type BottomSheetRef, Screen, Text } from '@/components/ui';
 import { appConstants, routes } from '@/constants';
 import type { FeedListing } from '@/features/home';
 import { LocationChip } from '@/features/location';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 import { useAppSelector } from '@/store/hooks';
 import { selectSearchRadius } from '@/store/selectors';
@@ -40,6 +40,7 @@ export function NearbyScreen({ showBack = true }: NearbyScreenProps = {}) {
   const theme = useTheme();
   const styles = useThemedStyles(createNearbyScreenStyles);
   const router = useRouter();
+  const goBack = useGoBack();
   const { t } = useTranslation();
 
   const geo = useUserGeo();
@@ -77,7 +78,7 @@ export function NearbyScreen({ showBack = true }: NearbyScreenProps = {}) {
       <Header
         title={t('market.nearbyTitle')}
         showBack={showBack}
-        onBack={() => router.back()}
+        onBack={goBack}
       />
       {geo ? (
         <ListingResults

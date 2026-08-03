@@ -20,8 +20,18 @@ export interface ScreenProps extends PropsWithChildren {
   style?: ViewStyle;
   // Whether to use the surface background instead of the base background.
   variant?: 'background' | 'surface';
-  // Whether a tap on a non-interactive area dismisses the keyboard. On by
-  // default; opt out only for screens that manage keyboard focus themselves.
+  // Whether a tap on a non-interactive area dismisses the keyboard.
+  //
+  // OFF by default, because it is redundant on almost every screen and not free.
+  // Any ScrollView / FlatList / FlashList already dismisses the keyboard both on
+  // an unhandled tap and on drag, via `keyboardShouldPersistTaps` and
+  // `keyboardDismissMode` (`KeyboardAwareScrollView` sets both for you). Wrapping
+  // the screen on top of that adds a second touch responder competing with the
+  // scroll surface's own — which is what a screen that "won't scroll" or whose
+  // first drag gets dropped usually turns out to be.
+  //
+  // Turn it on only for a screen that has inputs and NO scroll surface to
+  // inherit the behavior from.
   dismissKeyboardOnTap?: boolean;
 }
 
@@ -32,7 +42,7 @@ export function Screen({
   edges = ['top', 'bottom'],
   style,
   variant = 'background',
-  dismissKeyboardOnTap = true,
+  dismissKeyboardOnTap = false,
 }: ScreenProps) {
   const styles = useThemedStyles(createScreenStyles);
   // iOS keeps fixed bottom content (footer buttons, CTAs) close to the screen

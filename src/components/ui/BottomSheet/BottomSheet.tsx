@@ -4,6 +4,7 @@
 // text inputs should pass `scrollable` (with `snapPoints`) so the body scrolls
 // above the keyboard and a tap outside an input dismisses it; they may also pass
 // a sticky `footer` (e.g. an Apply button) that stays pinned above the keyboard.
+// Every sheet also closes on the Android hardware back button (see below).
 import {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
@@ -17,15 +18,16 @@ import type { ReactNode } from 'react';
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { View } from 'react-native';
+import { BackHandler, Platform, View } from 'react-native';
 
 import { useBottomInset, useThemedStyles } from '@/hooks';
-import { useTheme } from '@/providers';
 
 import { Text } from '../Text';
 import { createBottomSheetStyles } from './BottomSheet.styles';
@@ -55,18 +57,37 @@ export interface BottomSheetProps {
   footer?: ReactNode;
   // Additional style applied to the content container.
   contentStyle?: StyleProp<ViewStyle>;
+  // Whether dragging the sheet body pans / closes the sheet (gorhom default
+  // true). Set false when the body has its own drag control (e.g. a slider) that
+  // would otherwise fight the sheet's pan gesture and close it mid-drag.
+  enableContentPanningGesture?: boolean;
+  // Whether the scrollable body can scroll. Set false while a child (e.g. a
+  // slider) is being dragged so the drag doesn't scroll the sheet content.
+  scrollEnabled?: boolean;
 }
 
 // Renders a themed, safe-area-aware bottom sheet modal.
 export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
   function BottomSheet(
-    { children, title, subtitle, snapPoints, scrollable, footer, contentStyle },
+    {
+      children,
+      title,
+      subtitle,
+      snapPoints,
+      scrollable,
+      footer,
+      contentStyle,
+      enableContentPanningGesture = true,
+      scrollEnabled = true,
+    },
     ref,
   ) {
-    const theme = useTheme();
     const styles = useThemedStyles(createBottomSheetStyles);
     const bottomInset = useBottomInset();
     const modalRef = useRef<BottomSheetModal>(null);
+    // Whether the sheet is currently presented. Drives the Android back
+    // handler below; `index >= 0` means at least the first snap point is open.
+    const [isOpen, setIsOpen] = useState(false);
 
     useImperativeHandle(
       ref,
@@ -77,13 +98,47 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
       [],
     );
 
-    // Bottom padding always clears the navigation inset plus a base gap; extra
-    // room is added when a sticky footer overlays the content.
+    // Tracks presented/dismissed so the back handler is only registered while
+    // the sheet is actually on screen.
+    const handleChange = useCallback((index: number) => {
+      setIsOpen(index >= 0);
+    }, []);
+
+    const handleDismiss = useCallback(() => {
+      setIsOpen(false);
+    }, []);
+
+    // Android hardware back closes the sheet instead of navigating away.
+    // `@gorhom/bottom-sheet` ships no back-button integration of its own, so
+    // without this a back press pops the screen *behind* the open sheet — the
+    // user loses the whole screen when they meant to dismiss a filter panel.
+    //
+    // The listener is added only while open, and RN invokes handlers in reverse
+    // registration order, so with sheets stacked the topmost one closes first.
+    useEffect(() => {
+      if (Platform.OS !== 'android' || !isOpen) {
+        return;
+      }
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          modalRef.current?.dismiss();
+          // Consume the press so navigation does not also pop the screen.
+          return true;
+        },
+      );
+      return () => subscription.remove();
+    }, [isOpen]);
+
+    // Bottom padding is just the system navigation inset — 0 on iOS and on
+    // Android devices without a system nav bar, so the content (e.g. the Apply
+    // row) sits right near the bezel; extra room is added only when a sticky
+    // footer overlays the content.
     const contentPadding = useMemo<ViewStyle>(
       () => ({
-        paddingBottom: bottomInset + theme.spacing.xl + (footer ? 64 : 0),
+        paddingBottom: bottomInset + (footer ? 64 : 0),
       }),
-      [bottomInset, theme.spacing.xl, footer],
+      [bottomInset, footer],
     );
 
     // Renders the dimmed backdrop behind the sheet.
@@ -125,6 +180,9 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         snapPoints={snapPoints}
         enableDynamicSizing={!snapPoints}
         enablePanDownToClose
+        onChange={handleChange}
+        onDismiss={handleDismiss}
+        enableContentPanningGesture={enableContentPanningGesture}
         // Without these, a text input inside the sheet gets covered by the
         // keyboard on open and the sheet snaps shut instead of just losing
         // focus when the keyboard is dismissed — 'interactive' makes the
@@ -147,6 +205,7 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
             contentContainerStyle={[styles.content, contentPadding, contentStyle]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            scrollEnabled={scrollEnabled}
           >
             {header}
             {children}

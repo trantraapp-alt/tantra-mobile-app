@@ -5,7 +5,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Clock, SearchX, SlidersHorizontal } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { IconButton } from '@/components/buttons';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -16,7 +16,7 @@ import { type BottomSheetRef, Divider, Screen, Text } from '@/components/ui';
 import { appConstants, routes } from '@/constants';
 import type { FeaturedBusiness, FeedListing } from '@/features/home';
 import { FeaturedBusinessCard } from '@/features/home';
-import { useDebouncedValue, useThemedStyles, useTranslation } from '@/hooks';
+import { useDebouncedValue, useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { selectRecentSearches } from '@/store/selectors';
@@ -84,6 +84,7 @@ export function SearchResultsScreen() {
   const theme = useTheme();
   const styles = useThemedStyles(createSearchResultsStyles);
   const router = useRouter();
+  const goBack = useGoBack();
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const recentSearches = useAppSelector(selectRecentSearches);
@@ -253,8 +254,18 @@ export function SearchResultsScreen() {
         </View>
       );
     }
+    // A scroll view, not a plain View: the history holds up to
+    // `appConstants.maxRecentSearches` rows, which overflows a small screen
+    // once the search row and section header are accounted for — the last
+    // entries were unreachable. `handled` keeps a row tappable in one tap while
+    // the keyboard is open; dragging dismisses it.
     return (
-      <View style={styles.recent}>
+      <ScrollView
+        contentContainerStyle={styles.recent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+      >
         <SectionHeader
           title={t('market.search.recent')}
           actionLabel={t('market.search.clear')}
@@ -279,7 +290,7 @@ export function SearchResultsScreen() {
             <Divider />
           </View>
         ))}
-      </View>
+      </ScrollView>
     );
   };
 
@@ -289,7 +300,7 @@ export function SearchResultsScreen() {
         <IconButton
           icon={ArrowLeft}
           accessibilityLabel={t('common.back')}
-          onPress={() => router.back()}
+          onPress={goBack}
         />
         <View style={styles.searchInput}>
           <SearchBar

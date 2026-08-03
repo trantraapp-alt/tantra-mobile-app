@@ -1,7 +1,7 @@
 // Admin review screen: renders the shared BusinessProfileView body (photo
 // gallery, formatted fields, address) plus Approve / Reject / Block actions.
 // Reject and Block open a bottom sheet to collect the mandatory reason.
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Ban, Check, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -12,7 +12,7 @@ import { TextField } from '@/components/inputs';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import { BottomSheet, type BottomSheetRef, Screen, Text } from '@/components/ui';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
 import { useTheme, useToast } from '@/providers';
 
@@ -29,7 +29,7 @@ type ReasonAction = 'reject' | 'block';
 export function AdminReviewScreen() {
   const styles = useThemedStyles(createAdminReviewStyles);
   const theme = useTheme();
-  const router = useRouter();
+  const goBack = useGoBack();
   const { t, language } = useTranslation();
   const { showSuccess, showError } = useToast();
   const { profileId, profile: profileJson } = useLocalSearchParams<{ profileId: string; profile?: string }>();
@@ -100,14 +100,14 @@ export function AdminReviewScreen() {
     try {
       await businessProfileApi.approve(profileId);
       showSuccess(t('businessProfile.admin.approveSuccess'));
-      router.back();
+      goBack();
     } catch (error) {
       logger.warn('[BusinessProfile] Approve failed', error);
       showError(t('businessProfile.admin.actionError'));
     } finally {
       setSubmitting(false);
     }
-  }, [profileId, router, showSuccess, showError, t]);
+  }, [profileId, goBack, showSuccess, showError, t]);
 
   const handleReasonSubmit = useCallback(async () => {
     if (!profileId || !reasonAction) {
@@ -127,14 +127,14 @@ export function AdminReviewScreen() {
         await businessProfileApi.block(profileId, reason.trim());
         showSuccess(t('businessProfile.admin.blockSuccess'));
       }
-      router.back();
+      goBack();
     } catch (error) {
       logger.warn('[BusinessProfile] Review action failed', error);
       showError(t('businessProfile.admin.actionError'));
     } finally {
       setSubmitting(false);
     }
-  }, [profileId, reasonAction, reason, router, showSuccess, showError, t]);
+  }, [profileId, reasonAction, reason, goBack, showSuccess, showError, t]);
 
   const renderBody = () => {
     if (isLoading) {
@@ -219,7 +219,7 @@ export function AdminReviewScreen() {
       <Header
         title={profile?.businessName ?? t('businessProfile.admin.tracker')}
         showBack
-        onBack={() => router.back()}
+        onBack={goBack}
       />
       {renderBody()}
 

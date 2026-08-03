@@ -23,8 +23,13 @@ import { fileUrl } from '@/config';
 import { appConstants, routes } from '@/constants';
 import type { FeedListing } from '@/features/home';
 import { ListingRow } from '@/features/home';
-import { feedLocationLabel, resolveFeedTitle } from '@/features/home/utils/feedListing';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import {
+  feedDescription,
+  feedLocationLabel,
+  listingAttributeEntries,
+  resolveFeedTitle,
+} from '@/features/home/utils/feedListing';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
 import { useTheme, useToast } from '@/providers';
 
@@ -60,6 +65,7 @@ export function MarketplaceListingDetailScreen() {
   const styles = useThemedStyles(createListingDetailStyles);
   const { t, language } = useTranslation();
   const router = useRouter();
+  const goBack = useGoBack();
   const { showError } = useToast();
   const params = useLocalSearchParams<{ id?: string }>();
   const listingId = params.id?.trim() ?? '';
@@ -130,6 +136,12 @@ export function MarketplaceListingDetailScreen() {
     const ago = agoRaw === 'now' ? t('detail.justNow') : agoRaw;
     const type = String(listing.listingType ?? '').toUpperCase();
     const typeTone: BadgeTone = type === 'RENT' ? 'warning' : 'success';
+    const typeLabel =
+      type === 'RENT'
+        ? t('market.type.rent')
+        : type === 'SELL'
+          ? t('market.type.sell')
+          : type;
     const discount =
       listing.discountPct != null && listing.discountPct > 0
         ? Math.round(listing.discountPct)
@@ -138,9 +150,8 @@ export function MarketplaceListingDetailScreen() {
       listing.quantity != null
         ? `${listing.quantity} ${listing.unit ?? ''}`.trim()
         : '—';
-    const attrs = Object.entries(listing.attributes ?? {})
-      .filter(([, v]) => v != null && typeof v !== 'object' && String(v) !== '')
-      .slice(0, 12);
+    const description = feedDescription(listing);
+    const attrs = listingAttributeEntries(listing).slice(0, 12);
     const contactHidden = listing.showContact === false;
 
     return (
@@ -207,7 +218,7 @@ export function MarketplaceListingDetailScreen() {
             </View>
 
             <View style={styles.tagsRow}>
-              {type ? <Badge tone={typeTone} label={type} /> : null}
+              {type ? <Badge tone={typeTone} label={typeLabel} /> : null}
               {listing.isNegotiable ? (
                 <Badge tone="neutral" label={t('home.tagNegotiable')} />
               ) : null}
@@ -239,6 +250,22 @@ export function MarketplaceListingDetailScreen() {
             </View>
           </View>
 
+          {/* Description */}
+          {description ? (
+            <View style={[styles.section, styles.sectionBordered]}>
+              <Text
+                variant="overline"
+                color="textSecondary"
+                style={styles.sectionTitle}
+              >
+                {t('detail.description')}
+              </Text>
+              <Text variant="body" color="textSecondary">
+                {description}
+              </Text>
+            </View>
+          ) : null}
+
           {/* Attributes */}
           {attrs.length > 0 ? (
             <View style={[styles.section, styles.sectionBordered]}>
@@ -250,13 +277,13 @@ export function MarketplaceListingDetailScreen() {
                 {t('detail.details')}
               </Text>
               <View style={styles.attrsGrid}>
-                {attrs.map(([key, value]) => (
-                  <View key={key} style={styles.attrItem}>
+                {attrs.map((attr) => (
+                  <View key={attr.key} style={styles.attrItem}>
                     <Text variant="overline" color="textTertiary">
-                      {key}
+                      {attr.label}
                     </Text>
                     <Text variant="label" numberOfLines={2}>
-                      {String(value)}
+                      {attr.value}
                     </Text>
                   </View>
                 ))}
@@ -346,7 +373,7 @@ export function MarketplaceListingDetailScreen() {
       <Header
         title={t('detail.title')}
         showBack
-        onBack={() => router.back()}
+        onBack={goBack}
       />
       {renderBody()}
       <ContactModal

@@ -11,7 +11,7 @@ import { Button } from '@/components/buttons';
 import { ControlledTextField } from '@/components/inputs';
 import { Text } from '@/components/ui';
 import { routes } from '@/constants';
-import { useThemedStyles, useToastError } from '@/hooks';
+import { useGoBack, useThemedStyles, useToastError } from '@/hooks';
 import { useTheme } from '@/providers';
 
 import { AuthShell } from '../../components';
@@ -27,6 +27,7 @@ export function ForgotPasswordScreen() {
   const theme = useTheme();
   const styles = useThemedStyles(createForgotPasswordStyles);
   const router = useRouter();
+  const goBack = useGoBack(routes.auth.login);
   const { requestReset, isPending, error } = useForgotPassword();
 
   // Surface reset-request errors as a top toast.
@@ -53,7 +54,7 @@ export function ForgotPasswordScreen() {
 
   return (
     <AuthShell
-      onBack={() => router.back()}
+      onBack={goBack}
       title="Forgot password?"
       subtitle="Enter your mobile number and we will send you a reset code."
     >
@@ -88,7 +89,7 @@ export function ForgotPasswordScreen() {
           variant="ghost"
           size="sm"
           fullWidth={false}
-          onPress={() => router.back()}
+          onPress={goBack}
         />
       </View>
     </AuthShell>

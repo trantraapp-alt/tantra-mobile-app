@@ -11,7 +11,7 @@ import { IconButton } from '@/components/buttons';
 import { type BottomSheetRef, Screen, Text } from '@/components/ui';
 import { appConstants, routes } from '@/constants';
 import type { FeedListing } from '@/features/home';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 
 import { marketplaceApi } from '../../api';
@@ -23,11 +23,13 @@ import {
 } from '../../components';
 import { useListingFeed, useUserGeo } from '../../hooks';
 import type { ListingFilters } from '../../types';
+import { sortListings } from '../../utils/sortListings';
 import { createBrowseStyles } from './BrowseScreen.styles';
 
 // Renders the browse-by-category screen.
 export function BrowseScreen() {
   const router = useRouter();
+  const goBack = useGoBack();
   const { t } = useTranslation();
   const theme = useTheme();
   const styles = useThemedStyles(createBrowseStyles);
@@ -80,6 +82,12 @@ export function BrowseScreen() {
     [isNumericId, numericId, categoryKey, filters, geo, size],
   );
   const feed = useListingFeed(fetchPage, { enabled });
+  // The browse endpoints reject the backend sort param, so order the loaded
+  // results client-side by the selected sort option.
+  const sortedFeed = useMemo(
+    () => ({ ...feed, listings: sortListings(feed.listings, filters.sort) }),
+    [feed, filters.sort],
+  );
 
   const sortOptions = useMemo<SortOptionItem[]>(
     () => [
@@ -110,7 +118,7 @@ export function BrowseScreen() {
         <IconButton
           icon={ArrowLeft}
           accessibilityLabel={t('common.back')}
-          onPress={() => router.back()}
+          onPress={goBack}
         />
         <Pressable
           accessibilityRole="button"
@@ -138,7 +146,7 @@ export function BrowseScreen() {
         />
       </View>
       <ListingResults
-        feed={feed}
+        feed={sortedFeed}
         onListingPress={openListing}
         emptyTitle={t('market.emptyTitle')}
         emptyDescription={t('market.emptyDesc')}

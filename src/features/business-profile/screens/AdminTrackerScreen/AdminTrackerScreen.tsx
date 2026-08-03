@@ -11,7 +11,7 @@ import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import { Card, Screen, Text } from '@/components/ui';
 import { routes } from '@/constants';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import type { TranslationKey } from '@/i18n';
 import { useTheme } from '@/providers';
 
@@ -34,6 +34,7 @@ export function AdminTrackerScreen() {
   const styles = useThemedStyles(createAdminTrackerStyles);
   const theme = useTheme();
   const router = useRouter();
+  const goBack = useGoBack();
   const { t } = useTranslation();
   const { stats, isLoading, isError, refetch } = useAdminStats();
 
@@ -175,7 +176,7 @@ export function AdminTrackerScreen() {
       <Header
         title={t('businessProfile.admin.title')}
         showBack
-        onBack={() => router.back()}
+        onBack={goBack}
       />
       {renderBody()}
     </Screen>

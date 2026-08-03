@@ -14,7 +14,7 @@ import { Header } from '@/components/shared';
 import { Screen } from '@/components/ui';
 import { routes } from '@/constants';
 import { localize } from '@/features/sell';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
 import { useTheme, useToast } from '@/providers';
 
@@ -29,6 +29,7 @@ export function AddressListScreen() {
   const styles = useThemedStyles(createAddressListStyles);
   const theme = useTheme();
   const router = useRouter();
+  const goBack = useGoBack();
   const { t, language } = useTranslation();
   const { showSuccess, showError } = useToast();
   const {
@@ -179,7 +180,7 @@ export function AddressListScreen() {
       <Header
         title={t('address.title')}
         showBack
-        onBack={() => router.back()}
+        onBack={goBack}
       />
       {renderBody()}
       {!isEmpty && !atLimit ? (

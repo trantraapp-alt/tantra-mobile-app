@@ -1,5 +1,4 @@
 // Search screen: query input, recent searches and debounced query handling.
-import { useRouter } from 'expo-router';
 import { ArrowLeft, Clock } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
@@ -10,7 +9,7 @@ import { SearchBar } from '@/components/inputs';
 import { SectionHeader } from '@/components/shared';
 import { Divider, Screen, Text } from '@/components/ui';
 import { appConstants } from '@/constants';
-import { useDebouncedValue, useThemedStyles } from '@/hooks';
+import { useDebouncedValue, useGoBack, useThemedStyles } from '@/hooks';
 import { useTheme } from '@/providers';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { selectRecentSearches } from '@/store/selectors';
@@ -22,7 +21,7 @@ import { createSearchStyles } from './SearchScreen.styles';
 export function SearchScreen() {
   const theme = useTheme();
   const styles = useThemedStyles(createSearchStyles);
-  const router = useRouter();
+  const goBack = useGoBack();
   const dispatch = useAppDispatch();
   const recentSearches = useAppSelector(selectRecentSearches);
 
@@ -48,7 +47,7 @@ export function SearchScreen() {
         <IconButton
           icon={ArrowLeft}
           accessibilityLabel="Go back"
-          onPress={() => router.back()}
+          onPress={goBack}
         />
         <View style={styles.searchInput}>
           <SearchBar
@@ -62,7 +61,11 @@ export function SearchScreen() {
       </View>
 
       {!hasQuery && recentSearches.length > 0 ? (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           <SectionHeader
             title="Recent searches"
             actionLabel="Clear"

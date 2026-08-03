@@ -8,10 +8,6 @@ export {
 } from './FeaturedBusinessCard';
 export { FeedListingCard, type FeedListingCardProps } from './FeedListingCard';
 export { FlashDeals, type FlashDealsProps } from './FlashDeals';
-export {
-  HomeFilterSheet,
-  type HomeFilterSheetProps,
-} from './HomeFilterSheet';
 export { HomeHeader, type HomeHeaderProps } from './HomeHeader';
 export { ListingRow, type ListingRowProps } from './ListingRow';
 export {

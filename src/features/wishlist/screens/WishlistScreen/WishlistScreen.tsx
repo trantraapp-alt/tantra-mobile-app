@@ -12,6 +12,7 @@ import { Screen } from '@/components/ui';
 import { routes } from '@/constants';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import type { Product } from '@/types';
+import { commonStyles } from '@/utils';
 
 import { useWishlist } from '../../hooks';
 import { createWishlistStyles } from './WishlistScreen.styles';
@@ -56,14 +57,18 @@ export function WishlistScreen() {
           onAction={() => router.replace(routes.tabs.home)}
         />
       ) : (
-        <FlashList
-          data={items}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          numColumns={2}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-        />
+        // The flex wrapper bounds the grid below the header so FlashList
+        // scrolls internally rather than growing to its full content height.
+        <View style={commonStyles.flexOne}>
+          <FlashList
+            data={items}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            numColumns={2}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
       )}
     </Screen>
   );

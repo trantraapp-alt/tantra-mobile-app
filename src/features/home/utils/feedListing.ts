@@ -100,6 +100,64 @@ export function resolveFeedTitle(
   return category || fallback;
 }
 
+// Attribute keys whose value is a free-text description of the item.
+const DESCRIPTION_KEY_RE = /description|details|about|remarks/i;
+
+// A free-text description pulled from the listing's attributes (e.g.
+// `cropDescription`), or undefined when none is present.
+export function feedDescription(listing: FeedListing): string | undefined {
+  const attributes = listing.attributes ?? {};
+  for (const [key, value] of Object.entries(attributes)) {
+    if (
+      DESCRIPTION_KEY_RE.test(key) &&
+      typeof value === 'string' &&
+      value.trim() !== ''
+    ) {
+      return value.trim();
+    }
+  }
+  return undefined;
+}
+
+// Turns a raw attribute key into a human label: "cropType" -> "Crop Type",
+// "qty_measurement" -> "Qty Measurement".
+export function humanizeAttributeKey(key: string): string {
+  return key
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// Attribute keys already surfaced elsewhere (title / quantity), hidden from the
+// generic attributes grid to avoid duplication.
+const HIDDEN_ATTRIBUTE_KEYS = new Set(['title', 'qty', 'quantity']);
+
+// Human-labelled attribute entries for the detail grid: drops object / blank
+// values and the keys already shown as the title, description or quantity.
+export function listingAttributeEntries(
+  listing: FeedListing,
+): { key: string; label: string; value: string }[] {
+  const attributes = listing.attributes ?? {};
+  return Object.entries(attributes)
+    .filter(
+      ([key, value]) =>
+        value != null &&
+        typeof value !== 'object' &&
+        String(value).trim() !== '' &&
+        !HIDDEN_ATTRIBUTE_KEYS.has(key) &&
+        !DESCRIPTION_KEY_RE.test(key),
+    )
+    .map(([key, value]) => ({
+      key,
+      label: humanizeAttributeKey(key),
+      value: String(value),
+    }));
+}
+
 // Whether a listing has been sold (grey overlay + stamp on the card).
 export function isSold(listing: FeedListing): boolean {
   return String(listing.status ?? '').toUpperCase() === 'SOLD';

@@ -12,13 +12,36 @@ import {
 import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/buttons';
-import { TextField } from '@/components/inputs';
+import { RangeSlider, Slider } from '@/components/inputs';
 import { BottomSheet, type BottomSheetRef, Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
 
 import type { ListingFilters } from '../../types';
 import { AttributeFilters } from './AttributeFilters';
 import { createFilterSheetStyles } from './FilterSheet.styles';
+
+// Distance slider bounds (km). The maximum doubles as "All India" (no radius
+// filter), so at the far end the browse shows every listing.
+const DISTANCE_MIN = 1;
+const DISTANCE_MAX = 500;
+
+// Price-range slider bounds (₹). A fixed 0 – ₹20 lakh range so the slider covers
+// everything from cheap produce to high-value equipment / land.
+const PRICE_MIN = 0;
+const PRICE_MAX = 2_000_000;
+const PRICE_STEP = 1000;
+
+// Formats a rupee amount for the price-range read-out.
+function formatMoney(value: number): string {
+  return `₹${Math.round(value).toLocaleString('en-IN')}`;
+}
+
+// Fixed sheet height. A scrollable body needs an explicit snap point: with
+// dynamic sizing the sheet grows to its content, so on a category that loads
+// several attribute filter groups the Reset / Apply row is pushed past the
+// bottom of the screen with no bounded scroll region to reach it. Module-level
+// so the array identity stays stable across renders.
+const SNAP_POINTS = ['85%'];
 
 // A single-choice option value (undefined represents the "all / any" choice).
 type ChoiceValue = string | number | undefined;
@@ -52,13 +75,20 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
     const { t } = useTranslation();
     const sheetRef = useRef<BottomSheetRef>(null);
     const [draft, setDraft] = useState<ListingFilters>(filters);
-
+    // Live distance read-out (km); the slider maximum means "any distance".
+    const [radiusKm, setRadiusKm] = useState<number>(
+      filters.radius ?? DISTANCE_MAX,
+    );
+    // Lock the sheet's scroll while a slider is being dragged so the drag doesn't
+    // scroll the content or close the sheet.
+    const [scrollLocked, setScrollLocked] = useState(false);
     // Re-seed the draft from the applied filters every time the sheet opens.
     useImperativeHandle(
       ref,
       () => ({
         present: () => {
           setDraft(filters);
+          setRadiusKm(filters.radius ?? DISTANCE_MAX);
           sheetRef.current?.present();
         },
         dismiss: () => sheetRef.current?.dismiss(),
@@ -71,18 +101,6 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
         { label: t('market.type.all'), value: undefined },
         { label: t('market.type.sell'), value: 'SELL' },
         { label: t('market.type.rent'), value: 'RENT' },
-      ],
-      [t],
-    );
-
-    const radiusOptions = useMemo<Choice[]>(
-      () => [
-        { label: '5 km', value: 5 },
-        { label: '10 km', value: 10 },
-        { label: '25 km', value: 25 },
-        { label: '50 km', value: 50 },
-        { label: '100 km', value: 100 },
-        { label: t('market.radius.all'), value: undefined },
       ],
       [t],
     );
@@ -149,15 +167,10 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
       </View>
     );
 
-    // Parses a price input into a number (or undefined when blank).
-    const parsePrice = (text: string): number | undefined => {
-      const digits = text.replace(/[^0-9]/g, '');
-      return digits === '' ? undefined : Number(digits);
-    };
-
     const handleReset = () => {
       // Keep the module context (browse scope); clear only the user filters.
       setDraft({ sort: draft.sort, moduleId: draft.moduleId });
+      setRadiusKm(DISTANCE_MAX);
     };
 
     const handleApply = () => {
@@ -187,6 +200,9 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
         ref={sheetRef}
         title={t('market.filters.title')}
         scrollable
+        snapPoints={SNAP_POINTS}
+        enableContentPanningGesture={false}
+        scrollEnabled={!scrollLocked}
         contentStyle={styles.content}
       >
         {renderChoiceRow(
@@ -201,42 +217,64 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
         )}
 
         <View>
-          <Text variant="label" style={styles.rowLabel}>
-            {t('market.filters.price')}
-          </Text>
-          <View style={styles.priceRow}>
-            <View style={styles.priceField}>
-              <TextField
-                placeholder={t('market.filters.minPrice')}
-                keyboardType="number-pad"
-                value={draft.minPrice != null ? String(draft.minPrice) : ''}
-                onChangeText={(text) =>
-                  setDraft((d) => ({ ...d, minPrice: parsePrice(text) }))
-                }
-              />
-            </View>
-            <View style={styles.priceField}>
-              <TextField
-                placeholder={t('market.filters.maxPrice')}
-                keyboardType="number-pad"
-                value={draft.maxPrice != null ? String(draft.maxPrice) : ''}
-                onChangeText={(text) =>
-                  setDraft((d) => ({ ...d, maxPrice: parsePrice(text) }))
-                }
-              />
-            </View>
+          <View style={styles.rowHeader}>
+            <Text variant="label">{t('market.filters.price')}</Text>
+            <Text variant="label" color="primary">
+              {`${formatMoney(draft.minPrice ?? PRICE_MIN)} – ${formatMoney(
+                draft.maxPrice ?? PRICE_MAX,
+              )}`}
+            </Text>
           </View>
+          <RangeSlider
+            min={PRICE_MIN}
+            max={PRICE_MAX}
+            step={PRICE_STEP}
+            low={draft.minPrice ?? PRICE_MIN}
+            high={draft.maxPrice ?? PRICE_MAX}
+            onValueChange={(lo, hi) =>
+              setDraft((d) => {
+                const nextMin = lo <= PRICE_MIN ? undefined : lo;
+                const nextMax = hi >= PRICE_MAX ? undefined : hi;
+                // Return the SAME object when nothing changed — otherwise the
+                // controlled slider re-fires and the sheet loops.
+                if (d.minPrice === nextMin && d.maxPrice === nextMax) {
+                  return d;
+                }
+                return { ...d, minPrice: nextMin, maxPrice: nextMax };
+              })
+            }
+            onSlidingStart={() => setScrollLocked(true)}
+            onSlidingEnd={() => setScrollLocked(false)}
+          />
         </View>
 
-        {showRadius
-          ? renderChoiceRow(
-              t('market.filters.radius'),
-              radiusOptions,
-              draft.radius,
-              (value) =>
-                setDraft((d) => ({ ...d, radius: value as number | undefined })),
-            )
-          : null}
+        {showRadius ? (
+          <View>
+            <View style={styles.rowHeader}>
+              <Text variant="label">{t('market.filters.radius')}</Text>
+              <Text variant="label" color="primary">
+                {radiusKm >= DISTANCE_MAX
+                  ? t('market.radius.all')
+                  : `${radiusKm} km`}
+              </Text>
+            </View>
+            <Slider
+              min={DISTANCE_MIN}
+              max={DISTANCE_MAX}
+              step={1}
+              value={draft.radius ?? DISTANCE_MAX}
+              onValueChange={(v) => {
+                setRadiusKm(v);
+                setDraft((d) => ({
+                  ...d,
+                  radius: v >= DISTANCE_MAX ? undefined : v,
+                }));
+              }}
+              onSlidingStart={() => setScrollLocked(true)}
+              onSlidingEnd={() => setScrollLocked(false)}
+            />
+          </View>
+        ) : null}
 
         {renderChoiceRow(
           t('market.filters.sellerType'),

@@ -10,9 +10,9 @@ import { EmptyState } from '@/components/empty-state';
 import { Header } from '@/components/shared';
 import { Divider, Screen, Text } from '@/components/ui';
 import { routes } from '@/constants';
-import { useThemedStyles } from '@/hooks';
+import { useGoBack, useThemedStyles } from '@/hooks';
 import type { CartItem } from '@/types';
-import { formatCurrency } from '@/utils';
+import { commonStyles, formatCurrency } from '@/utils';
 
 import { CartItemCard } from '../../components';
 import { useCart } from '../../hooks';
@@ -22,6 +22,7 @@ import { createCartStyles } from './CartScreen.styles';
 export function CartScreen() {
   const styles = useThemedStyles(createCartStyles);
   const router = useRouter();
+  const goBack = useGoBack();
   const { items, summary, setQuantity, remove } = useCart();
 
   // Renders a single cart line item.
@@ -35,7 +36,7 @@ export function CartScreen() {
   if (items.length === 0) {
     return (
       <Screen padded={false}>
-        <Header title="Cart" showBack onBack={() => router.back()} />
+        <Header title="Cart" showBack onBack={goBack} />
         <EmptyState
           icon={ShoppingBag}
           title="Your cart is empty"
@@ -49,16 +50,21 @@ export function CartScreen() {
 
   return (
     <Screen padded={false} edges={['top']}>
-      <Header title="Cart" showBack onBack={() => router.back()} />
+      <Header title="Cart" showBack onBack={goBack} />
 
-      <FlashList
-        data={items}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        showsVerticalScrollIndicator={false}
-      />
+      {/* The flex wrapper bounds the list between the header and the order
+          summary. Without it the list grows to its content height and pushes
+          the summary — including the checkout button — off the screen. */}
+      <View style={commonStyles.flexOne}>
+        <FlashList
+          data={items}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
 
       <View style={styles.summary}>
         <View style={styles.summaryRow}>

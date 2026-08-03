@@ -12,6 +12,12 @@ export function createFilterSheetStyles(theme: AppTheme) {
     rowLabel: {
       marginBottom: theme.spacing.sm,
     },
+    rowHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: theme.spacing.sm,
+    },
     chipsRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -31,13 +37,6 @@ export function createFilterSheetStyles(theme: AppTheme) {
     },
     pressed: {
       opacity: theme.opacity.pressed,
-    },
-    priceRow: {
-      flexDirection: 'row',
-      gap: theme.spacing.md,
-    },
-    priceField: {
-      flex: 1,
     },
     actions: {
       flexDirection: 'row',

@@ -31,6 +31,7 @@ export {
   RadioGroup,
   type RadioGroupProps,
 } from './RadioGroup';
+export { RangeSlider, type RangeSliderProps } from './RangeSlider';
 export { SearchBar, type SearchBarProps } from './SearchBar';
 export {
   ControlledSegmentedControl,
@@ -39,5 +40,7 @@ export {
   type SegmentedControlProps,
 } from './SegmentedControl';
 export { Select, type SelectItem, type SelectProps } from './Select';
+export { Slider, type SliderProps } from './Slider';
+export { SortSelect, type SortSelectProps } from './SortSelect';
 export { SwitchRow, type SwitchRowProps } from './SwitchRow';
 export { TextField, type TextFieldProps } from './TextField';

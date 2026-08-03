@@ -18,9 +18,10 @@ import {
   Screen,
 } from '@/components/ui';
 import { routes } from '@/constants';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
 import { useToast } from '@/providers';
+import { commonStyles } from '@/utils';
 
 import { businessProfileApi } from '../../api/businessProfileApi';
 import { BusinessProfileCard } from '../../components/BusinessProfileCard';
@@ -31,6 +32,7 @@ import { createMyProfilesScreenStyles } from './MyProfilesScreen.styles';
 export function MyProfilesScreen() {
   const styles = useThemedStyles(createMyProfilesScreenStyles);
   const router = useRouter();
+  const goBack = useGoBack();
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
 
@@ -217,25 +219,30 @@ export function MyProfilesScreen() {
        
       );
     }
+    // The flex wrapper bounds the list below the header, so FlashList scrolls
+    // internally instead of growing to its content height and pushing its own
+    // tail out of reach.
     return (
-      <FlashList
-        data={profiles}
-        keyExtractor={(item) => item.profileId}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.4}
-        refreshing={isRefreshing}
-        onRefresh={refresh}
-        showsVerticalScrollIndicator={false}
-        ListFooterComponent={
-          isLoadingMore ? (
-            <View style={styles.footerLoader}>
-              <Spinner />
-            </View>
-          ) : null
-        }
-      />
+      <View style={commonStyles.flexOne}>
+        <FlashList
+          data={profiles}
+          keyExtractor={(item) => item.profileId}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.4}
+          refreshing={isRefreshing}
+          onRefresh={refresh}
+          showsVerticalScrollIndicator={false}
+          ListFooterComponent={
+            isLoadingMore ? (
+              <View style={styles.footerLoader}>
+                <Spinner />
+              </View>
+            ) : null
+          }
+        />
+      </View>
     );
   };
 
@@ -244,7 +251,7 @@ export function MyProfilesScreen() {
       <Header
         title={t('businessProfile.myProfiles')}
         showBack
-        onBack={() => router.back()}
+        onBack={goBack}
       />
       {renderBody()}
 

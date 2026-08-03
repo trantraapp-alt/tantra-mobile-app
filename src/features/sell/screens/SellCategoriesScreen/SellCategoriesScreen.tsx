@@ -1,16 +1,16 @@
 // Categories screen for a marketplace module (opened from the Sell sheet).
 // Split layout: a 30% vertical category rail on the left drives a 70% listing
 // form on the right.
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { PackageX } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { BackHandler, Platform, View } from 'react-native';
 
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import { Screen } from '@/components/ui';
-import { useThemedStyles } from '@/hooks';
+import { useGoBack, useThemedStyles } from '@/hooks';
 import type { ModuleCategory } from '@/types';
 
 import { SellCategoryForm, SellCategoryRail } from '../../components';
@@ -21,7 +21,7 @@ import { createSellCategoriesStyles } from './SellCategoriesScreen.styles';
 // Renders the split category rail + listing form for a module.
 export function SellCategoriesScreen() {
   const styles = useThemedStyles(createSellCategoriesStyles);
-  const router = useRouter();
+  const goBack = useGoBack();
   const params = useLocalSearchParams<{ moduleId: string; title?: string }>();
   const moduleId = Number(params.moduleId);
   const { categories, language, isLoading, isError, refetch } =
@@ -100,7 +100,7 @@ export function SellCategoriesScreen() {
   // drilled — a subcategory returns to its grid, a leaf top to the browser.
   const handleBack = useCallback(() => {
     if (!drilled) {
-      router.back();
+      goBack();
       return;
     }
     if (activeSub) {
@@ -108,7 +108,28 @@ export function SellCategoriesScreen() {
       return;
     }
     exitToBrowse();
-  }, [drilled, activeSub, exitToBrowse, router]);
+  }, [drilled, activeSub, exitToBrowse, goBack]);
+
+  // Android hardware back must follow the same in-screen hierarchy as the
+  // header chevron. Without this it pops the whole sell flow from inside a
+  // drilled-in form, silently discarding a half-filled listing. The handler is
+  // registered only while drilled, so at the top level the default pop stands.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android' || !drilled) {
+        return;
+      }
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          handleBack();
+          // Consume the press: we stepped up one level in-screen.
+          return true;
+        },
+      );
+      return () => subscription.remove();
+    }, [drilled, handleBack]),
+  );
 
   // After a listing is posted, reset back to the module's category browse (the
   // module screen) — a subcategory returns to its grid, a leaf top to the rail.

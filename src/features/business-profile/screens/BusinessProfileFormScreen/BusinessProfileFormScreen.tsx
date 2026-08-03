@@ -12,7 +12,7 @@ import { Screen } from '@/components/ui';
 import { routes } from '@/constants';
 import { DynamicListingForm } from '@/features/sell/components/DynamicListingForm';
 import type { ListingValues } from '@/features/sell/forms/listingPayload';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
 import { useToast } from '@/providers';
 
@@ -26,6 +26,7 @@ import { createBPFormScreenStyles } from './BusinessProfileFormScreen.styles';
 export function BusinessProfileFormScreen() {
   const styles = useThemedStyles(createBPFormScreenStyles);
   const router = useRouter();
+  const goBack = useGoBack(routes.businessProfile.list);
   const { t, language } = useTranslation();
   const { showSuccess, showError } = useToast();
   const params = useLocalSearchParams<{ profileType?: string; profileId?: string }>();
@@ -166,7 +167,7 @@ export function BusinessProfileFormScreen() {
 
   return (
     <Screen padded={false}>
-      <Header title={title} showBack onBack={() => router.back()} />
+      <Header title={title} showBack onBack={goBack} />
       {renderBody()}
     </Screen>
   );

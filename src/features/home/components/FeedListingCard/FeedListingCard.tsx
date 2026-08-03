@@ -15,6 +15,7 @@ import { useTheme } from '@/providers';
 
 import type { FeedListing } from '../../types';
 import {
+  feedDescription,
   feedLocationLabel,
   firstFeedImage,
   formatDistanceKm,
@@ -47,6 +48,7 @@ function FeedListingCardComponent({
 
   const imageUri = firstFeedImage(listing);
   const title = resolveFeedTitle(listing, language, t('home.listingFallback'));
+  const description = feedDescription(listing);
   const locality = feedLocationLabel(listing.address);
   const distance = formatDistanceKm(listing.distanceKm);
   const premiumColor = highlightColorOf(listing);
@@ -181,6 +183,17 @@ function FeedListingCardComponent({
               <Text variant="bodyMedium" numberOfLines={1}>
                 {title}
               </Text>
+
+              {description ? (
+                <Text
+                  variant="caption"
+                  color="textSecondary"
+                  numberOfLines={2}
+                  style={styles.description}
+                >
+                  {description}
+                </Text>
+              ) : null}
 
               {locality ? (
                 <View style={styles.locationRow}>

@@ -11,9 +11,9 @@ import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import { Badge, Card, Screen, Text } from '@/components/ui';
 import { routes } from '@/constants';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
-import { formatDate } from '@/utils';
+import { commonStyles, formatDate } from '@/utils';
 
 import { businessProfileApi } from '../../api/businessProfileApi';
 import { useAdminProfiles } from '../../hooks/useAdminProfiles';
@@ -27,6 +27,7 @@ export function AdminProfileListScreen() {
   const styles = useThemedStyles(createAdminProfileListStyles);
   const theme = useTheme();
   const router = useRouter();
+  const goBack = useGoBack(routes.admin.businessProfile);
   const { t, language } = useTranslation();
   const params = useLocalSearchParams<{ status?: string }>();
   const [profileTypes, setProfileTypes] = useState<ProfileTypeOption[]>([]);
@@ -185,31 +186,36 @@ export function AdminProfileListScreen() {
         />
       );
     }
+    // The flex wrapper bounds the list below the header, so FlashList scrolls
+    // internally instead of growing to its content height and pushing its own
+    // tail out of reach.
     return (
-      <FlashList
-        data={profiles}
-        keyExtractor={(item) => item.profileId}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.4}
-        refreshing={isRefreshing}
-        onRefresh={refresh}
-        showsVerticalScrollIndicator={false}
-        ListFooterComponent={
-          isLoadingMore ? (
-            <View style={styles.footerLoader}>
-              <Spinner />
-            </View>
-          ) : null
-        }
-      />
+      <View style={commonStyles.flexOne}>
+        <FlashList
+          data={profiles}
+          keyExtractor={(item) => item.profileId}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.4}
+          refreshing={isRefreshing}
+          onRefresh={refresh}
+          showsVerticalScrollIndicator={false}
+          ListFooterComponent={
+            isLoadingMore ? (
+              <View style={styles.footerLoader}>
+                <Spinner />
+              </View>
+            ) : null
+          }
+        />
+      </View>
     );
   };
 
   return (
     <Screen padded={false}>
-      <Header title={title} showBack onBack={() => router.back()} />
+      <Header title={title} showBack onBack={goBack} />
       {renderBody()}
     </Screen>
   );

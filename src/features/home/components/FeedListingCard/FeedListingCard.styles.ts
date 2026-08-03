@@ -95,6 +95,10 @@ export function createFeedListingCardStyles(theme: AppTheme) {
     quantity: {
       flexShrink: 0,
     },
+    // Two-line item description under the title.
+    description: {
+      marginTop: theme.spacing.xxs / 2,
+    },
     // Locality line with a leading pin.
     locationRow: {
       flexDirection: 'row',

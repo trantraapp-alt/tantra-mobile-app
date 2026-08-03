@@ -13,7 +13,7 @@ import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import { Screen, Text } from '@/components/ui';
 import { routes } from '@/constants';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 
 import { BusinessProfileView } from '../../components/BusinessProfileView';
@@ -27,6 +27,7 @@ export function BusinessProfileDetailScreen() {
   const styles = useThemedStyles(createBPDetailScreenStyles);
   const theme = useTheme();
   const router = useRouter();
+  const goBack = useGoBack(routes.businessProfile.list);
   const { t, language } = useTranslation();
   const { profileId } = useLocalSearchParams<{ profileId: string }>();
 
@@ -112,7 +113,7 @@ export function BusinessProfileDetailScreen() {
       <Header
         title={profile?.businessName ?? t('businessProfile.profileDetails')}
         showBack
-        onBack={() => router.back()}
+        onBack={goBack}
       />
       {renderBody()}
     </Screen>

@@ -45,7 +45,7 @@ import {
 import { fileUrl } from '@/config';
 import { routes } from '@/constants';
 import { localize } from '@/features/sell';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import type { TranslationKey } from '@/i18n';
 import { logger } from '@/lib';
 import { useTheme, useToast } from '@/providers';
@@ -263,6 +263,7 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
   const styles = useThemedStyles(createListingDetailScreenStyles);
   const theme = useTheme();
   const router = useRouter();
+  const goBack = useGoBack(routes.listings);
   const { t, language } = useTranslation();
   const { showSuccess, showError } = useToast();
 
@@ -403,12 +404,12 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
           ? localize(res.message, language)
           : t('listing.deleteSuccess'),
       );
-      router.back();
+      goBack();
     } catch (error) {
       logger.warn('[Listings] Delete failed', error);
       showError(t('listing.deleteError'));
     }
-  }, [listingId, showSuccess, showError, language, t, router]);
+  }, [listingId, showSuccess, showError, language, t, goBack]);
 
   // Delete-confirmation dialog visibility, and whether the delete is in flight.
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -690,7 +691,7 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
         <Header
           title={t('listing.previewTitle')}
           showBack
-          onBack={() => router.back()}
+          onBack={goBack}
         />
         <View style={styles.center}>
           <ErrorState onRetry={retry} retryLabel={t('common.retry')} />
@@ -705,7 +706,7 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
         <Header
           title={t('listing.previewTitle')}
           showBack
-          onBack={() => router.back()}
+          onBack={goBack}
         />
         <View style={styles.skeletonHero}>
           <Skeleton width="100%" height="100%" radius={theme.radius.none} />
@@ -725,7 +726,7 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
       <Header
         title={t('listing.previewTitle')}
         showBack
-        onBack={() => router.back()}
+        onBack={goBack}
         rightAction={
           <IconButton
             icon={MoreVertical}

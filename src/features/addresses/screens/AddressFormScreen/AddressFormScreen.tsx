@@ -1,7 +1,6 @@
 // Add / edit a saved address. Fill it manually (with cascading geo dropdowns and
 // PIN auto-fill) or from the device's current location. On save, returns to the
 // list — or, when opened with a `returnTo`, back to that screen.
-import { useRouter } from 'expo-router';
 import { LocateFixed } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -23,7 +22,7 @@ import { Header } from '@/components/shared';
 import { Screen } from '@/components/ui';
 import { lookupPincode, useDeviceLocation } from '@/features/location';
 import { localize } from '@/features/sell';
-import { useThemedStyles, useTranslation } from '@/hooks';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
 import { useTheme, useToast } from '@/providers';
 
@@ -58,7 +57,7 @@ export function AddressFormScreen({
 }: AddressFormScreenProps) {
   const styles = useThemedStyles(createAddressFormStyles);
   const theme = useTheme();
-  const router = useRouter();
+  const goBack = useGoBack();
   const { t, language } = useTranslation();
   const { showSuccess, showError } = useToast();
   const { request: requestLocation, loading: locating } = useDeviceLocation();
@@ -178,7 +177,7 @@ export function AddressFormScreen({
       if (returnTo && res.addressId) {
         pendingAddress.set(res.addressId);
       }
-      router.back();
+      goBack();
     } catch (error) {
       logger.warn('[Addresses] Save failed', error);
       showError(t('address.saveError'));
@@ -190,7 +189,7 @@ export function AddressFormScreen({
     isEdit,
     addressId,
     returnTo,
-    router,
+    goBack,
     showSuccess,
     showError,
     language,
@@ -210,7 +209,7 @@ export function AddressFormScreen({
         <View style={styles.center}>
           <ErrorState
             description={t('address.loadError')}
-            onRetry={() => router.back()}
+            onRetry={goBack}
             retryLabel={t('common.retry')}
           />
         </View>
@@ -349,7 +348,7 @@ export function AddressFormScreen({
       <Header
         title={isEdit ? t('address.editTitle') : t('address.addTitle')}
         showBack
-        onBack={() => router.back()}
+        onBack={goBack}
       />
       {renderBody()}
     </Screen>

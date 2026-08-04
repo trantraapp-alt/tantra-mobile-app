@@ -1,5 +1,6 @@
-// Style factory for the BusinessProfileCard component. Mirrors the listing card:
-// a bordered tile on the left, a details column on the right.
+// Style factory for the BusinessProfileCard component: a bordered photo/status
+// tile on the left, a details column on the right reading owner name →
+// business name → category + status, with per-status actions on the bottom row.
 import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
@@ -11,11 +12,21 @@ export function createBusinessProfileCardStyles(theme: AppTheme) {
       marginHorizontal: theme.spacing.md,
       marginBottom: theme.spacing.md,
     },
-    // Tappable content row: status tile + details column.
+    // Tappable content row: status tile + details column. Relative so the
+    // status badge can pin to the card's top-right corner.
     content: {
       flexDirection: 'row',
       gap: theme.spacing.md,
       padding: theme.spacing.md,
+      position: 'relative',
+    },
+    // Status badge, pinned to the top-right corner of the card (its original
+    // position) rather than sitting inline in the meta row.
+    cornerBadge: {
+      position: 'absolute',
+      top: -theme.spacing.sm,
+      right: theme.spacing.sm,
+      zIndex: 1,
     },
     // Press feedback; radius matches the card so the fill stays within corners.
     contentPressed: {
@@ -47,88 +58,49 @@ export function createBusinessProfileCardStyles(theme: AppTheme) {
       justifyContent: 'space-between',
       gap: theme.spacing.sm,
     },
-    // Name + meta, bound by the tightest gap so they read as one unit.
+    // Owner name → business name → category/status, bound by the tightest
+    // gap so they read as one identity block.
     identity: {
       gap: theme.spacing.xxs,
     },
-    // Name row.
+    // Owner-name line — the first thing the card says (who runs this).
+    ownerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+    },
+    ownerName: {
+      flex: 1,
+    },
+    // Business-name row, with the delete action trailing it.
     titleRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: theme.spacing.xs,
+      marginTop: theme.spacing.xxs,
     },
-    // Name takes every pixel the header slot does not.
+    // Name takes every pixel the delete icon does not.
     title: {
       flex: 1,
       minWidth: 0,
     },
-    // Overflow-menu inset so a 32dp control keeps the tight name -> meta bond.
+    // Inset so the 32dp delete control keeps the tight name -> meta bond.
     headerActionSlot: {
       marginTop: -theme.spacing.xs,
       marginBottom: -theme.spacing.xs,
       marginRight: -theme.spacing.sm,
     },
-    // Category + status row.
-    metaRow: {
-      gap: theme.spacing.sm,
-    },
-    // Solid tone-colored circle behind the status icon — matches the admin
-    // screens so status reads the same way everywhere in the feature.
-    statusIcon: {
-      width: theme.sizing.avatarSm,
-      height: theme.sizing.avatarSm,
-      borderRadius: theme.radius.pill,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    titleBlock: {
-      flex: 1,
-      gap: theme.spacing.xxs,
-    },
-    // Reason notice (rejected/blocked) — a left-accented card so it reads as a
-    // flagged notice rather than a plain text block.
-    reasonBox: {
-      backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: theme.radius.sm,
-      borderLeftWidth: 3,
-      padding: theme.spacing.sm,
-      marginTop: theme.spacing.md,
-      gap: theme.spacing.xxs,
-    },
-    actions: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: theme.spacing.xs,
-      justifyContent: 'space-between',
-    },
-    blockedHint: {
-      marginTop: theme.spacing.xs,
-    },
-    verifiedRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
     // Category label gives way under width pressure before the status does.
     category: {
       flexShrink: 1,
-    },
-    // Status dot + label; never shrinks so the status stays whole.
-    statusGroup: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flexShrink: 0,
-      gap: theme.spacing.xs,
-    },
-    // Small colored status dot.
-    statusDot: {
-      width: theme.spacing.sm,
-      height: theme.spacing.sm,
-      borderRadius: theme.radius.pill,
+      marginTop: theme.spacing.xxs,
     },
     // Rejection / block reason line.
     reason: {
-      marginTop: theme.spacing.xxs,
+      marginTop: theme.spacing.xs,
+    },
+    blockedHint: {
+      marginTop: theme.spacing.xs,
     },
     // Action row: actions aligned to the right (edit sits rightmost).
     valueRow: {
@@ -138,6 +110,5 @@ export function createBusinessProfileCardStyles(theme: AppTheme) {
       gap: theme.spacing.sm,
       minHeight: theme.sizing.buttonHeightSm,
     },
- 
   });
 }

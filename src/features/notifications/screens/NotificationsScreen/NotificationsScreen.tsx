@@ -16,7 +16,7 @@ import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { commonStyles } from '@/utils';
 
 import { NotificationRow } from '../../components';
-import { useNotifications } from '../../hooks';
+import { useBusinessProfileNames, useNotifications } from '../../hooks';
 import type { AppNotification } from '../../types';
 import { createNotificationsStyles } from './NotificationsScreen.styles';
 
@@ -39,6 +39,8 @@ export function NotificationsScreen() {
     markAllRead,
   } = useNotifications();
 
+  const profileNames = useBusinessProfileNames(notifications);
+
   // Marks read and deep-links to the referenced entity when known.
   const handlePress = useCallback(
     (notification: AppNotification) => {
@@ -58,10 +60,15 @@ export function NotificationsScreen() {
       <NotificationRow
         notification={item}
         language={language}
+        profileName={
+          item.refType === 'BUSINESS_PROFILE' && item.refId != null
+            ? profileNames[String(item.refId)]
+            : undefined
+        }
         onPress={handlePress}
       />
     ),
-    [language, handlePress],
+    [language, handlePress, profileNames],
   );
 
   const renderBody = () => {

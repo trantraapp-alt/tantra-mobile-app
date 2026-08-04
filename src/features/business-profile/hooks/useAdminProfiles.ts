@@ -81,6 +81,41 @@ export function useAdminProfiles({
     void fetchPage(0, 'replace');
   }, [fetchPage]);
 
+  // The list endpoint can return a leaner projection than the full record
+  // (e.g. missing attributes.ownerName). Backfill each row once in the
+  // background via the admin-scoped endpoint (the owner-scoped `getProfile`
+  // would 404 here for a PENDING/REJECTED/BLOCKED profile the admin doesn't
+  // own) — enrichedRef guards against re-fetching a row that still comes
+  // back incomplete, or whose fetch failed.
+  const enrichedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    profiles.forEach((p) => {
+      const hasOwnerName =
+        typeof p.attributes?.ownerName === 'string' && p.attributes.ownerName.trim() !== '';
+      if (hasOwnerName || enrichedRef.current.has(p.profileId)) {
+        return;
+      }
+      enrichedRef.current.add(p.profileId);
+      businessProfileApi
+        .getProfileForReview(p.profileId)
+        .then((full) => {
+          setProfiles((prev) =>
+            prev.map((item) =>
+              item.profileId === p.profileId
+                ? { ...item, attributes: full.attributes, address: full.address }
+                : item,
+            ),
+          );
+        })
+        .catch((error) => {
+          logger.warn('[BusinessProfile] Failed to enrich admin profile row', {
+            profileId: p.profileId,
+            error,
+          });
+        });
+    });
+  }, [profiles]);
+
   const loadMore = useCallback(() => {
     if (
       last ||

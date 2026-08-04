@@ -1,9 +1,9 @@
 // My Business Profiles: the owner's list of profiles with status chips,
-// per-status actions, overflow menu, and delete confirmation.
+// per-status actions, and delete confirmation.
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { Plus, Store, Trash2 } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { Fab } from '@/components/buttons';
@@ -11,12 +11,7 @@ import { EmptyState, ErrorState } from '@/components/empty-state';
 import { ConfirmDialog } from '@/components/feedback';
 import { Spinner } from '@/components/loaders';
 import { Header } from '@/components/shared';
-import {
-  ActionSheet,
-  type ActionSheetAction,
-  type ActionSheetRef,
-  Screen,
-} from '@/components/ui';
+import { Screen } from '@/components/ui';
 import { routes } from '@/constants';
 import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
@@ -36,14 +31,12 @@ export function MyProfilesScreen() {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
 
-  const [active, setActive] = useState<BusinessProfile | null>(null);
   const [profileTypes, setProfileTypes] = useState<ProfileTypeOption[]>([]);
   // Profile pending delete-confirmation, and whether the delete is in flight.
   const [pendingDelete, setPendingDelete] = useState<BusinessProfile | null>(
     null,
   );
   const [deleting, setDeleting] = useState(false);
-  const actionSheetRef = useRef<ActionSheetRef>(null);
 
   // Fetch profile types once for label mapping
   useEffect(() => {
@@ -85,11 +78,6 @@ export function MyProfilesScreen() {
     },
     [router],
   );
-
-  const openMenu = useCallback((profile: BusinessProfile) => {
-    setActive(profile);
-    actionSheetRef.current?.present();
-  }, []);
 
   const toggleVisibility = useCallback(
     async (profile: BusinessProfile) => {
@@ -152,32 +140,6 @@ export function MyProfilesScreen() {
     setPendingDelete(null);
   }, [pendingDelete, performDelete]);
 
-  const menuActions = useMemo<ActionSheetAction[]>(() => {
-    if (!active) {
-      return [];
-    }
-    const actions: ActionSheetAction[] = [];
-    if (active.status !== 'BLOCKED') {
-      actions.push({
-        key: 'edit',
-        label:
-          active.status === 'REJECTED'
-            ? t('businessProfile.editResubmit')
-            : t('businessProfile.editProfile'),
-        icon: Store,
-        onPress: () => goToEdit(active),
-      });
-    }
-    actions.push({
-      key: 'delete',
-      label: t('businessProfile.delete'),
-      icon: Trash2,
-      destructive: true,
-      onPress: () => confirmDelete(active),
-    });
-    return actions;
-  }, [active, t, goToEdit, confirmDelete]);
-
   const renderItem = useCallback(
     ({ item }: { item: BusinessProfile }) => (
       <BusinessProfileCard
@@ -186,10 +148,10 @@ export function MyProfilesScreen() {
         onPress={() => goToDetail(item)}
         onEdit={() => goToEdit(item)}
         onToggleVisibility={() => void toggleVisibility(item)}
-        onMenu={() => openMenu(item)}
+        onDelete={() => confirmDelete(item)}
       />
     ),
-    [profileTypes, goToDetail, goToEdit, toggleVisibility, openMenu],
+    [profileTypes, goToDetail, goToEdit, toggleVisibility, confirmDelete],
   );
 
   const renderBody = () => {
@@ -265,13 +227,6 @@ export function MyProfilesScreen() {
           accessibilityLabel={t('businessProfile.create')}
         />
       ) : null}
-
-      <ActionSheet
-        ref={actionSheetRef}
-        title={active?.businessName}
-        actions={menuActions}
-        cancelLabel={t('common.cancel')}
-      />
 
       <ConfirmDialog
         visible={pendingDelete !== null}

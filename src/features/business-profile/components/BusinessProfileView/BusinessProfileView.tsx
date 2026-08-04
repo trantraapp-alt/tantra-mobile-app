@@ -1,27 +1,17 @@
-// Read-only business profile body: photo gallery, identity, verified badge /
-// reason notice, every filled field grouped by the form's own sections (drawn
-// as fieldset-legend cards, the same language as the create/edit form), and
-// the business address. Shared by the owner detail screen and the admin
-// review screen so both read as the same kind of page — the caller supplies
-// the header and the status-specific footer (Edit vs Approve/Reject/Block).
-import {
-  AlertTriangle,
-  BadgeCheck,
-  Ban,
-  Check,
-  FileText,
-  type LucideIcon,
-  Mail,
-  MapPin,
-  Phone,
-  User,
-  X,
-} from 'lucide-react-native';
+// Read-only business profile body: photo gallery, identity, status tags,
+// verified/reason notice, every filled field grouped by the form's own
+// sections (drawn as a lavender attribute grid), and the business address —
+// the same visual pattern as the buyer marketplace listing-detail screen, so
+// a profile reads as the same kind of detail page as a listing. Shared by the
+// owner detail screen and the admin review screen so both read as the same
+// kind of page — the caller supplies the header and the status-specific
+// footer (Edit vs Approve/Reject/Block).
+import { AlertTriangle, BadgeCheck, Ban, MapPin, Phone, User } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { Fragment, useMemo } from 'react';
+import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { Badge, Divider, ImageCarousel, Text } from '@/components/ui';
+import { Badge, ImageCarousel, Text } from '@/components/ui';
 import { fileUrl } from '@/config';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
@@ -35,85 +25,45 @@ import { getStatusLabelKey, getStatusTone } from '../../utils/profileStatus';
 import { withAlpha } from '../../utils/withAlpha';
 import { createBusinessProfileViewStyles } from './BusinessProfileView.styles';
 
-// Best-effort contextual icon for a field row, guessed from its key — purely
-// decorative, so an unmatched key just renders without one.
-function fieldIcon(key: string): LucideIcon | null {
-  if (/phone|mobile/i.test(key)) {
-    return Phone;
-  }
-  if (/email/i.test(key)) {
-    return Mail;
-  }
-  if (/gst|registration|license|tax/i.test(key)) {
-    return FileText;
-  }
-  return null;
-}
-
-// Props for one rendered field row.
-interface FieldRowProps {
+// Props for one rendered attribute-grid box.
+interface AttrItemProps {
   row: BPDetailRow;
   yesLabel: string;
   noLabel: string;
 }
 
-// Renders one label/value pair, inline or stacked depending on its value.
-function FieldRow({ row, yesLabel, noLabel }: FieldRowProps) {
-  const theme = useTheme();
+// Renders one label/value box in the attribute grid.
+function AttrItem({ row, yesLabel, noLabel }: AttrItemProps) {
   const styles = useThemedStyles(createBusinessProfileViewStyles);
   const { value } = row;
-  const Icon = fieldIcon(row.key);
 
   let body: ReactNode;
   if (value.kind === 'boolean') {
     body = (
-      <View style={styles.booleanValue}>
-        {value.value ? (
-          <Check size={theme.sizing.iconSm} color={theme.colors.success} />
-        ) : (
-          <X size={theme.sizing.iconSm} color={theme.colors.textTertiary} />
-        )}
-        <Text variant="bodyMedium">{value.value ? yesLabel : noLabel}</Text>
-      </View>
+      <Text variant="label" numberOfLines={2}>
+        {value.value ? yesLabel : noLabel}
+      </Text>
     );
   } else if (value.kind === 'tags') {
     body = (
-      <View style={styles.tagWrap}>
-        {value.items.map((item, position) => (
-          <View key={`${row.key}-${position}-${item}`} style={styles.tag}>
-            <Text variant="caption" color="textSecondary">
-              {item}
-            </Text>
-          </View>
-        ))}
-      </View>
+      <Text variant="label" numberOfLines={2}>
+        {value.items.join(', ')}
+      </Text>
     );
   } else {
-    body = <Text variant="bodyMedium">{value.text}</Text>;
-  }
-
-  const label = (
-    <View style={styles.rowLabelGroup}>
-      {Icon ? <Icon size={theme.sizing.iconXs} color={theme.colors.textTertiary} /> : null}
-      <Text variant="body" color="textSecondary" style={styles.rowLabel}>
-        {row.label}
+    body = (
+      <Text variant="label" numberOfLines={2}>
+        {value.text}
       </Text>
-    </View>
-  );
-
-  if (row.stacked) {
-    return (
-      <View style={styles.stackedRow}>
-        {label}
-        {body}
-      </View>
     );
   }
 
   return (
-    <View style={styles.row}>
-      {label}
-      <View style={styles.rowValue}>{body}</View>
+    <View style={[styles.attrItem, row.stacked ? styles.attrItemWide : null]}>
+      <Text variant="overline" color="textTertiary">
+        {row.label}
+      </Text>
+      {body}
     </View>
   );
 }
@@ -159,7 +109,7 @@ export function BusinessProfileView({
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={styles.content}
     >
       <View style={styles.hero}>
         <ImageCarousel images={photoUris} aspectRatio={4 / 3} contentFit="cover" />
@@ -171,39 +121,34 @@ export function BusinessProfileView({
         </View>
       </View>
 
-      <View style={[styles.block, styles.identity]}>
+      <View style={styles.section}>
         <Text variant="overline" color="textTertiary">
           {profileTypeLabel}
         </Text>
-        <Text variant="h2" numberOfLines={2}>
-          {profile.businessName}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text variant="h4" numberOfLines={2} style={styles.title}>
+            {profile.businessName}
+          </Text>
+          {profile.status === 'APPROVED' ? (
+            <BadgeCheck size={theme.sizing.iconSm} color={theme.colors.info} />
+          ) : null}
+        </View>
+
+        <View style={styles.tagsRow}>
+          <Badge tone={tone} label={t(getStatusLabelKey(profile.status))} />
+        </View>
+
         {ownerName ? (
-          <View style={styles.ownerRow}>
-            <User size={theme.sizing.iconSm} color={theme.colors.textSecondary} />
-            <Text variant="body" color="textSecondary">
-              {ownerName}
-            </Text>
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <User size={theme.sizing.iconXs} color={theme.colors.textTertiary} />
+              <Text variant="caption" color="textSecondary">
+                {ownerName}
+              </Text>
+            </View>
           </View>
         ) : null}
       </View>
-
-      {profile.status === 'APPROVED' ? (
-        <View
-          style={[
-            styles.verifiedBanner,
-            {
-              backgroundColor: withAlpha(toneColor, theme.opacity.faint),
-              borderColor: withAlpha(toneColor, theme.opacity.subtle),
-            },
-          ]}
-        >
-          <BadgeCheck size={theme.sizing.iconMd} color={toneColor} />
-          <Text variant="bodyMedium" style={{ color: toneColor }}>
-            {t('businessProfile.verifiedBadge')}
-          </Text>
-        </View>
-      ) : null}
 
       {reason ? (
         <View
@@ -232,12 +177,10 @@ export function BusinessProfileView({
       ) : null}
 
       {model.descriptions.length > 0 ? (
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionLegend}>
-            <Text variant="overline" color="textSecondary">
-              {t('businessProfile.description').toUpperCase()}
-            </Text>
-          </View>
+        <View style={[styles.section, styles.sectionBordered]}>
+          <Text variant="overline" color="textSecondary" style={styles.sectionTitle}>
+            {t('businessProfile.description')}
+          </Text>
           <View style={styles.descriptionGroup}>
             {model.descriptions.map((entry) => (
               <View key={entry.key}>
@@ -246,7 +189,9 @@ export function BusinessProfileView({
                     {entry.label}
                   </Text>
                 ) : null}
-                <Text variant="body">{entry.text}</Text>
+                <Text variant="body" color="textSecondary">
+                  {entry.text}
+                </Text>
               </View>
             ))}
           </View>
@@ -254,29 +199,29 @@ export function BusinessProfileView({
       ) : null}
 
       {model.sections.map((section) => (
-        <View key={section.key} style={styles.sectionCard}>
-          <View style={styles.sectionLegend}>
-            <Text variant="overline" color="textSecondary">
-              {section.title}
-            </Text>
+        <View key={section.key} style={[styles.section, styles.sectionBordered]}>
+          <Text variant="overline" color="textSecondary" style={styles.sectionTitle}>
+            {section.title}
+          </Text>
+          <View style={styles.attrsGrid}>
+            {section.rows.map((row) => (
+              <AttrItem
+                key={row.key}
+                row={row}
+                yesLabel={t('common.yes')}
+                noLabel={t('common.no')}
+              />
+            ))}
           </View>
-          {section.rows.map((row, position) => (
-            <Fragment key={row.key}>
-              {position > 0 ? <Divider /> : null}
-              <FieldRow row={row} yesLabel={t('common.yes')} noLabel={t('common.no')} />
-            </Fragment>
-          ))}
         </View>
       ))}
 
       {model.address ? (
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionLegend}>
-            <Text variant="overline" color="textSecondary">
-              {t('businessProfile.businessAddress').toUpperCase()}
-            </Text>
-          </View>
-          <View style={styles.titleRow}>
+        <View style={[styles.section, styles.sectionBordered]}>
+          <Text variant="overline" color="textSecondary" style={styles.sectionTitle}>
+            {t('businessProfile.businessAddress')}
+          </Text>
+          <View style={styles.addressCard}>
             <View style={[styles.addressIcon, { backgroundColor: toneColor }]}>
               <MapPin size={theme.sizing.iconSm} color={theme.colors.onPrimary} />
             </View>
@@ -286,19 +231,19 @@ export function BusinessProfileView({
                   {line}
                 </Text>
               ))}
+              {model.address.phones.map((phone) => (
+                <View key={phone} style={styles.contactRow}>
+                  <Phone size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
+                  <Text variant="bodyMedium">{phone}</Text>
+                </View>
+              ))}
+              {model.address.coordinates ? (
+                <Text variant="caption" color="textTertiary" style={styles.coordinates}>
+                  {model.address.coordinates}
+                </Text>
+              ) : null}
             </View>
           </View>
-          {model.address.phones.map((phone) => (
-            <View key={phone} style={styles.contactRow}>
-              <Phone size={theme.sizing.iconSm} color={theme.colors.textSecondary} />
-              <Text variant="bodyMedium">{phone}</Text>
-            </View>
-          ))}
-          {model.address.coordinates ? (
-            <Text variant="caption" color="textTertiary" style={styles.coordinates}>
-              {model.address.coordinates}
-            </Text>
-          ) : null}
         </View>
       ) : null}
     </ScrollView>

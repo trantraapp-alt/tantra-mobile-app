@@ -53,17 +53,27 @@ export function AdminReviewScreen() {
     if (!profileId) {
       return;
     }
-    // Only refetch if profile wasn't passed in params
-    if (!profileJson) {
+    // The profile passed via nav params comes from the admin list, which can
+    // be a leaner projection than the full record (missing address/attributes
+    // sometimes) — render that instantly, but always attempt the authoritative
+    // fetch in the background and upgrade to it silently. Only show the
+    // loading/error UI when there's no cached data to fall back on.
+    const hasCached = Boolean(profileJson);
+    if (!hasCached) {
       setIsLoading(true);
       setIsError(false);
-      try {
-        const res = await businessProfileApi.getProfileForReview(profileId);
-        setProfile(res);
-      } catch (error) {
-        logger.warn('[BusinessProfile] Admin failed to load profile', { profileId, error });
+    }
+    try {
+      const res = await businessProfileApi.getProfileForReview(profileId);
+      setProfile(res);
+      setIsError(false);
+    } catch (error) {
+      logger.warn('[BusinessProfile] Admin failed to load full profile', { profileId, error });
+      if (!hasCached) {
         setIsError(true);
-      } finally {
+      }
+    } finally {
+      if (!hasCached) {
         setIsLoading(false);
       }
     }

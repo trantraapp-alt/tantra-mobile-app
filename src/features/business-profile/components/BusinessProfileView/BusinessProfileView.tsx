@@ -1,9 +1,22 @@
 // Read-only business profile body: photo gallery, identity, verified badge /
-// reason notice, every filled field grouped by the form's own sections, and
+// reason notice, every filled field grouped by the form's own sections (drawn
+// as fieldset-legend cards, the same language as the create/edit form), and
 // the business address. Shared by the owner detail screen and the admin
 // review screen so both read as the same kind of page — the caller supplies
 // the header and the status-specific footer (Edit vs Approve/Reject/Block).
-import { AlertTriangle, BadgeCheck, Ban, Check, MapPin, Phone, X } from 'lucide-react-native';
+import {
+  AlertTriangle,
+  BadgeCheck,
+  Ban,
+  Check,
+  FileText,
+  type LucideIcon,
+  Mail,
+  MapPin,
+  Phone,
+  User,
+  X,
+} from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Fragment, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -19,7 +32,23 @@ import {
   type BusinessProfileDetailModel,
 } from '../../utils/businessProfileDetailFields';
 import { getStatusLabelKey, getStatusTone } from '../../utils/profileStatus';
+import { withAlpha } from '../../utils/withAlpha';
 import { createBusinessProfileViewStyles } from './BusinessProfileView.styles';
+
+// Best-effort contextual icon for a field row, guessed from its key — purely
+// decorative, so an unmatched key just renders without one.
+function fieldIcon(key: string): LucideIcon | null {
+  if (/phone|mobile/i.test(key)) {
+    return Phone;
+  }
+  if (/email/i.test(key)) {
+    return Mail;
+  }
+  if (/gst|registration|license|tax/i.test(key)) {
+    return FileText;
+  }
+  return null;
+}
 
 // Props for one rendered field row.
 interface FieldRowProps {
@@ -33,6 +62,7 @@ function FieldRow({ row, yesLabel, noLabel }: FieldRowProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createBusinessProfileViewStyles);
   const { value } = row;
+  const Icon = fieldIcon(row.key);
 
   let body: ReactNode;
   if (value.kind === 'boolean') {
@@ -62,12 +92,19 @@ function FieldRow({ row, yesLabel, noLabel }: FieldRowProps) {
     body = <Text variant="bodyMedium">{value.text}</Text>;
   }
 
+  const label = (
+    <View style={styles.rowLabelGroup}>
+      {Icon ? <Icon size={theme.sizing.iconXs} color={theme.colors.textTertiary} /> : null}
+      <Text variant="body" color="textSecondary" style={styles.rowLabel}>
+        {row.label}
+      </Text>
+    </View>
+  );
+
   if (row.stacked) {
     return (
       <View style={styles.stackedRow}>
-        <Text variant="label" color="textSecondary">
-          {row.label}
-        </Text>
+        {label}
         {body}
       </View>
     );
@@ -75,9 +112,7 @@ function FieldRow({ row, yesLabel, noLabel }: FieldRowProps) {
 
   return (
     <View style={styles.row}>
-      <Text variant="body" color="textSecondary" style={styles.rowLabel}>
-        {row.label}
-      </Text>
+      {label}
       <View style={styles.rowValue}>{body}</View>
     </View>
   );
@@ -103,6 +138,17 @@ export function BusinessProfileView({
   const { t } = useTranslation();
 
   const photoUris = useMemo(() => model.photos.map(fileUrl), [model.photos]);
+  const tone = getStatusTone(profile.status);
+  const toneColor = theme.colors[tone];
+  // Read directly off attributes rather than relying on the schema-driven
+  // rows below — some profile types' form metadata marks this field in a way
+  // that makes it fall out of the generic section rows, and the owner's name
+  // is important enough that it should never silently go missing.
+  const ownerName =
+    typeof profile.attributes?.ownerName === 'string' &&
+    profile.attributes.ownerName.trim() !== ''
+      ? profile.attributes.ownerName
+      : null;
   const reason =
     profile.status === 'REJECTED'
       ? profile.rejectReason
@@ -132,12 +178,28 @@ export function BusinessProfileView({
         <Text variant="h2" numberOfLines={2}>
           {profile.businessName}
         </Text>
+        {ownerName ? (
+          <View style={styles.ownerRow}>
+            <User size={theme.sizing.iconSm} color={theme.colors.textSecondary} />
+            <Text variant="body" color="textSecondary">
+              {ownerName}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {profile.status === 'APPROVED' ? (
-        <View style={styles.verifiedBanner}>
-          <BadgeCheck size={theme.sizing.iconMd} color={theme.colors.success} />
-          <Text variant="bodyMedium" color="success">
+        <View
+          style={[
+            styles.verifiedBanner,
+            {
+              backgroundColor: withAlpha(toneColor, theme.opacity.faint),
+              borderColor: withAlpha(toneColor, theme.opacity.subtle),
+            },
+          ]}
+        >
+          <BadgeCheck size={theme.sizing.iconMd} color={toneColor} />
+          <Text variant="bodyMedium" style={{ color: toneColor }}>
             {t('businessProfile.verifiedBadge')}
           </Text>
         </View>
@@ -148,17 +210,15 @@ export function BusinessProfileView({
           style={[
             styles.reasonBox,
             {
-              borderLeftColor:
-                profile.status === 'BLOCKED'
-                  ? theme.colors.danger
-                  : theme.colors.warning,
+              backgroundColor: withAlpha(toneColor, theme.opacity.faint),
+              borderLeftColor: toneColor,
             },
           ]}
         >
           {profile.status === 'BLOCKED' ? (
-            <Ban size={theme.sizing.iconSm} color={theme.colors.danger} />
+            <Ban size={theme.sizing.iconSm} color={toneColor} />
           ) : (
-            <AlertTriangle size={theme.sizing.iconSm} color={theme.colors.warning} />
+            <AlertTriangle size={theme.sizing.iconSm} color={toneColor} />
           )}
           <View style={styles.reasonBoxText}>
             <Text variant="caption" color="textSecondary">
@@ -172,10 +232,12 @@ export function BusinessProfileView({
       ) : null}
 
       {model.descriptions.length > 0 ? (
-        <View style={styles.block}>
-          <Text variant="h4" style={styles.blockTitle}>
-            {t('businessProfile.description')}
-          </Text>
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionLegend}>
+            <Text variant="overline" color="textSecondary">
+              {t('businessProfile.description').toUpperCase()}
+            </Text>
+          </View>
           <View style={styles.descriptionGroup}>
             {model.descriptions.map((entry) => (
               <View key={entry.key}>
@@ -192,29 +254,31 @@ export function BusinessProfileView({
       ) : null}
 
       {model.sections.map((section) => (
-        <Fragment key={section.key}>
-          <View style={styles.band} />
-          <View style={styles.block}>
-            <Text variant="overline" color="textSecondary" style={styles.blockTitle}>
+        <View key={section.key} style={styles.sectionCard}>
+          <View style={styles.sectionLegend}>
+            <Text variant="overline" color="textSecondary">
               {section.title}
             </Text>
-            {section.rows.map((row, position) => (
-              <Fragment key={row.key}>
-                {position > 0 ? <Divider /> : null}
-                <FieldRow row={row} yesLabel={t('common.yes')} noLabel={t('common.no')} />
-              </Fragment>
-            ))}
           </View>
-        </Fragment>
+          {section.rows.map((row, position) => (
+            <Fragment key={row.key}>
+              {position > 0 ? <Divider /> : null}
+              <FieldRow row={row} yesLabel={t('common.yes')} noLabel={t('common.no')} />
+            </Fragment>
+          ))}
+        </View>
       ))}
 
       {model.address ? (
-        <>
-          <View style={styles.band} />
-          <View style={styles.block}>
-            <View style={styles.titleRow}>
-              <MapPin size={theme.sizing.iconSm} color={theme.colors.textSecondary} />
-              <Text variant="h4">{t('businessProfile.businessAddress')}</Text>
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionLegend}>
+            <Text variant="overline" color="textSecondary">
+              {t('businessProfile.businessAddress').toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.titleRow}>
+            <View style={[styles.addressIcon, { backgroundColor: toneColor }]}>
+              <MapPin size={theme.sizing.iconSm} color={theme.colors.onPrimary} />
             </View>
             <View style={styles.addressLines}>
               {model.address.lines.map((line, position) => (
@@ -223,19 +287,19 @@ export function BusinessProfileView({
                 </Text>
               ))}
             </View>
-            {model.address.phones.map((phone) => (
-              <View key={phone} style={styles.contactRow}>
-                <Phone size={theme.sizing.iconSm} color={theme.colors.textSecondary} />
-                <Text variant="bodyMedium">{phone}</Text>
-              </View>
-            ))}
-            {model.address.coordinates ? (
-              <Text variant="caption" color="textTertiary" style={styles.coordinates}>
-                {model.address.coordinates}
-              </Text>
-            ) : null}
           </View>
-        </>
+          {model.address.phones.map((phone) => (
+            <View key={phone} style={styles.contactRow}>
+              <Phone size={theme.sizing.iconSm} color={theme.colors.textSecondary} />
+              <Text variant="bodyMedium">{phone}</Text>
+            </View>
+          ))}
+          {model.address.coordinates ? (
+            <Text variant="caption" color="textTertiary" style={styles.coordinates}>
+              {model.address.coordinates}
+            </Text>
+          ) : null}
+        </View>
       ) : null}
     </ScrollView>
   );

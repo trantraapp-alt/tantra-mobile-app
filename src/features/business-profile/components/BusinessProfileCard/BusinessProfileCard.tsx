@@ -1,7 +1,7 @@
-// A business-profile card, laid out like the listing card: a bordered status
-// tile on the left, then the business name, category and a colored status
-// dot/label, with per-status actions on the bottom row. Status color: approved
-// green, pending amber, rejected / blocked red.
+// A business-profile card: a bordered status/photo tile on the left, then a
+// details column reading owner name → business name → category + status,
+// a bin icon for direct delete (top-right), and per-status actions on the
+// bottom row. Status color: approved green, pending amber, rejected/blocked red.
 import { Image } from 'expo-image';
 import {
   BadgeCheck,
@@ -10,17 +10,15 @@ import {
   Eye,
   EyeOff,
   type LucideIcon,
-  MoreVertical,
+  Trash2,
+  User,
   XCircle,
 } from 'lucide-react-native';
-// A card representing one business profile in the "My Profiles" list.
-// Shows business name, type, status badge, reason text, and per-status actions.
 import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Button, IconButton } from '@/components/buttons';
 import { Badge, Card, Text } from '@/components/ui';
-import { fileUrl } from '@/config';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import type { TranslationKey } from '@/i18n';
 import { useTheme } from '@/providers';
@@ -31,6 +29,7 @@ import type {
   BusinessProfileStatus,
   ProfileTypeOption,
 } from '../../types/businessProfile.types';
+import { firstImageUrl } from '../../utils/profileImage';
 import { getStatusLabelKey, getStatusTone } from '../../utils/profileStatus';
 import { getProfileTypeLabel } from '../../utils/profileTypeLabels';
 import { resolveProfileStatus } from '../../utils/status';
@@ -77,26 +76,6 @@ function statusVisual(status: BusinessProfileStatus): StatusVisual {
   }
 }
 
-// Resolves the profile's first uploaded photo (from attributes.photos / images,
-// or any string array) to an absolute URL, or undefined when there is none.
-function firstImageUrl(
-  attributes: Record<string, unknown> | undefined,
-): string | undefined {
-  if (!attributes) {
-    return undefined;
-  }
-  const candidates = [attributes.photos, attributes.images, ...Object.values(attributes)];
-  for (const list of candidates) {
-    if (Array.isArray(list)) {
-      const first = list.find((item) => typeof item === 'string' && item);
-      if (typeof first === 'string') {
-        return fileUrl(first);
-      }
-    }
-  }
-  return undefined;
-}
-
 // Props for the BusinessProfileCard component.
 export interface BusinessProfileCardProps {
   profile: BusinessProfile;
@@ -104,7 +83,7 @@ export interface BusinessProfileCardProps {
   onPress: () => void;
   onEdit: () => void;
   onToggleVisibility: () => void;
-  onMenu: () => void;
+  onDelete: () => void;
 }
 
 function BusinessProfileCardComponent({
@@ -113,7 +92,7 @@ function BusinessProfileCardComponent({
   onPress,
   onEdit,
   onToggleVisibility,
-  onMenu,
+  onDelete,
 }: BusinessProfileCardProps) {
   const styles = useThemedStyles(createBusinessProfileCardStyles);
   const theme = useTheme();
@@ -124,13 +103,18 @@ function BusinessProfileCardComponent({
   const StatusIcon = visual.icon;
   const statusColor = theme.colors[visual.color];
   const statusLabel = t(visual.labelKey);
+  const tone = getStatusTone(profile.status);
   const category = getProfileTypeLabel(
     profile.profileType,
     profileTypes,
     language,
   );
   const imageUri = firstImageUrl(profile.attributes);
-  const tone = getStatusTone(profile.status);
+  const ownerName =
+    typeof profile.attributes?.ownerName === 'string' &&
+    profile.attributes.ownerName.trim() !== ''
+      ? profile.attributes.ownerName
+      : null;
 
   const reason =
     status === 'REJECTED'
@@ -143,7 +127,7 @@ function BusinessProfileCardComponent({
       ? t('businessProfile.rejectReason')
       : t('businessProfile.blockReason');
 
-  const accessibilityLabel = [profile.businessName, category, statusLabel]
+  const accessibilityLabel = [ownerName, profile.businessName, category, statusLabel]
     .filter(Boolean)
     .join(', ');
 
@@ -156,6 +140,9 @@ function BusinessProfileCardComponent({
       >
         {({ pressed }) => (
           <View style={[styles.content, pressed ? styles.contentPressed : null]}>
+            <View style={styles.cornerBadge} pointerEvents="none">
+              <Badge label={t(getStatusLabelKey(profile.status))} tone={tone} />
+            </View>
             <View style={styles.iconWrap}>
               {imageUri ? (
                 <Image
@@ -169,41 +156,48 @@ function BusinessProfileCardComponent({
                 <StatusIcon size={theme.sizing.iconXl} color={statusColor} />
               )}
             </View>
-           
 
             <View style={styles.body}>
               <View style={styles.identity}>
-                <View style={styles.titleRow}>
-                  <Text variant="h4" numberOfLines={1} style={styles.title}>
-                    {profile.businessName}
-                  </Text>
-                  <View style={styles.headerActionSlot}>
-                    <IconButton
-                      icon={MoreVertical}
-                      size="sm"
-                      color={theme.colors.textSecondary}
-                      accessibilityLabel={t('businessProfile.moreActions')}
-                      onPress={onMenu}
-                    />
-                  </View>
-                </View>
-                   <View style={{position: 'absolute', right: 10, top: -20}}>
-                      <Badge label={t(getStatusLabelKey(profile.status))} tone={tone} />
-                    </View>
-
-                <View style={styles.metaRow}>
-                  {category ? (
+                {ownerName ? (
+                  <View style={styles.ownerRow}>
+                    <User size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
                     <Text
                       variant="label"
                       color="textSecondary"
                       numberOfLines={1}
-                      style={styles.category}
+                      style={styles.ownerName}
                     >
-                      {category}
+                      {ownerName}
                     </Text>
-                  ) : null}
-                 
+                  </View>
+                ) : null}
+
+                <View style={styles.titleRow}>
+                  <Text variant="h3" numberOfLines={1} style={styles.title}>
+                    {profile.businessName}
+                  </Text>
+                  <View style={styles.headerActionSlot}>
+                    <IconButton
+                      icon={Trash2}
+                      size="sm"
+                      color={theme.colors.textPrimary}
+                      accessibilityLabel={t('businessProfile.delete')}
+                      onPress={onDelete}
+                    />
+                  </View>
                 </View>
+
+                {category ? (
+                  <Text
+                    variant="caption"
+                    color="textSecondary"
+                    numberOfLines={1}
+                    style={styles.category}
+                  >
+                    {category}
+                  </Text>
+                ) : null}
 
                 {reason ? (
                   <Text

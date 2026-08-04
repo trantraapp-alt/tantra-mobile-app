@@ -1,7 +1,12 @@
 // Assembles the create/update business-profile payload from a form schema and
 // collected values. Common fields (common:true) go top-level; the rest land in
-// `attributes`. The address is always inline (no address-book selection).
+// `attributes`. The business-profile API only accepts an inline address object
+// (no addressId / useDefaultAddress reference support, unlike listings), so a
+// "use my default address" or "saved address" selection has to be resolved to
+// its actual field values here rather than passed through as a reference.
+import { addressesApi, type SavedAddress } from '@/features/addresses';
 import {
+  type AddressPayload,
   addressToPayload,
   type AddressValue,
   isAddressSelection,
@@ -13,15 +18,61 @@ import { coerceFieldValue } from '@/features/sell/forms/listingPayload';
 
 import type { BusinessProfilePayload } from '../api/businessProfileApi';
 
-// Converts a form AddressValue/AddressSelection to the inline address object the
-// business-profile API expects (always an inline address, no addressId).
-function extractAddress(raw: unknown): Record<string, unknown> | undefined {
+// Trims a string, returning null when empty — mirrors address.ts's own helper
+// since a saved-address record's fields are already plain strings/numbers,
+// not the form's AddressValue shape.
+function text(value: string | null | undefined): string | null {
+  const trimmed = (value ?? '').trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+// Converts a saved address-book record to the inline shape the business-profile
+// API expects.
+function savedAddressToPayload(saved: SavedAddress): AddressPayload {
+  return {
+    fullAddress: text(saved.fullAddress),
+    village: text(saved.village),
+    district: text(saved.district),
+    city: text(saved.city),
+    state: text(saved.state),
+    country: text(saved.country),
+    pinCode: text(saved.pinCode),
+    mobileNumber: text(saved.mobileNumber),
+    altMobileNumber: text(saved.altMobileNumber),
+    latitude: saved.latitude ?? null,
+    longitude: saved.longitude ?? null,
+  };
+}
+
+// Resolves the user's default saved address (or a specific one by id) from
+// the address book, converted to the inline payload shape.
+async function resolveSavedAddress(
+  addressId?: string,
+): Promise<Record<string, unknown> | undefined> {
+  const addresses = await addressesApi.list();
+  const match = addressId
+    ? addresses.find((item) => item.addressId === addressId)
+    : (addresses.find((item) => item.isDefault) ?? addresses[0]);
+  return match
+    ? (savedAddressToPayload(match) as unknown as Record<string, unknown>)
+    : undefined;
+}
+
+// Converts a form AddressValue/AddressSelection to the inline address object
+// the business-profile API expects — resolving a "default"/"saved" selection
+// against the address book rather than dropping it.
+async function extractAddress(
+  raw: unknown,
+): Promise<Record<string, unknown> | undefined> {
   if (isAddressSelection(raw)) {
     if (raw.mode === 'manual') {
       return addressToPayload(raw.value) as unknown as Record<string, unknown>;
     }
-    // Saved / default modes are not used for BP — fall through to undefined.
-    return undefined;
+    if (raw.mode === 'saved') {
+      return resolveSavedAddress(raw.addressId);
+    }
+    // mode === 'default'
+    return resolveSavedAddress();
   }
   if (isAddressValue(raw)) {
     return addressToPayload(raw as AddressValue) as unknown as Record<
@@ -33,17 +84,17 @@ function extractAddress(raw: unknown): Record<string, unknown> | undefined {
 }
 
 // Builds the business-profile POST/PUT body from the schema and form values.
-export function buildBusinessProfilePayload(
+export async function buildBusinessProfilePayload(
   form: ListingForm,
   values: ListingValues,
-): BusinessProfilePayload {
+): Promise<BusinessProfilePayload> {
   const common: Record<string, unknown> = {};
   const attributes: Record<string, unknown> = {};
 
   for (const section of form.sections) {
     for (const field of section.fields) {
       if (field.type === 'ADDRESS') {
-        const address = extractAddress(values[field.fieldKey]);
+        const address = await extractAddress(values[field.fieldKey]);
         if (address) {
           common.address = address;
         }

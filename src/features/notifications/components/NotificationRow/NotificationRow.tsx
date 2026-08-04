@@ -18,6 +18,11 @@ export interface NotificationRowProps {
   notification: AppNotification;
   // Active language for title/body.
   language: PreferredLanguage;
+  // The referenced business profile's name, when known (resolved separately
+  // since the notification's own title/body don't carry it — only an opaque
+  // refId does). Shown as a small label above the title so a user with
+  // several profiles can tell which one a notification is about.
+  profileName?: string;
   // Called when the row is tapped.
   onPress: (notification: AppNotification) => void;
 }
@@ -26,6 +31,7 @@ export interface NotificationRowProps {
 function NotificationRowComponent({
   notification,
   language,
+  profileName,
   onPress,
 }: NotificationRowProps) {
   const styles = useThemedStyles(createNotificationRowStyles);
@@ -36,7 +42,7 @@ function NotificationRowComponent({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={[profileName, title].filter(Boolean).join(' — ')}
       onPress={() => onPress(notification)}
       style={[styles.row, unread ? styles.unread : null]}
     >
@@ -44,6 +50,11 @@ function NotificationRowComponent({
         {unread ? <View style={styles.dot} /> : null}
       </View>
       <View style={styles.body}>
+        {profileName ? (
+          <Text variant="label" color="primary" numberOfLines={1}>
+            {profileName}
+          </Text>
+        ) : null}
         {title ? (
           <Text variant="bodyMedium" numberOfLines={2}>
             {title}

@@ -67,6 +67,40 @@ export function useMyProfiles() {
     void fetchPage(0, 'replace');
   }, [fetchPage]);
 
+  // The list endpoint can return a leaner projection than the single-profile
+  // fetch (e.g. missing attributes.ownerName), so a card would otherwise show
+  // incomplete info even though the full record exists. Backfill each row
+  // once in the background — enrichedRef guards against re-fetching a row
+  // that still comes back without an owner name (a real gap, not a fluke).
+  const enrichedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    profiles.forEach((p) => {
+      const hasOwnerName =
+        typeof p.attributes?.ownerName === 'string' && p.attributes.ownerName.trim() !== '';
+      if (hasOwnerName || enrichedRef.current.has(p.profileId)) {
+        return;
+      }
+      enrichedRef.current.add(p.profileId);
+      businessProfileApi
+        .getProfile(p.profileId)
+        .then((full) => {
+          setProfiles((prev) =>
+            prev.map((item) =>
+              item.profileId === p.profileId
+                ? { ...item, attributes: full.attributes, address: full.address }
+                : item,
+            ),
+          );
+        })
+        .catch((error) => {
+          logger.warn('[BusinessProfile] Failed to enrich profile row', {
+            profileId: p.profileId,
+            error,
+          });
+        });
+    });
+  }, [profiles]);
+
   const loadMore = useCallback(() => {
     if (
       last ||

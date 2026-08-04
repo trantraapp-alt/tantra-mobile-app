@@ -17,5 +17,8 @@ export function createBPFormScreenStyles(theme: AppTheme) {
     typePickerLabel: {
       marginBottom: theme.spacing.sm,
     },
+    typeOption: {
+      marginBottom: theme.spacing.sm,
+    },
   });
 }

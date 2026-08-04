@@ -1,6 +1,10 @@
 // Admin profile list: filtered by status from route params. Used by the
 // tracker tiles (PENDING queue) and drill-downs (APPROVED / REJECTED / BLOCKED).
+// Cards intentionally mirror the owner's My Profiles card (photo/status tile,
+// owner name → business name → category + status) — pure display, no actions,
+// since a tap always goes to the full review screen.
 import { FlashList } from '@shopify/flash-list';
+import { Image } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronRight, ClipboardList, User } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
@@ -18,9 +22,9 @@ import { commonStyles, formatDate } from '@/utils';
 import { businessProfileApi } from '../../api/businessProfileApi';
 import { useAdminProfiles } from '../../hooks/useAdminProfiles';
 import type { BusinessProfile, ProfileTypeOption } from '../../types/businessProfile.types';
+import { firstImageUrl } from '../../utils/profileImage';
 import { getStatusIcon, getStatusLabelKey, getStatusTone } from '../../utils/profileStatus';
 import { getProfileTypeLabel } from '../../utils/profileTypeLabels';
-import { withAlpha } from '../../utils/withAlpha';
 import { createAdminProfileListStyles } from './AdminProfileListScreen.styles';
 
 export function AdminProfileListScreen() {
@@ -95,6 +99,11 @@ export function AdminProfileListScreen() {
       const tone = getStatusTone(item.status);
       const toneColor = theme.colors[tone];
       const StatusIcon = getStatusIcon(item.status);
+      const imageUri = firstImageUrl(item.attributes);
+      const ownerName =
+        typeof item.attributes?.ownerName === 'string' && item.attributes.ownerName.trim() !== ''
+          ? item.attributes.ownerName
+          : null;
       const reason =
         item.status === 'REJECTED'
           ? item.rejectReason
@@ -103,13 +112,7 @@ export function AdminProfileListScreen() {
             : null;
       return (
         <Card
-          style={[
-            styles.card,
-            {
-              backgroundColor: withAlpha(toneColor, theme.opacity.faint),
-              borderColor: withAlpha(toneColor, theme.opacity.subtle),
-            },
-          ]}
+          style={styles.card}
           onPress={() => {
             router.push({
               pathname: routes.admin.businessProfileReview(item.profileId),
@@ -118,17 +121,35 @@ export function AdminProfileListScreen() {
           }}
         >
           <View style={styles.cardRow}>
-            <View style={[styles.statusIcon, { backgroundColor: toneColor }]}>
-              <StatusIcon size={theme.sizing.iconSm} color={theme.colors.onPrimary} />
+            <View style={styles.cornerBadge} pointerEvents="none">
+              <Badge label={t(getStatusLabelKey(item.status))} tone={tone} />
+            </View>
+            <View style={styles.iconWrap}>
+              {imageUri ? (
+                <Image
+                  source={{ uri: imageUri }}
+                  style={styles.iconImage}
+                  contentFit="cover"
+                  transition={theme.animation.normal}
+                  accessibilityLabel={item.businessName}
+                />
+              ) : (
+                <StatusIcon size={theme.sizing.iconXl} color={toneColor} />
+              )}
             </View>
             <View style={styles.cardBody}>
-              <View style={styles.cardHeader}>
-                <Text variant="bodyMedium" numberOfLines={1} style={styles.cardTitle}>
-                  {item.businessName}
-                </Text>
-                <Badge label={t(getStatusLabelKey(item.status))} tone={tone} />
-              </View>
-              <Text variant="caption" color="textSecondary">
+              {ownerName ? (
+                <View style={styles.ownerRow}>
+                  <User size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
+                  <Text variant="label" color="textSecondary" numberOfLines={1}>
+                    {ownerName}
+                  </Text>
+                </View>
+              ) : null}
+              <Text variant="h3" numberOfLines={1} style={styles.cardTitle}>
+                {item.businessName}
+              </Text>
+              <Text variant="caption" color="textSecondary" style={styles.category}>
                 {getProfileTypeLabel(item.profileType, profileTypes, language)}
               </Text>
               {reason ? (
@@ -137,14 +158,11 @@ export function AdminProfileListScreen() {
                 </Text>
               ) : null}
               {item.verifiedAt || item.verifiedBy ? (
-                <View style={styles.metaRow}>
+                <View style={styles.verifiedRow}>
                   {item.verifiedBy ? (
-                    <View style={styles.metaItem}>
-                      <User size={theme.sizing.iconXs} color={theme.colors.textTertiary} />
-                      <Text variant="caption" color="textTertiary">
-                        {item.verifiedBy}
-                      </Text>
-                    </View>
+                    <Text variant="caption" color="textTertiary">
+                      {item.verifiedBy}
+                    </Text>
                   ) : null}
                   {item.verifiedAt ? (
                     <Text variant="caption" color="textTertiary">

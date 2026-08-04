@@ -1,49 +1,105 @@
 // Style factory for BusinessProfileView — the read-only profile body shared by
-// the owner detail screen and the admin review screen. Sections use the same
-// "fieldset legend" language as the create/edit form (an outlined card with
-// its title straddling the top border), so a profile reads as the read-only
-// mirror of the form that built it, not an unrelated plain list.
+// the owner detail screen and the admin review screen. Mirrors the buyer
+// marketplace listing-detail screen's pattern (hairline-bordered sections,
+// a lavender attribute grid) so a business profile reads as the same kind of
+// detail page as a listing, not a bespoke form-mirror layout.
 import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
 
 export function createBusinessProfileViewStyles(theme: AppTheme) {
   return StyleSheet.create({
-    scrollContent: {
-      paddingHorizontal: theme.spacing.lg,
+    content: {
       paddingBottom: theme.spacing.xxl,
-      gap: theme.spacing.md,
     },
-    // Positioning context for the gallery and its status badge overlay. Pulled
-    // back out to full width since scrollContent now carries side padding.
-    hero: {
-      position: 'relative',
-      marginHorizontal: -theme.spacing.lg,
-    },
-    heroBadge: {
-      position: 'absolute',
-      left: theme.spacing.md,
-      bottom: theme.spacing.md,
-    },
-    block: {
-      paddingTop: theme.spacing.md,
-    },
-    identity: {
-      gap: theme.spacing.xxs,
-    },
-    ownerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
+    // A padded content block.
+    section: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
       gap: theme.spacing.xs,
-      marginTop: theme.spacing.xxs,
     },
-    blockTitle: {
-      marginBottom: theme.spacing.sm,
+    sectionBordered: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.border,
+    },
+    sectionTitle: {
+      textTransform: 'uppercase',
+      marginBottom: theme.spacing.xxs,
     },
     titleRow: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+    },
+    title: {
+      flexShrink: 1,
+    },
+    tagsRow: {
+      flexDirection: 'row',
+      gap: theme.spacing.xs,
+      flexWrap: 'wrap',
+    },
+    metaRow: {
+      flexDirection: 'row',
+      gap: theme.spacing.md,
+      flexWrap: 'wrap',
+      alignItems: 'center',
+    },
+    metaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+    },
+    // Reason notice (rejected/blocked) — a left-accented, tone-tinted card so
+    // it reads as a flagged notice rather than another plain field row.
+    reasonBox: {
+      flexDirection: 'row',
       gap: theme.spacing.sm,
+      marginHorizontal: theme.spacing.lg,
+      borderRadius: theme.radius.md,
+      borderLeftWidth: 3,
+      padding: theme.spacing.md,
+    },
+    reasonBoxText: {
+      flex: 1,
+      gap: theme.spacing.xxs,
+    },
+    descriptionGroup: {
+      gap: theme.spacing.md,
+    },
+    blockTitle: {
+      marginBottom: theme.spacing.xxs,
+    },
+    // Attribute key/value grid.
+    attrsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
+    },
+    attrItem: {
+      width: '47%',
+      flexGrow: 1,
+      backgroundColor: theme.colors.primaryLight,
+      borderRadius: theme.radius.sm,
+      padding: theme.spacing.sm,
+      gap: 1,
+    },
+    attrItemWide: {
+      width: '100%',
+    },
+    booleanValue: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+    },
+    // Business address card.
+    addressCard: {
+      flexDirection: 'row',
+      gap: theme.spacing.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+      borderRadius: theme.cardRadius.lg,
+      padding: theme.spacing.md,
     },
     // Solid tone-colored circle behind the address pin — the same
     // solid-icon-circle convention used across the feature.
@@ -54,88 +110,6 @@ export function createBusinessProfileViewStyles(theme: AppTheme) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    verifiedBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-      borderWidth: 1,
-      borderRadius: theme.radius.pill,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-    },
-    // Reason notice (rejected/blocked) — a left-accented, tone-tinted card so
-    // it reads as a flagged notice rather than another plain field row.
-    reasonBox: {
-      flexDirection: 'row',
-      gap: theme.spacing.sm,
-      borderRadius: theme.radius.md,
-      borderLeftWidth: 3,
-      padding: theme.spacing.md,
-    },
-    reasonBoxText: {
-      flex: 1,
-      gap: theme.spacing.xxs,
-    },
-    // A titled group of fields, drawn as an outlined card with its title
-    // sitting on the top-left border — mirrors DynamicListingForm's section.
-    sectionCard: {
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: theme.radius.lg,
-      paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.lg,
-      paddingBottom: theme.spacing.sm,
-    },
-    // Section title chip straddling the card's top-left border.
-    sectionLegend: {
-      position: 'absolute',
-      top: -theme.spacing.md,
-      left: theme.spacing.md,
-      paddingHorizontal: theme.spacing.xs,
-      backgroundColor: theme.colors.background,
-    },
-    // Two-column label/value row.
-    row: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-    },
-    rowLabelGroup: {
-      flex: 42,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-    },
-    rowLabel: {
-      flex: 1,
-    },
-    rowValue: {
-      flex: 58,
-    },
-    stackedRow: {
-      paddingVertical: theme.spacing.sm,
-      gap: theme.spacing.xs,
-    },
-    booleanValue: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-    },
-    tagWrap: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: theme.spacing.xs,
-    },
-    tag: {
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xxs,
-      borderRadius: theme.radius.pill,
-      backgroundColor: theme.colors.surfaceVariant,
-    },
-    descriptionGroup: {
-      gap: theme.spacing.lg,
-    },
     addressLines: {
       flex: 1,
       gap: theme.spacing.xxs,
@@ -144,10 +118,19 @@ export function createBusinessProfileViewStyles(theme: AppTheme) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
-      marginTop: theme.spacing.md,
+      marginTop: theme.spacing.sm,
     },
     coordinates: {
-      marginTop: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
+    },
+    // Positioning context for the gallery and its status badge overlay.
+    hero: {
+      position: 'relative',
+    },
+    heroBadge: {
+      position: 'absolute',
+      left: theme.spacing.md,
+      bottom: theme.spacing.md,
     },
   });
 }

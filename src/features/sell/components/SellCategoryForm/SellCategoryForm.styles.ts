@@ -56,6 +56,12 @@ export function createSellCategoryFormStyles(theme: AppTheme) {
       width: '64%',
       height: '64%',
     },
+    // Emoji glyph shown when there is no image (matches the Home "Browse
+    // Categories" tiles).
+    pickerEmoji: {
+      fontSize: 40,
+      lineHeight: 46,
+    },
     // Wraps the info banner + the leaf listing form.
     leafFormWrap: {
       flex: 1,

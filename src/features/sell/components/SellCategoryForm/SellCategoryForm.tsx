@@ -184,7 +184,6 @@ function SubcategoryPicker({
           const name = categoryName(sub, language);
           const imageSource = getCategoryImageSource(sub.categoryKey);
           const visual = getCategoryVisual(sub.categoryKey);
-          const Icon = visual.icon;
           return (
             <Card
               key={sub.id}
@@ -203,10 +202,7 @@ function SubcategoryPicker({
                       accessibilityLabel={name}
                     />
                   ) : (
-                    <Icon
-                      size={theme.sizing.avatarMd}
-                      color={theme.colors[visual.accent]}
-                    />
+                    <Text style={styles.pickerEmoji}>{visual.emoji}</Text>
                   )}
                 </View>
                 <Text variant="bodyMedium" align="center" numberOfLines={2}>

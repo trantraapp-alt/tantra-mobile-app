@@ -8,7 +8,7 @@
 // pre-fill, `mode="update"` to lock fields the backend marks non-editable, and
 // `onSubmit` to override the default create call (e.g. to PUT an update).
 import { Lock } from 'lucide-react-native';
-import { memo, useCallback, useEffect, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type Control,
   type RegisterOptions,
@@ -207,6 +207,40 @@ function rentOptionValue(field: ListingField): string | undefined {
   )?.value;
 }
 
+// Field types that are never a free-text contact number.
+const NON_CONTACT_FIELD_TYPES = new Set([
+  'BOOLEAN',
+  'ADDRESS',
+  'AUTO_CALC',
+  'IMAGE',
+  'DROPDOWN',
+  'RADIO',
+  'MULTISELECT',
+  'CHECKBOX_GROUP',
+  'DATE',
+]);
+
+// Finds the seller contact-number field inside the Contact section so the
+// address selector can prefill it from the chosen address. Scoped to the
+// Contact section (so a "phone"/"model number" product field elsewhere is not
+// matched) and skips the show-contact toggle.
+function findContactFieldKey(form: ListingForm): string | null {
+  for (const section of form.sections) {
+    if (!/contact/i.test(`${section.key} ${section.title.en}`)) {
+      continue;
+    }
+    for (const field of section.fields) {
+      if (NON_CONTACT_FIELD_TYPES.has(field.type)) {
+        continue;
+      }
+      if (/contact|mobile|phone|whatsapp|number/i.test(field.fieldKey)) {
+        return field.fieldKey;
+      }
+    }
+  }
+  return null;
+}
+
 // Whether a section is one hidden while a rental is being listed.
 function isRentHiddenSection(section: ListingSection): boolean {
   return RENT_HIDDEN_SECTIONS.test(`${section.key} ${section.title.en}`);
@@ -376,10 +410,19 @@ interface FieldProps {
   language: PreferredLanguage;
   mode: ListingFormMode;
   fieldsByKey: FieldMap;
+  // Prefills the seller contact field from a chosen address (ADDRESS field only).
+  onAddressContact?: (mobileNumber: string) => void;
 }
 
 // Renders a single editable field with the control matching its type.
-function InputField({ field, control, language, mode, fieldsByKey }: FieldProps) {
+function InputField({
+  field,
+  control,
+  language,
+  mode,
+  fieldsByKey,
+  onAddressContact,
+}: FieldProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const styles = useThemedStyles(createDynamicListingFormStyles);
@@ -541,6 +584,7 @@ function InputField({ field, control, language, mode, fieldsByKey }: FieldProps)
         onChange={onChange}
         language={language}
         error={error}
+        onResolveContact={onAddressContact}
       />
     );
   }
@@ -568,6 +612,7 @@ function ConditionalField({
   language,
   mode,
   fieldsByKey,
+  onAddressContact,
 }: FieldProps) {
   const when = field.visibleWhen;
   const watched = useWatch({ control, name: when?.field ?? field.fieldKey });
@@ -580,6 +625,7 @@ function ConditionalField({
         language={language}
         mode={mode}
         fieldsByKey={fieldsByKey}
+        onAddressContact={onAddressContact}
       />
     );
   }
@@ -591,6 +637,7 @@ function ConditionalField({
       language={language}
       mode={mode}
       fieldsByKey={fieldsByKey}
+      onAddressContact={onAddressContact}
     />
   ) : null;
 }
@@ -627,6 +674,7 @@ function renderField(
   language: PreferredLanguage,
   mode: ListingFormMode,
   fieldsByKey: FieldMap,
+  onAddressContact: (mobileNumber: string) => void,
 ) {
   if (field.type === 'AUTO_CALC') {
     return (
@@ -649,6 +697,7 @@ function renderField(
         language={language}
         mode={mode}
         fieldsByKey={fieldsByKey}
+        onAddressContact={onAddressContact}
       />
     );
   }
@@ -660,6 +709,7 @@ function renderField(
       language={language}
       mode={mode}
       fieldsByKey={fieldsByKey}
+      onAddressContact={onAddressContact}
     />
   );
 }
@@ -712,7 +762,6 @@ function DynamicListingFormComponent({
   onSubmit: onSubmitProp,
   onSubmitSuccess,
 }: DynamicListingFormProps) {
-  const theme = useTheme();
   const styles = useThemedStyles(createDynamicListingFormStyles);
   const { showSuccess, showError } = useToast();
   const { t } = useTranslation();
@@ -731,7 +780,6 @@ function DynamicListingFormComponent({
     () => getCategoryVisual(categoryKey ?? resolvedForm.title.en),
     [categoryKey, resolvedForm.title.en],
   );
-  const HeadingIcon = headingVisual.icon;
 
   const defaultValues = useMemo(
     () => buildDefaults(resolvedForm, initialValues),
@@ -748,10 +796,35 @@ function DynamicListingFormComponent({
       ),
     [resolvedForm],
   );
-  const { control, handleSubmit, formState, reset } = useForm<ListingValues>({
-    defaultValues,
-    mode: 'onBlur',
-  });
+  const { control, handleSubmit, formState, reset, setValue } =
+    useForm<ListingValues>({
+      defaultValues,
+      mode: 'onBlur',
+    });
+
+  // Bumped after a successful create to remount the field tree, guaranteeing
+  // every input visibly returns to blank even if a controlled field would
+  // otherwise hold on to its last value.
+  const [formInstanceKey, setFormInstanceKey] = useState(0);
+
+  // The seller contact-number field, prefilled from the address the lister
+  // picks (their default address or a freshly created one).
+  const contactFieldKey = useMemo(
+    () => findContactFieldKey(resolvedForm),
+    [resolvedForm],
+  );
+  const fillContactFromAddress = useCallback(
+    (mobileNumber: string) => {
+      if (!contactFieldKey) {
+        return;
+      }
+      setValue(contactFieldKey, mobileNumber, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    },
+    [contactFieldKey, setValue],
+  );
 
   // The "rent" value on the transaction toggle. Watch only that field so typing
   // elsewhere does not re-render the whole form.
@@ -803,8 +876,10 @@ function DynamicListingFormComponent({
       try {
         await modulesApi.createListing(payload);
         showSuccess(t('form.submitSuccess'));
-        // Clear the form, then let the caller leave (back to the module screen).
+        // Clear the form: reset the values AND remount the fields so every input
+        // visibly returns to blank, then let the caller leave.
         reset(defaultValues);
+        setFormInstanceKey((key) => key + 1);
         onSubmitSuccess?.();
       } catch (error) {
         logger.warn('[Sell] Create listing failed', error);
@@ -831,15 +906,13 @@ function DynamicListingFormComponent({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <KeyboardAwareScrollView
+          key={formInstanceKey}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.intro}>
             <View style={styles.introIcon}>
-              <HeadingIcon
-                size={theme.sizing.iconMd}
-                color={theme.colors[headingVisual.accent]}
-              />
+              <Text style={styles.introEmoji}>{headingVisual.emoji}</Text>
             </View>
             <View style={styles.introText}>
               <Text variant="h3">{localize(resolvedForm.title, language)}</Text>
@@ -866,7 +939,14 @@ function DynamicListingFormComponent({
                 </Text>
                 <View style={styles.sectionFields}>
                   {fields.map((field) =>
-                    renderField(field, control, language, mode, fieldsByKey),
+                    renderField(
+                      field,
+                      control,
+                      language,
+                      mode,
+                      fieldsByKey,
+                      fillContactFromAddress,
+                    ),
                   )}
                 </View>
               </View>

@@ -39,8 +39,10 @@ export function createSearchResultsStyles(theme: AppTheme) {
     body: {
       flex: 1,
     },
-    // Sellers list padding + per-card cell.
+    // Sellers list padding + per-card cell. flexGrow lets the empty state fill
+    // the viewport and center instead of hugging the top.
     sellersContent: {
+      flexGrow: 1,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.md,
       gap: theme.spacing.md,
@@ -48,7 +50,6 @@ export function createSearchResultsStyles(theme: AppTheme) {
     // Centered container for loading / empty / recent states.
     state: {
       flex: 1,
-      paddingVertical: theme.spacing.giant,
       paddingHorizontal: theme.spacing.lg,
       alignItems: 'center',
       justifyContent: 'center',

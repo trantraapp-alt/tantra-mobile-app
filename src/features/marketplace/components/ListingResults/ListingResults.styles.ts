@@ -11,7 +11,10 @@ export function createListingResultsStyles(theme: AppTheme) {
       flex: 1,
     },
     // Grid padding; the extra bottom room clears the tab bar / footer.
+    // flexGrow lets the content fill the viewport when the list is empty, so the
+    // empty state centers on screen instead of hugging the top.
     content: {
+      flexGrow: 1,
       paddingHorizontal: theme.spacing.sm,
       paddingBottom: theme.spacing.xxxl,
     },
@@ -26,9 +29,10 @@ export function createListingResultsStyles(theme: AppTheme) {
       paddingVertical: theme.spacing.lg,
       alignItems: 'center',
     },
-    // Centered container for the loading / empty / error states.
+    // Centered container for the loading / empty / error states. flex:1 fills
+    // the flexGrow content area so the state sits in the middle of the screen.
     state: {
-      paddingVertical: theme.spacing.giant,
+      flex: 1,
       paddingHorizontal: theme.spacing.lg,
       alignItems: 'center',
       justifyContent: 'center',

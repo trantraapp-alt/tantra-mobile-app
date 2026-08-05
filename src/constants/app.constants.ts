@@ -38,11 +38,19 @@ export const routes = {
   product: (id: string) => `/product/${id}`,
   category: (id: string) => `/category/${id}`,
   search: '/search',
-  // Browse a marketplace category's listings (optionally carrying its name).
-  browse: (categoryId: number | string, name?: string) =>
-    name
-      ? `/browse/${categoryId}?name=${encodeURIComponent(name)}`
-      : `/browse/${categoryId}`,
+  // Browse a marketplace category's listings (optionally carrying its name and a
+  // pre-applied listing type, e.g. a "Rent …" promo opens RENT-only listings).
+  browse: (categoryId: number | string, name?: string, listingType?: string) => {
+    const parts: string[] = [];
+    if (name) {
+      parts.push(`name=${encodeURIComponent(name)}`);
+    }
+    if (listingType) {
+      parts.push(`type=${encodeURIComponent(listingType)}`);
+    }
+    const qs = parts.length > 0 ? `?${parts.join('&')}` : '';
+    return `/browse/${categoryId}${qs}`;
+  },
   // Browse a category by its string key (crop/seed/equipment…) from the carousel,
   // carrying an optional display name and a pre-applied listing type.
   browseKey: (key: string, name?: string, listingType?: string) => {

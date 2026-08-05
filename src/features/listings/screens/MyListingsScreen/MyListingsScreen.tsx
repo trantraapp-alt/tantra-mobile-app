@@ -1,16 +1,14 @@
-// My Listings: the seller's own listings as a scrollable list of cards with
-// SELL/RENT + status filters, inline quick-edit, full edit, status changes and
-// delete. Data and mutations come from useMyListings; the card visual is the
-// shared ListingCard; per-card actions open a shared ActionSheet.
+// My Listings: the seller's own listings in a 2-column grid using the shared
+// buyer FeedListingCard (identical to Browse), each with Edit / Action footer
+// buttons; SELL/RENT + status filters, quick-edit, full edit, status changes and
+// delete. Data + mutations come from useMyListings; actions open a shared
+// ActionSheet.
 import { FlashList } from '@shopify/flash-list';
-import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import {
   CheckCircle2,
   Eye,
   EyeOff,
-  MoreVertical,
   PackageOpen,
   Pencil,
   SquarePen,
@@ -19,8 +17,7 @@ import {
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, IconButton } from '@/components/buttons';
-import { ListingCard } from '@/components/cards';
+import { Button } from '@/components/buttons';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { ConfirmDialog } from '@/components/feedback';
 import { Spinner } from '@/components/loaders';
@@ -32,11 +29,11 @@ import {
   Screen,
 } from '@/components/ui';
 import { routes } from '@/constants';
+import { type FeedListing, FeedListingCard } from '@/features/home';
 import { localize } from '@/features/sell';
 import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
-import type { TranslationKey } from '@/i18n';
 import { logger } from '@/lib';
-import { useTheme, useToast } from '@/providers';
+import { useToast } from '@/providers';
 import { commonStyles } from '@/utils';
 
 import { listingsApi } from '../../api';
@@ -51,27 +48,14 @@ import type {
 } from '../../types';
 import {
   deriveListingTitle,
-  firstImageUri,
   getListingId,
-  statusTone,
+  imageToUrl,
 } from '../../utils/listingDisplay';
 import { createMyListingsScreenStyles } from './MyListingsScreen.styles';
-
-// Maps a status to its i18n label key.
-function statusLabelKey(status: string): TranslationKey {
-  if (status === 'SOLD') {
-    return 'listing.status.sold';
-  }
-  if (status === 'INACTIVE') {
-    return 'listing.status.inactive';
-  }
-  return 'listing.status.active';
-}
 
 // Renders the My Listings screen.
 export function MyListingsScreen() {
   const styles = useThemedStyles(createMyListingsScreenStyles);
-  const theme = useTheme();
   const router = useRouter();
   const goBack = useGoBack();
   const { t, language } = useTranslation();
@@ -141,17 +125,6 @@ export function MyListingsScreen() {
     setActive(listing);
     actionSheetRef.current?.present();
   }, []);
-
-  // Copies a listing id — the reference a seller quotes to a buyer — so the ID
-  // chip is a tool rather than a label.
-  const copyId = useCallback(
-    async (id: string) => {
-      await Clipboard.setStringAsync(String(id));
-      void Haptics.selectionAsync();
-      showSuccess(t('listing.idCopied'));
-    },
-    [showSuccess, t],
-  );
 
   // Applies a status change (Mark as sold / active / inactive).
   const changeStatus = useCallback(
@@ -273,58 +246,71 @@ export function MyListingsScreen() {
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: MyListing }) => (
-      <View style={styles.cell}>
-        <ListingCard
-          title={deriveListingTitle(
-            item,
-            formsByCategory[item.categoryId],
-            language,
-            t('listing.untitled'),
-          )}
-          listingId={getListingId(item)}
-          idLabel={t('listing.idLabel')}
-          imageUri={firstImageUri(item)}
-          dimImage={String(item.status) === 'INACTIVE'}
-          offeredPrice={item.offeredPrice ?? undefined}
-          actualPrice={item.actualPrice ?? undefined}
-          discountPct={item.discountPct ?? undefined}
-          statusLabel={t(statusLabelKey(String(item.status)))}
-          statusTone={statusTone(String(item.status))}
-          onPress={() => goToDetail(item)}
-          onCopyId={copyId}
-          headerAction={
-            <IconButton
-              icon={MoreVertical}
-              size="sm"
-              color={theme.colors.textSecondary}
-              accessibilityLabel={t('listing.moreActions')}
-              onPress={() => openMenu(item)}
-            />
-          }
-          priceAction={
-            <Button
-              label={t('listing.edit')}
-              variant="outline"
-              size="sm"
-              fullWidth={false}
-              onPress={() => goToEdit(item)}
-            />
-          }
-        />
-      </View>
-    ),
-    [
-      styles,
-      theme,
-      language,
-      t,
-      goToEdit,
-      goToDetail,
-      openMenu,
-      copyId,
-      formsByCategory,
-    ],
+    ({ item }: { item: MyListing }) => {
+      // Adapt the owner's listing onto the shared buyer card shape so My
+      // Listings looks identical to Browse; the owner Edit / Action buttons are
+      // passed as the card's footer slot.
+      const feedListing: FeedListing = {
+        listingId: getListingId(item),
+        listingType: item.listingType,
+        status: item.status,
+        categoryId: item.categoryId,
+        categoryName: item.categoryName,
+        title: deriveListingTitle(
+          item,
+          formsByCategory[item.categoryId],
+          language,
+          t('listing.untitled'),
+        ),
+        offeredPrice: item.offeredPrice,
+        actualPrice: item.actualPrice,
+        discountPct: item.discountPct,
+        images: (item.images ?? []).map(imageToUrl),
+        address: (item.address ?? undefined) as FeedListing['address'],
+        attributes: item.attributes,
+        isNegotiable: item.isNegotiable === true,
+      };
+      const status = String(item.status).toUpperCase();
+      return (
+        <View style={styles.cell}>
+          <FeedListingCard
+            listing={feedListing}
+            onPress={() => goToDetail(item)}
+            statusBadge={
+              status === 'ACTIVE' || status === 'INACTIVE'
+                ? {
+                    tone: status === 'INACTIVE' ? 'danger' : 'success',
+                    label:
+                      status === 'INACTIVE'
+                        ? t('listing.status.inactive')
+                        : t('listing.status.active'),
+                  }
+                : undefined
+            }
+            footer={
+              <>
+                <View style={styles.footerButton}>
+                  <Button
+                    label={t('listing.edit')}
+                    variant="outline"
+                    size="sm"
+                    onPress={() => goToEdit(item)}
+                  />
+                </View>
+                <View style={styles.footerButton}>
+                  <Button
+                    label={t('listing.actions')}
+                    size="sm"
+                    onPress={() => openMenu(item)}
+                  />
+                </View>
+              </>
+            }
+          />
+        </View>
+      );
+    },
+    [styles, language, t, goToEdit, goToDetail, openMenu, formsByCategory],
   );
 
   // Chooses the body for the current data state.
@@ -359,6 +345,7 @@ export function MyListingsScreen() {
       <View style={commonStyles.flexOne}>
         <FlashList
           data={listings}
+          numColumns={2}
           keyExtractor={(item) => String(getListingId(item))}
           renderItem={renderItem}
           contentContainerStyle={styles.list}

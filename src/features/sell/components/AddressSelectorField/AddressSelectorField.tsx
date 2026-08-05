@@ -6,7 +6,7 @@
 // fields here.
 import { useFocusEffect, usePathname, useRouter } from 'expo-router';
 import { Phone, Plus } from 'lucide-react-native';
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { View } from 'react-native';
 
 import { Button } from '@/components/buttons';
@@ -36,6 +36,10 @@ export interface AddressSelectorFieldProps {
   language: PreferredLanguage;
   // Error message shown below the field.
   error?: string;
+  // Called with the chosen address's mobile number when the user ticks "use
+  // default address" or returns from creating one, so the form can prefill the
+  // seller contact field below.
+  onResolveContact?: (mobileNumber: string) => void;
 }
 
 // The address fields shared by a saved address and a listing's snapshot.
@@ -76,6 +80,7 @@ function AddressSelectorFieldComponent({
   value,
   onChange,
   error,
+  onResolveContact,
 }: AddressSelectorFieldProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createAddressSelectorStyles);
@@ -83,6 +88,10 @@ function AddressSelectorFieldComponent({
   const router = useRouter();
   const pathname = usePathname();
   const { addresses, refresh } = useAddresses();
+
+  // Set when an address was just created via the "Create new address" round
+  // trip, so the seller contact field is filled once that address resolves.
+  const pendingContactFill = useRef(false);
 
   // On focus, refresh the list and auto-select any address just created via the
   // "Create new address" round trip.
@@ -92,6 +101,7 @@ function AddressSelectorFieldComponent({
       const created = pendingAddress.take();
       if (created) {
         onChange({ mode: 'saved', addressId: created });
+        pendingContactFill.current = true;
       }
     }, [refresh, onChange]),
   );
@@ -128,8 +138,14 @@ function AddressSelectorFieldComponent({
         latitude: defaultAddress?.latitude ?? null,
         longitude: defaultAddress?.longitude ?? null,
       });
+      // Carry the default address's contact number down to the seller contact
+      // field so the lister does not retype it.
+      const mobile = clean(defaultAddress?.mobileNumber);
+      if (mobile) {
+        onResolveContact?.(mobile);
+      }
     },
-    [onChange, defaultAddress],
+    [onChange, defaultAddress, onResolveContact],
   );
 
   // Backfill the chosen address's coordinates onto the selection once the
@@ -163,6 +179,18 @@ function AddressSelectorFieldComponent({
       });
     }
   }, [value, savedAddress, defaultAddress, onChange]);
+
+  // Once the just-created saved address has loaded, prefill the seller contact
+  // field from its mobile number (the create-new-address round trip).
+  useEffect(() => {
+    if (pendingContactFill.current && savedAddress) {
+      pendingContactFill.current = false;
+      const mobile = clean(savedAddress.mobileNumber);
+      if (mobile) {
+        onResolveContact?.(mobile);
+      }
+    }
+  }, [savedAddress, onResolveContact]);
 
   const openCreate = useCallback(() => {
     router.push({

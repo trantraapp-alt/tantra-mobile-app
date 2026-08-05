@@ -1,118 +1,115 @@
-// Full-width trust/stats strip shown on the home screen: a primary-colored band
-// carrying four marketplace stats (farmers, districts, value traded,
-// satisfaction) separated by thin vertical dividers. Uses the live public stats
-// (GET /stats/public) when available, and falls back to curated values while
-// loading or if the endpoint is unavailable.
-import { Fragment, memo } from 'react';
-import { View } from 'react-native';
+// Full-width trust/stats strip shown on the home screen: a diagonal brand
+// gradient band (violet → orange, from the logo) carrying live marketplace stat
+// tiles whose numbers count up on mount. Tiles are admin-managed (GET
+// /stats/public) — the bar loops over whatever the API returns, sorted by
+// displayOrder, renders the pre-formatted value, picks the bilingual label for
+// the active language, and hides entirely when there are none.
+import { useFocusEffect } from 'expo-router';
+import { Fragment, memo, useCallback, useRef, useState } from 'react';
+import { type LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Text } from '@/components/ui';
-import { localize, type LocalizedText } from '@/features/sell';
 import { useThemedStyles, useTranslation } from '@/hooks';
+import { useTheme } from '@/providers';
 
 import { usePublicStats } from '../../hooks';
+import { CountUp } from './CountUp';
 import { createTrustBarStyles } from './TrustBar.styles';
-
-// A single stat: a display value over a bilingual label.
-interface TrustStat {
-  id: string;
-  value: string;
-  label: LocalizedText;
-}
-
-// Bilingual labels shared by the live + fallback stats.
-const LABELS = {
-  farmers: { en: 'Farmers', hi: 'किसान' },
-  districts: { en: 'Districts', hi: 'ज़िले' },
-  traded: { en: 'Traded', hi: 'व्यापार' },
-  satisfied: { en: 'Satisfied', hi: 'संतुष्ट' },
-} as const;
-
-// Curated fallback stats used until the live values load.
-const FALLBACK: readonly TrustStat[] = [
-  { id: 'farmers', value: '12,400+', label: LABELS.farmers },
-  { id: 'districts', value: '48', label: LABELS.districts },
-  { id: 'traded', value: '₹4.2Cr+', label: LABELS.traded },
-  { id: 'satisfied', value: '98%', label: LABELS.satisfied },
-];
-
-// Formats a whole number with Indian digit grouping (e.g. 12400 -> "12,400").
-function formatIndian(value: number): string {
-  const digits = Math.round(value).toString();
-  const lastThree = digits.slice(-3);
-  const rest = digits.slice(0, -3);
-  return rest
-    ? `${rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',')},${lastThree}`
-    : lastThree;
-}
-
-// Formats a traded value into ₹Cr / ₹L / plain rupees.
-function formatTraded(value: number): string {
-  if (value >= 1e7) {
-    return `₹${(value / 1e7).toFixed(1)}Cr+`;
-  }
-  if (value >= 1e5) {
-    return `₹${(value / 1e5).toFixed(1)}L+`;
-  }
-  return `₹${formatIndian(value)}`;
-}
 
 // The TrustBar takes no props — its content is self-sourced.
 export type TrustBarProps = Record<string, never>;
 
+// Puts a label's second word onto its own line ("Active Listings" ->
+// "Active\nListings") so every tile's caption stacks to two lines.
+function stackWords(label: string): string {
+  return label.replace(' ', '\n');
+}
+
 // Renders the full-width marketplace stats strip.
 function TrustBarComponent() {
+  const theme = useTheme();
   const styles = useThemedStyles(createTrustBarStyles);
   const { language } = useTranslation();
   const stats = usePublicStats();
+  // Measured band size — the gradient Svg needs explicit dimensions.
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  // Replays the count-up each time the home screen regains focus — on app open
+  // and when returning here from another page. The first focus is skipped since
+  // the mount animation already covers it.
+  const [runToken, setRunToken] = useState(0);
+  const hasFocused = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocused.current) {
+        hasFocused.current = true;
+        return;
+      }
+      setRunToken((token) => token + 1);
+    }, []),
+  );
 
-  const items: readonly TrustStat[] = stats
-    ? [
-        {
-          id: 'farmers',
-          value: formatIndian(stats.sellerCount),
-          label: LABELS.farmers,
-        },
-        {
-          id: 'districts',
-          value: formatIndian(stats.districtCount),
-          label: LABELS.districts,
-        },
-        {
-          id: 'traded',
-          value: formatTraded(stats.totalTradeValue),
-          label: LABELS.traded,
-        },
-        {
-          id: 'satisfied',
-          value: `${Math.round(stats.satisfiedPct)}%`,
-          label: LABELS.satisfied,
-        },
-      ]
-    : FALLBACK;
+  // Sort a copy by displayOrder so the source array order never matters.
+  const items = [...stats].sort((a, b) => a.displayOrder - b.displayOrder);
+
+  // Nothing to show → hide the ribbon entirely (no empty boxes).
+  if (items.length === 0) {
+    return null;
+  }
+
+  const onLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setSize((prev) =>
+      prev.width === width && prev.height === height
+        ? prev
+        : { width, height },
+    );
+  };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={onLayout}>
+      {size.width > 0 ? (
+        <Svg
+          width={size.width}
+          height={size.height}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        >
+          <Defs>
+            <LinearGradient id="trustBarGradient" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor={theme.colors.primary} />
+              <Stop offset="0.6" stopColor={theme.colors.primaryDark} />
+              <Stop offset="1" stopColor={theme.colors.secondary} />
+            </LinearGradient>
+          </Defs>
+          <Rect
+            width={size.width}
+            height={size.height}
+            fill="url(#trustBarGradient)"
+          />
+        </Svg>
+      ) : null}
+
       {items.map((stat, index) => (
-        <Fragment key={stat.id}>
+        <Fragment key={stat.statKey}>
           {index > 0 ? <View style={styles.divider} /> : null}
           <View style={styles.item}>
-            <Text
+            <CountUp
+              value={stat.value}
+              runToken={runToken}
               variant="h3"
               color="onPrimary"
               align="center"
               numberOfLines={1}
               style={styles.number}
-            >
-              {stat.value}
-            </Text>
+            />
             <Text
               variant="overline"
               align="center"
-              numberOfLines={1}
+              numberOfLines={2}
               style={styles.label}
             >
-              {localize(stat.label, language)}
+              {stackWords(language === 'HI' ? stat.labelHi : stat.labelEn)}
             </Text>
           </View>
         </Fragment>

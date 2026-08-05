@@ -48,6 +48,12 @@ export function createSellCategoryRailStyles(theme: AppTheme) {
       width: '64%',
       height: '64%',
     },
+    // Emoji glyph shown when there is no image (matches the Home "Browse
+    // Categories" tiles).
+    emoji: {
+      fontSize: 28,
+      lineHeight: 34,
+    },
     // Category name; full width so the full name wraps onto two lines.
     label: {
       width: '100%',

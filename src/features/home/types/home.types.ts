@@ -106,6 +106,10 @@ export interface PromoCard {
   ctaLabel?: LocalizedText | null;
   ctaType?: 'MODULE' | 'CATEGORY' | 'EXTERNAL' | 'NONE' | string;
   ctaValue?: string | null;
+  // Pre-applied listing type (RENT / SELL) for a CATEGORY promo. When the
+  // backend omits it, the client infers it from the title (a "Rent …" card
+  // opens the browse pre-filtered to RENT).
+  listingType?: string | null;
   // Sort order (lower first).
   displayOrder?: number;
   // District this card is scoped to, when localized.

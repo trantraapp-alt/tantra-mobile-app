@@ -31,6 +31,11 @@ export function createModuleTabsStyles(theme: AppTheme) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    // Emoji glyph inside the circle (matches the Home "Browse Categories").
+    emoji: {
+      fontSize: 30,
+      lineHeight: 36,
+    },
     // Centered module name.
     label: {
       textAlign: 'center',

@@ -50,7 +50,6 @@ function SellCategoryRailComponent({
         // Prefer a registered local image; fall back to the mapped icon.
         const imageSource = getCategoryImageSource(category.categoryKey);
         const visual = getCategoryVisual(category.categoryKey);
-        const Icon = visual.icon;
 
         return (
           <Pressable
@@ -71,10 +70,7 @@ function SellCategoryRailComponent({
                   accessibilityLabel={name}
                 />
               ) : (
-                <Icon
-                  size={theme.sizing.iconLg}
-                  color={theme.colors[visual.accent]}
-                />
+                <Text style={styles.emoji}>{visual.emoji}</Text>
               )}
             </View>
             <Text

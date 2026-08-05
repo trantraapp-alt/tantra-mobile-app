@@ -52,6 +52,18 @@ import { createHomeStyles } from './HomeScreen.styles';
 // Fixed width for a featured-business card in its horizontal rail.
 const BUSINESS_CARD_WIDTH = 260;
 
+// A "Rent …" promo (e.g. "Rent Tractor and Equipment") opens the browse
+// pre-filtered to RENT so only rental listings show. Prefer an explicit
+// listingType from the backend card; otherwise infer it from the title wording.
+function resolvePromoListingType(card: PromoCard): string | undefined {
+  const explicit = String(card.listingType ?? '').toUpperCase();
+  if (explicit === 'RENT' || explicit === 'SELL') {
+    return explicit;
+  }
+  const title = `${card.title?.en ?? ''} ${card.title?.hi ?? ''}`;
+  return /rent|lease|किराए|किराया/i.test(title) ? 'RENT' : undefined;
+}
+
 // Placeholder shown during the first feed load.
 function HomeSkeleton() {
   const styles = useThemedStyles(createHomeStyles);
@@ -226,7 +238,9 @@ export function HomeScreen() {
         // CATEGORY carries a category id (e.g. "4") or key (e.g. "crop"); both
         // resolve inside BrowseScreen via routes.browse.
         if (ctaType === 'CATEGORY' || ctaType === 'BROWSE_CATEGORY') {
-          router.push(routes.browse(ctaValue, name));
+          router.push(
+            routes.browse(ctaValue, name, resolvePromoListingType(card)),
+          );
           return;
         }
         // MODULE scopes the search/browse screen to a module id.

@@ -37,14 +37,21 @@ function EmptyStateComponent({
 
   return (
     <View style={styles.container}>
-      <View style={styles.iconWrapper}>
-        <Icon size={theme.sizing.iconXxl} color={theme.colors.textTertiary} />
+      <View style={styles.iconHalo}>
+        <View style={styles.iconCircle}>
+          <Icon size={theme.sizing.iconXxl} color={theme.colors.primary} />
+        </View>
       </View>
       <Text variant="h4" align="center" style={styles.title}>
         {title}
       </Text>
       {description ? (
-        <Text variant="body" color="textSecondary" align="center">
+        <Text
+          variant="body"
+          color="textSecondary"
+          align="center"
+          style={styles.description}
+        >
           {description}
         </Text>
       ) : null}

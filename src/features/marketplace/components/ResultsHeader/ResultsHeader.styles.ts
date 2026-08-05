@@ -9,7 +9,7 @@ export function createResultsHeaderStyles(theme: AppTheme) {
     container: {
       gap: theme.spacing.md,
       paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.xs,
+      paddingBottom: theme.spacing.md,
     },
     toolbar: {
       flexDirection: 'row',

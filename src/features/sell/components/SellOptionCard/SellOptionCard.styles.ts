@@ -28,5 +28,11 @@ export function createSellOptionCardStyles(theme: AppTheme) {
       width: '80%',
       height: '80%',
     },
+    // Emoji glyph shown when there is no remote image (matches the Home
+    // "Browse Categories" tiles).
+    emoji: {
+      fontSize: 40,
+      lineHeight: 46,
+    },
   });
 }

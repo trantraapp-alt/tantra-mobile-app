@@ -8,8 +8,14 @@ export function createActiveFilterChipsStyles(theme: AppTheme) {
   return StyleSheet.create({
     railContent: {
       paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
       gap: theme.spacing.sm,
       alignItems: 'center',
+    },
+    // Grid-aligned inset: matches the listing grid's cell padding so the first
+    // chip's left edge lines up with the cards below.
+    railContentGrid: {
+      paddingHorizontal: theme.spacing.xs,
     },
     chip: {
       flexDirection: 'row',

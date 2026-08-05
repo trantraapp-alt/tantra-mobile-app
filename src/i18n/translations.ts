@@ -48,6 +48,7 @@ const en = {
   'home.sold': 'SOLD',
   'home.tagRent': 'Rent',
   'home.tagNegotiable': 'Negotiable',
+  'home.tagNotNegotiable': 'Not Negotiable',
   'home.business.fallback': 'Business',
   'home.emptyTitle': 'Nothing here yet',
   'home.emptyDesc':
@@ -206,6 +207,7 @@ const en = {
   'listing.emptyTitle': 'No listings yet',
   'listing.emptyDesc': 'Your posted listings will appear here.',
   'listing.edit': 'Edit',
+  'listing.actions': 'Action',
   'listing.quickEdit': 'Quick edit',
   'listing.markSold': 'Mark as sold',
   'listing.markActive': 'Mark as active',
@@ -484,6 +486,7 @@ const hi: Record<TranslationKey, string> = {
   'home.sold': 'बिक गया',
   'home.tagRent': 'किराया',
   'home.tagNegotiable': 'मोल-भाव',
+  'home.tagNotNegotiable': 'मोल-भाव नहीं',
   'home.business.fallback': 'व्यवसाय',
   'home.emptyTitle': 'अभी कुछ नहीं है',
   'home.emptyDesc':
@@ -633,6 +636,7 @@ const hi: Record<TranslationKey, string> = {
   'listing.emptyTitle': 'अभी कोई लिस्टिंग नहीं',
   'listing.emptyDesc': 'आपकी पोस्ट की गई लिस्टिंग यहां दिखाई देंगी।',
   'listing.edit': 'संपादित करें',
+  'listing.actions': 'विकल्प',
   'listing.quickEdit': 'त्वरित संपादन',
   'listing.markSold': 'बिका हुआ चिह्नित करें',
   'listing.markActive': 'सक्रिय चिह्नित करें',

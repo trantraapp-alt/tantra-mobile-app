@@ -19,6 +19,9 @@ export interface ActiveFilterChipsProps {
   filters: ListingFilters;
   // Called with the next filter set after a chip is dismissed.
   onChange: (filters: ListingFilters) => void;
+  // When true, use the 2-column grid's cell inset so the first chip lines up
+  // with the listing cards below (default uses the wider toolbar inset).
+  gridAligned?: boolean;
 }
 
 // A rendered chip: its label and what removing it clears.
@@ -32,6 +35,7 @@ interface Chip {
 function ActiveFilterChipsComponent({
   filters,
   onChange,
+  gridAligned,
 }: ActiveFilterChipsProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createActiveFilterChipsStyles);
@@ -104,7 +108,10 @@ function ActiveFilterChipsComponent({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.railContent}
+      contentContainerStyle={[
+        styles.railContent,
+        gridAligned ? styles.railContentGrid : null,
+      ]}
     >
       {chips.map((chip) => (
         <Pressable

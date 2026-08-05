@@ -35,6 +35,12 @@ export function createDynamicListingFormStyles(theme: AppTheme) {
       justifyContent: 'center',
       backgroundColor: theme.colors.surfaceVariant,
     },
+    // Emoji glyph shown in the heading tile (matches the Home "Browse
+    // Categories" tiles).
+    introEmoji: {
+      fontSize: 24,
+      lineHeight: 28,
+    },
     // Heading + subtitle column.
     introText: {
       flex: 1,

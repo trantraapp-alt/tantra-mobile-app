@@ -6,14 +6,21 @@ import type { AppTheme } from '@/theme';
 // Builds My Listings screen styles from the active theme.
 export function createMyListingsScreenStyles(theme: AppTheme) {
   return StyleSheet.create({
-    // List content padding.
+    // Grid content padding.
     list: {
-      padding: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing.xxl,
     },
-    // Spacing between cards.
+    // One grid cell (two per row); the inner padding is the inter-card gap.
     cell: {
-      marginBottom: theme.spacing.md,
+      flex: 1,
+      paddingHorizontal: theme.spacing.xs,
+      paddingBottom: theme.spacing.md,
+    },
+    // Each footer button fills half of the action row.
+    footerButton: {
+      flex: 1,
     },
     // Centered container for loading/error states.
     center: {

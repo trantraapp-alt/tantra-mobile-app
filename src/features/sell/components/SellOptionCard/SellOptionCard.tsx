@@ -30,7 +30,6 @@ function SellOptionCardComponent({
   const theme = useTheme();
   const styles = useThemedStyles(createSellOptionCardStyles);
   const visual = getModuleVisual(module.moduleKey);
-  const Icon = visual.icon;
 
   // Emits the module when the card is pressed.
   const handlePress = useCallback(() => onPress(module), [onPress, module]);
@@ -52,11 +51,8 @@ function SellOptionCardComponent({
             accessibilityLabel={getModuleName(module, language)}
           />
         ) : (
-          // Accent-colored icon on the soft neutral tile — no solid color box.
-          <Icon
-            size={theme.sizing.avatarMd}
-            color={theme.colors[visual.accent]}
-          />
+          // Emoji glyph — same visual as the Home "Browse Categories" tiles.
+          <Text style={styles.emoji}>{visual.emoji}</Text>
         )}
       </View>
       <Text variant="bodyMedium" align="center" numberOfLines={2}>

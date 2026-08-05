@@ -30,11 +30,13 @@ export function createBottomSheetStyles(theme: AppTheme) {
     flex: {
       flex: 1,
     },
-    // Sticky footer bar (its own surface + top divider, sits above the inset).
+    // Sticky footer bar (its own surface + top divider). It sits above the
+    // system-nav inset (via BottomSheetFooter); this base bottom padding keeps
+    // the buttons off the bezel on devices with no system nav bar.
     footer: {
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.sm,
-      paddingBottom: theme.spacing.sm,
+      paddingBottom: theme.spacing.md,
       backgroundColor: theme.colors.background,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.border,

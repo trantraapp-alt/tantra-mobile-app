@@ -14,6 +14,9 @@ import type { ColorScheme } from '@/theme';
 export interface ModuleVisual {
   // Icon rendered as the card image.
   icon: LucideIcon;
+  // Emoji glyph shown on the "Sell on Tantra" module cards (mirrors the Home
+  // "Browse Categories" tiles).
+  emoji: string;
   // Theme color-scheme key used to tint the module icon.
   accent: Extract<
     keyof ColorScheme,
@@ -23,9 +26,9 @@ export interface ModuleVisual {
 
 // Exact module-key visuals (fast path).
 const MODULE_VISUALS: Record<string, ModuleVisual> = {
-  MOD_AGRI: { icon: Sprout, accent: 'success' },
-  MOD_ANIMAL_LIVESTOCK: { icon: PawPrint, accent: 'warning' },
-  MOD_SERVICE_PROVIDER: { icon: Briefcase, accent: 'secondary' },
+  MOD_AGRI: { icon: Sprout, emoji: '🌾', accent: 'success' },
+  MOD_ANIMAL_LIVESTOCK: { icon: PawPrint, emoji: '🐄', accent: 'warning' },
+  MOD_SERVICE_PROVIDER: { icon: Briefcase, emoji: '💼', accent: 'secondary' },
 };
 
 // Substring rules so a renamed or differently-cased module key still resolves
@@ -33,19 +36,19 @@ const MODULE_VISUALS: Record<string, ModuleVisual> = {
 const MODULE_RULES: { match: RegExp; visual: ModuleVisual }[] = [
   {
     match: /animal|livestock|poultry|fish|dairy|cattle|pashu/,
-    visual: { icon: PawPrint, accent: 'warning' },
+    visual: { icon: PawPrint, emoji: '🐄', accent: 'warning' },
   },
   {
     match: /agri|crop|farm|krishi|kheti/,
-    visual: { icon: Sprout, accent: 'success' },
+    visual: { icon: Sprout, emoji: '🌾', accent: 'success' },
   },
   {
     match: /service|repair|maramat|seva|sevah/,
-    visual: { icon: Briefcase, accent: 'secondary' },
+    visual: { icon: Briefcase, emoji: '💼', accent: 'secondary' },
   },
   {
     match: /market|bazaar|bazar|store|shop|dukan/,
-    visual: { icon: Store, accent: 'primary' },
+    visual: { icon: Store, emoji: '🏪', accent: 'primary' },
   },
 ];
 
@@ -58,5 +61,5 @@ export function getModuleVisual(moduleKey: string): ModuleVisual {
   }
   const key = moduleKey.toLowerCase();
   const rule = MODULE_RULES.find((entry) => entry.match.test(key));
-  return rule?.visual ?? { icon: Store, accent: 'primary' };
+  return rule?.visual ?? { icon: Store, emoji: '🏪', accent: 'primary' };
 }

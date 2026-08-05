@@ -88,6 +88,10 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
     // Whether the sheet is currently presented. Drives the Android back
     // handler below; `index >= 0` means at least the first snap point is open.
     const [isOpen, setIsOpen] = useState(false);
+    // Measured height of the sticky footer, so the content reserves exactly
+    // enough bottom padding to clear it. A fixed guess left the last row (e.g.
+    // the Crop Type filter) hidden behind a taller Reset / Apply footer.
+    const [footerHeight, setFooterHeight] = useState(0);
 
     useImperativeHandle(
       ref,
@@ -136,9 +140,9 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
     // footer overlays the content.
     const contentPadding = useMemo<ViewStyle>(
       () => ({
-        paddingBottom: bottomInset + (footer ? 64 : 0),
+        paddingBottom: bottomInset + (footer ? footerHeight : 0),
       }),
-      [bottomInset, footer],
+      [bottomInset, footer, footerHeight],
     );
 
     // Renders the dimmed backdrop behind the sheet.
@@ -157,7 +161,14 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
     const renderFooter = useCallback(
       (props: BottomSheetFooterProps) => (
         <BottomSheetFooter {...props} bottomInset={bottomInset}>
-          <View style={styles.footer}>{footer}</View>
+          <View
+            style={styles.footer}
+            onLayout={(event) =>
+              setFooterHeight(event.nativeEvent.layout.height)
+            }
+          >
+            {footer}
+          </View>
         </BottomSheetFooter>
       ),
       [footer, bottomInset, styles.footer],

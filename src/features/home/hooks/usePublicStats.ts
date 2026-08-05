@@ -1,22 +1,23 @@
-// Loads the public marketplace stats once for the home trust bar. Returns null
-// until loaded or on failure, so the trust bar can fall back to curated values.
+// Loads the public marketplace stat tiles once for the home trust bar. Returns
+// an empty array until loaded, or on failure / an empty response, so the trust
+// bar simply hides when there is nothing to show.
 import { useEffect, useState } from 'react';
 
 import { logger } from '@/lib';
 
 import { getPublicStats } from '../api/statsApi';
-import type { PublicStats } from '../types';
+import type { PublicStat } from '../types';
 
-// Returns the public stats, or null when unavailable.
-export function usePublicStats(): PublicStats | null {
-  const [stats, setStats] = useState<PublicStats | null>(null);
+// Returns the public stat tiles (empty when unavailable).
+export function usePublicStats(): PublicStat[] {
+  const [stats, setStats] = useState<PublicStat[]>([]);
 
   useEffect(() => {
     let active = true;
     getPublicStats()
       .then((data) => {
         if (active) {
-          setStats(data);
+          setStats(Array.isArray(data) ? data : []);
         }
       })
       .catch((error) => {

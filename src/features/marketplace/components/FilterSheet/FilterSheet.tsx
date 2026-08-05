@@ -15,6 +15,7 @@ import { Button } from '@/components/buttons';
 import { RangeSlider, Slider } from '@/components/inputs';
 import { BottomSheet, type BottomSheetRef, Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
+import { logger } from '@/lib';
 
 import type { ListingFilters } from '../../types';
 import { AttributeFilters } from './AttributeFilters';
@@ -31,17 +32,20 @@ const PRICE_MIN = 0;
 const PRICE_MAX = 2_000_000;
 const PRICE_STEP = 1000;
 
-// Formats a rupee amount for the price-range read-out.
+// Formats a rupee amount compactly for the price read-out (₹0, ₹50k, ₹1.5L,
+// ₹20L) so the range pill stays short and legible.
 function formatMoney(value: number): string {
-  return `₹${Math.round(value).toLocaleString('en-IN')}`;
+  const amount = Math.round(value);
+  if (amount >= 100_000) {
+    const lakh = amount / 100_000;
+    return `₹${Number.isInteger(lakh) ? lakh : lakh.toFixed(1)}L`;
+  }
+  if (amount >= 1000) {
+    const thousand = amount / 1000;
+    return `₹${Number.isInteger(thousand) ? thousand : thousand.toFixed(1)}k`;
+  }
+  return `₹${amount}`;
 }
-
-// Fixed sheet height. A scrollable body needs an explicit snap point: with
-// dynamic sizing the sheet grows to its content, so on a category that loads
-// several attribute filter groups the Reset / Apply row is pushed past the
-// bottom of the screen with no bounded scroll region to reach it. Module-level
-// so the array identity stays stable across renders.
-const SNAP_POINTS = ['85%'];
 
 // A single-choice option value (undefined represents the "all / any" choice).
 type ChoiceValue = string | number | undefined;
@@ -79,9 +83,6 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
     const [radiusKm, setRadiusKm] = useState<number>(
       filters.radius ?? DISTANCE_MAX,
     );
-    // Lock the sheet's scroll while a slider is being dragged so the drag doesn't
-    // scroll the content or close the sheet.
-    const [scrollLocked, setScrollLocked] = useState(false);
     // Re-seed the draft from the applied filters every time the sheet opens.
     useImperativeHandle(
       ref,
@@ -174,6 +175,18 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
     };
 
     const handleApply = () => {
+      // Diagnostic: the exact filter set handed to the browse screen on Apply.
+      logger.info('[FilterSheet] Apply', {
+        listingType: draft.listingType,
+        minPrice: draft.minPrice,
+        maxPrice: draft.maxPrice,
+        radius: draft.radius,
+        sellerType: draft.sellerType,
+        postedWithin: draft.postedWithin,
+        attributes: draft.attributes,
+        sort: draft.sort,
+        moduleId: draft.moduleId,
+      });
       onApply(draft);
       sheetRef.current?.dismiss();
     };
@@ -199,11 +212,22 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
       <BottomSheet
         ref={sheetRef}
         title={t('market.filters.title')}
-        scrollable
-        snapPoints={SNAP_POINTS}
         enableContentPanningGesture={false}
-        scrollEnabled={!scrollLocked}
         contentStyle={styles.content}
+        footer={
+          <View style={styles.actions}>
+            <View style={styles.actionButton}>
+              <Button
+                label={t('market.filters.reset')}
+                variant="outline"
+                onPress={handleReset}
+              />
+            </View>
+            <View style={styles.actionButton}>
+              <Button label={t('market.filters.apply')} onPress={handleApply} />
+            </View>
+          </View>
+        }
       >
         {renderChoiceRow(
           t('market.filters.listingType'),
@@ -219,11 +243,13 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
         <View>
           <View style={styles.rowHeader}>
             <Text variant="label">{t('market.filters.price')}</Text>
-            <Text variant="label" color="primary">
-              {`${formatMoney(draft.minPrice ?? PRICE_MIN)} – ${formatMoney(
-                draft.maxPrice ?? PRICE_MAX,
-              )}`}
-            </Text>
+            <View style={styles.valueBadge}>
+              <Text variant="caption" color="primary">
+                {`${formatMoney(draft.minPrice ?? PRICE_MIN)} – ${formatMoney(
+                  draft.maxPrice ?? PRICE_MAX,
+                )}${draft.maxPrice == null ? '+' : ''}`}
+              </Text>
+            </View>
           </View>
           <RangeSlider
             min={PRICE_MIN}
@@ -243,20 +269,28 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
                 return { ...d, minPrice: nextMin, maxPrice: nextMax };
               })
             }
-            onSlidingStart={() => setScrollLocked(true)}
-            onSlidingEnd={() => setScrollLocked(false)}
           />
+          <View style={styles.sliderScale}>
+            <Text variant="caption" color="textTertiary">
+              {formatMoney(PRICE_MIN)}
+            </Text>
+            <Text variant="caption" color="textTertiary">
+              {`${formatMoney(PRICE_MAX)}+`}
+            </Text>
+          </View>
         </View>
 
         {showRadius ? (
           <View>
             <View style={styles.rowHeader}>
               <Text variant="label">{t('market.filters.radius')}</Text>
-              <Text variant="label" color="primary">
-                {radiusKm >= DISTANCE_MAX
-                  ? t('market.radius.all')
-                  : `${radiusKm} km`}
-              </Text>
+              <View style={styles.valueBadge}>
+                <Text variant="caption" color="primary">
+                  {radiusKm >= DISTANCE_MAX
+                    ? t('market.radius.all')
+                    : `${radiusKm} km`}
+                </Text>
+              </View>
             </View>
             <Slider
               min={DISTANCE_MIN}
@@ -270,9 +304,15 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
                   radius: v >= DISTANCE_MAX ? undefined : v,
                 }));
               }}
-              onSlidingStart={() => setScrollLocked(true)}
-              onSlidingEnd={() => setScrollLocked(false)}
             />
+            <View style={styles.sliderScale}>
+              <Text variant="caption" color="textTertiary">
+                {`${DISTANCE_MIN} km`}
+              </Text>
+              <Text variant="caption" color="textTertiary">
+                {t('market.radius.all')}
+              </Text>
+            </View>
           </View>
         ) : null}
 
@@ -299,25 +339,18 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
         )}
 
         {categoryId != null ? (
-          <AttributeFilters
-            categoryId={categoryId}
-            attributes={draft.attributes ?? {}}
-            onChange={setAttr}
-          />
-        ) : null}
-
-        <View style={styles.actions}>
-          <View style={styles.actionButton}>
-            <Button
-              label={t('market.filters.reset')}
-              variant="outline"
-              onPress={handleReset}
+          <View style={styles.attrSection}>
+            <AttributeFilters
+              categoryId={categoryId}
+              attributes={draft.attributes ?? {}}
+              onChange={setAttr}
             />
           </View>
-          <View style={styles.actionButton}>
-            <Button label={t('market.filters.apply')} onPress={handleApply} />
-          </View>
-        </View>
+        ) : (
+          // No attribute (Crop Type) section on this screen — keep the last row
+          // (Posted Within) off the sticky footer with a little tail spacing.
+          <View style={styles.tailSpacing} />
+        )}
       </BottomSheet>
     );
   },

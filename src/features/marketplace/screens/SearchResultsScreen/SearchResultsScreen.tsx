@@ -22,7 +22,12 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { selectRecentSearches } from '@/store/selectors';
 import { addRecentSearch, clearRecentSearches } from '@/store/slices';
 
-import { FilterSheet, ListingResults, ResultsHeader } from '../../components';
+import {
+  ActiveFilterChips,
+  FilterSheet,
+  ListingResults,
+  ResultsHeader,
+} from '../../components';
 import type { UseListingFeedResult } from '../../hooks';
 import { useSearch, useUserGeo } from '../../hooks';
 import type { ListingFilters } from '../../types';
@@ -98,6 +103,10 @@ export function SearchResultsScreen() {
     parseInitialFilters(params.filters),
   );
   const filterRef = useRef<BottomSheetRef>(null);
+  // Opened from a Home ModuleTab (scoped to a module): show a plain listing grid
+  // — no Listings/Sellers tabs and no results header (the filter still lives on
+  // the search-row icon). General search from the search bar keeps both.
+  const scopedToModule = filters.moduleId != null;
 
   const geo = useUserGeo();
   const search = useSearch(debounced, filters, geo);
@@ -190,34 +199,36 @@ export function SearchResultsScreen() {
   // Body for an active query: tabs + the selected result set.
   const renderResults = () => (
     <>
-      <View style={styles.tabs}>
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: tab === 'listings' }}
-          onPress={() => setTab('listings')}
-          style={[styles.tab, tab === 'listings' ? styles.tabActive : null]}
-        >
-          <Text
-            variant="label"
-            color={tab === 'listings' ? 'onPrimary' : 'textPrimary'}
+      {scopedToModule ? null : (
+        <View style={styles.tabs}>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab === 'listings' }}
+            onPress={() => setTab('listings')}
+            style={[styles.tab, tab === 'listings' ? styles.tabActive : null]}
           >
-            {t('market.tab.listings', { count: search.totalListings })}
-          </Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityState={{ selected: tab === 'sellers' }}
-          onPress={() => setTab('sellers')}
-          style={[styles.tab, tab === 'sellers' ? styles.tabActive : null]}
-        >
-          <Text
-            variant="label"
-            color={tab === 'sellers' ? 'onPrimary' : 'textPrimary'}
+            <Text
+              variant="label"
+              color={tab === 'listings' ? 'onPrimary' : 'textPrimary'}
+            >
+              {t('market.tab.listings', { count: search.totalListings })}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab === 'sellers' }}
+            onPress={() => setTab('sellers')}
+            style={[styles.tab, tab === 'sellers' ? styles.tabActive : null]}
           >
-            {t('market.tab.sellers', { count: search.businesses.length })}
-          </Text>
-        </Pressable>
-      </View>
+            <Text
+              variant="label"
+              color={tab === 'sellers' ? 'onPrimary' : 'textPrimary'}
+            >
+              {t('market.tab.sellers', { count: search.businesses.length })}
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       <View style={styles.body}>
         {tab === 'listings' ? (
@@ -227,11 +238,22 @@ export function SearchResultsScreen() {
             emptyTitle={t('market.search.emptyTitle')}
             emptyDescription={t('market.search.emptyDesc')}
             ListHeaderComponent={
-              <ResultsHeader
-                filters={filters}
-                onFiltersChange={setFilters}
-                onOpenFilters={() => filterRef.current?.present()}
-              />
+              scopedToModule ? (
+                // Module browse: no toolbar, but keep the dismissible chips so
+                // an applied filter can be removed with its ×. Grid-aligned so
+                // the first chip lines up with the cards below.
+                <ActiveFilterChips
+                  filters={filters}
+                  onChange={setFilters}
+                  gridAligned
+                />
+              ) : (
+                <ResultsHeader
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  onOpenFilters={() => filterRef.current?.present()}
+                />
+              )
             }
           />
         ) : (

@@ -1,14 +1,13 @@
 // Horizontal strip of marketplace modules rendered as circular icon tiles with
 // a centered label — the home screen's primary category entry points. The
-// modules API returns no icon, so each tile's glyph + accent come from the
-// shared module-visual map.
+// modules API returns no icon, so each tile's emoji comes from the shared
+// module-visual map (the same glyphs as the "Browse Categories" tiles).
 import { memo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Text } from '@/components/ui';
 import { getModuleVisual } from '@/features/sell/utils/moduleVisuals';
 import { useThemedStyles, useTranslation } from '@/hooks';
-import { useTheme } from '@/providers';
 import type { MarketplaceModule } from '@/types';
 
 import { createModuleTabsStyles } from './ModuleTabs.styles';
@@ -23,7 +22,6 @@ export interface ModuleTabsProps {
 
 // Renders the horizontal module strip.
 function ModuleTabsComponent({ modules, onModulePress }: ModuleTabsProps) {
-  const theme = useTheme();
   const styles = useThemedStyles(createModuleTabsStyles);
   const { language } = useTranslation();
 
@@ -39,7 +37,6 @@ function ModuleTabsComponent({ modules, onModulePress }: ModuleTabsProps) {
     >
       {modules.map((module) => {
         const visual = getModuleVisual(module.moduleKey);
-        const Icon = visual.icon;
         const label =
           language === 'HI' ? module.moduleNameHi : module.moduleNameEn;
         return (
@@ -61,10 +58,7 @@ function ModuleTabsComponent({ modules, onModulePress }: ModuleTabsProps) {
                 ]}
               >
                 <View style={styles.circle}>
-                  <Icon
-                    size={theme.sizing.iconLg}
-                    color={theme.colors[visual.accent]}
-                  />
+                  <Text style={styles.emoji}>{visual.emoji}</Text>
                 </View>
                 <Text variant="label" numberOfLines={1} style={styles.label}>
                   {label}

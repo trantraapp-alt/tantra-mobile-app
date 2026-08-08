@@ -8,3 +8,7 @@ export {
 } from './useMandiPrices';
 export { usePublicStats } from './usePublicStats';
 export { useWeather } from './useWeather';
+export {
+  useWeatherForecast,
+  type UseWeatherForecastResult,
+} from './useWeatherForecast';

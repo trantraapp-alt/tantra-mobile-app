@@ -21,4 +21,8 @@ export type {
 } from './home.types';
 export type { MandiPrice } from './mandi.types';
 export type { PublicStat } from './stats.types';
-export type { WeatherNow } from './weather.types';
+export type {
+  WeatherDay,
+  WeatherForecast,
+  WeatherNow,
+} from './weather.types';

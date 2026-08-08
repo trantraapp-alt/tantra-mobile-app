@@ -97,6 +97,9 @@ function TrustBarComponent() {
             <CountUp
               value={stat.value}
               runToken={runToken}
+              plus
+              bigSize={30}
+              smallSize={20}
               variant="h3"
               color="onPrimary"
               align="center"

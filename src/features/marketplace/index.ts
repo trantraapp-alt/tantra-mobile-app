@@ -3,7 +3,13 @@ export { marketplaceApi } from './api';
 export {
   ActiveFilterChips,
   ContactModal,
+  type DetailRow,
+  type DetailSection,
+  type DetailStat,
+  type DetailTag,
   FilterSheet,
+  ListingDetailView,
+  type ListingDetailViewProps,
   ListingResults,
   ResultsHeader,
   SortBar,

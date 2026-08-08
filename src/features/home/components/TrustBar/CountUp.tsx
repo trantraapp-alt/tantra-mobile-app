@@ -1,9 +1,10 @@
-// A Text whose number animates up from zero once on mount, giving the trust-bar
-// stats a lively "counting" feel. Any prefix / suffix (₹, +, %) and thousands
-// separators are preserved; a value with no clean integer (decimals, plain text)
-// renders as-is without animating.
+// A Text whose number animates up from zero once on mount (and on each runToken
+// change), giving the trust-bar stats a lively "counting" feel. Any prefix /
+// suffix (₹, +, %) and thousands separators are preserved. When bigSize +
+// smallSize are given, digits render with alternating font sizes (1st, 3rd, 5th…
+// large, the rest small); `plus` appends a trailing "+".
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 import { Text, type TextProps } from '@/components/ui';
 
@@ -13,9 +14,13 @@ export interface CountUpProps extends Omit<TextProps, 'children'> {
   value: string;
   // Count-up duration in ms.
   duration?: number;
-  // Change this to replay the count-up from zero (e.g. when the home screen
-  // regains focus). Each new value re-runs the animation.
+  // Change this to replay the count-up from zero (e.g. on home-screen focus).
   runToken?: number;
+  // When both are set, digits alternate between these two font sizes.
+  bigSize?: number;
+  smallSize?: number;
+  // Append a "+" after the number (e.g. "70+").
+  plus?: boolean;
 }
 
 // Splits a value into an optional prefix, an integer body (digits + commas) and
@@ -35,11 +40,15 @@ function decompose(
   return { prefix: match[1] ?? '', suffix: match[3] ?? '', target };
 }
 
-// Renders a Text whose number counts up to `value` once on mount.
+// Renders a Text whose number counts up to `value`.
 export function CountUp({
   value,
   duration = 1200,
   runToken,
+  bigSize,
+  smallSize,
+  plus,
+  style,
   ...textProps
 }: CountUpProps) {
   const parts = useMemo(() => decompose(value), [value]);
@@ -72,5 +81,48 @@ export function CountUp({
     };
   }, [parts, value, duration, anim, runToken]);
 
-  return <Text {...textProps}>{display}</Text>;
+  const text = plus && parts ? `${display}+` : display;
+
+  // Plain render when there is no numeric value or no alternating sizes set.
+  if (!parts || bigSize == null || smallSize == null) {
+    return (
+      <Text {...textProps} style={style}>
+        {text}
+      </Text>
+    );
+  }
+
+  // Per-character render: the 1st, 3rd, 5th… digit large, the rest small.
+  let digitIndex = 0;
+  return (
+    <View style={styles.row}>
+      {text.split('').map((char, index) => {
+        const isDigit = char >= '0' && char <= '9';
+        const big = isDigit && digitIndex % 2 === 0;
+        if (isDigit) {
+          digitIndex += 1;
+        }
+        const fontSize = big ? bigSize : smallSize;
+        return (
+          <Text
+            // Fixed-length list of characters; index is a stable enough key here.
+            // eslint-disable-next-line react/no-array-index-key
+            key={index}
+            {...textProps}
+            style={[style, { fontSize, lineHeight: Math.round(fontSize * 1.15) }]}
+          >
+            {char}
+          </Text>
+        );
+      })}
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  // Digits sit in a row, bottom-aligned so mixed sizes share a baseline.
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+});

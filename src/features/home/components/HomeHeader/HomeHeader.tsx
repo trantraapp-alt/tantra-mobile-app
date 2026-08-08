@@ -20,6 +20,7 @@ import { selectSearchRadius, selectSelectedLocation } from '@/store/selectors';
 import { setRadius } from '@/store/slices';
 
 import { useWeather } from '../../hooks';
+import { weatherEmoji } from '../../utils/weather';
 import { LocationPickerSheet } from '../LocationPickerSheet';
 import {
   createHomeHeaderStyles,
@@ -29,18 +30,6 @@ import {
 
 // Radius presets (km) the header chip cycles through.
 const RADIUS_PRESETS = [5, 10, 25, 50, 100];
-
-// Maps a WMO weather-interpretation code to a compact condition emoji.
-function weatherEmoji(code: number): string {
-  if (code === 0) return '☀️';
-  if (code <= 2) return '🌤️';
-  if (code === 3) return '☁️';
-  if (code === 45 || code === 48) return '🌫️';
-  if (code >= 71 && code <= 77) return '❄️';
-  if (code >= 95) return '⛈️';
-  if (code >= 51) return '🌧️';
-  return '☁️';
-}
 
 // Props for the HomeHeader component.
 export interface HomeHeaderProps {
@@ -187,11 +176,21 @@ function HomeHeaderComponent({ onSearchPress }: HomeHeaderProps) {
         </Pressable>
 
         {weather ? (
-          <View style={styles.weatherPill}>
-            <Text variant="overline" color="onPrimary">
-              {`${weatherEmoji(weather.code)} ${weather.tempC}°C`}
-            </Text>
-          </View>
+          <Pressable
+            onPress={() => router.push(routes.weather)}
+            accessibilityRole="button"
+            accessibilityLabel={language === 'HI' ? 'मौसम' : 'Weather'}
+          >
+            {({ pressed }) => (
+              <View
+                style={[styles.weatherPill, pressed ? styles.pressed : null]}
+              >
+                <Text variant="overline" color="onPrimary">
+                  {`${weatherEmoji(weather.code)} ${weather.tempC}°C`}
+                </Text>
+              </View>
+            )}
+          </Pressable>
         ) : null}
       </View>
 

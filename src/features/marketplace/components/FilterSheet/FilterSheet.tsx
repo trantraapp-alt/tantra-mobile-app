@@ -15,7 +15,6 @@ import { Button } from '@/components/buttons';
 import { RangeSlider, Slider } from '@/components/inputs';
 import { BottomSheet, type BottomSheetRef, Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
-import { logger } from '@/lib';
 
 import type { ListingFilters } from '../../types';
 import { AttributeFilters } from './AttributeFilters';
@@ -175,18 +174,6 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
     };
 
     const handleApply = () => {
-      // Diagnostic: the exact filter set handed to the browse screen on Apply.
-      logger.info('[FilterSheet] Apply', {
-        listingType: draft.listingType,
-        minPrice: draft.minPrice,
-        maxPrice: draft.maxPrice,
-        radius: draft.radius,
-        sellerType: draft.sellerType,
-        postedWithin: draft.postedWithin,
-        attributes: draft.attributes,
-        sort: draft.sort,
-        moduleId: draft.moduleId,
-      });
       onApply(draft);
       sheetRef.current?.dismiss();
     };

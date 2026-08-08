@@ -125,6 +125,15 @@ export function createListingDetailScreenStyles(theme: AppTheme) {
       borderRadius: theme.radius.pill,
       backgroundColor: theme.colors.surfaceVariant,
     },
+    // Address section content wrapper.
+    addressGroup: {
+      gap: theme.spacing.sm,
+    },
+    // Inline form-error notice inside a card.
+    formErrorInline: {
+      gap: theme.spacing.md,
+      alignItems: 'flex-start',
+    },
     // Stacked address lines.
     addressLines: {
       gap: theme.spacing.xxs,

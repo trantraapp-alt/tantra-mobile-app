@@ -66,6 +66,13 @@ export const routes = {
   },
   // Nearby listings around the user's GPS point.
   nearby: '/nearby',
+  // Weather + farming advisory for the selected location.
+  weather: '/weather',
+  // Listings behind a "Today's Deals" group (optionally carrying its label).
+  dealListings: (groupKey: string, name?: string) =>
+    name
+      ? `/deals/${encodeURIComponent(groupKey)}?name=${encodeURIComponent(name)}`
+      : `/deals/${encodeURIComponent(groupKey)}`,
   // A seller's public storefront (optionally carrying their display name).
   seller: (userId: string, name?: string) =>
     name

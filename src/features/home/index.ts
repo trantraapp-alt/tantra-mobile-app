@@ -10,6 +10,7 @@ export {
 } from './components';
 export { useHomeFeed, type UseHomeFeedResult } from './hooks';
 export { HomeScreen } from './screens/HomeScreen';
+export { WeatherScreen } from './screens/WeatherScreen';
 export type {
   FeaturedBusiness,
   FeaturedListingsSection,

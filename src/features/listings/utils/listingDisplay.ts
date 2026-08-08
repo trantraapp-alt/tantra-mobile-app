@@ -161,7 +161,7 @@ export function statusTone(status: string): BadgeTone {
     case 'SOLD':
       return 'primary';
     case 'INACTIVE':
-      return 'neutral';
+      return 'danger';
     default:
       return 'neutral';
   }

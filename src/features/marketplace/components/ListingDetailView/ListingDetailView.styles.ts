@@ -1,10 +1,10 @@
-// Style factory for the buyer ListingDetailScreen.
+// Style factory for the shared ListingDetailView.
 import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
 
-// Builds ListingDetailScreen styles from the active theme.
-export function createListingDetailStyles(theme: AppTheme) {
+// Builds shared listing-detail view styles from the active theme.
+export function createListingDetailViewStyles(theme: AppTheme) {
   return StyleSheet.create({
     flex: {
       flex: 1,
@@ -15,11 +15,15 @@ export function createListingDetailStyles(theme: AppTheme) {
       gap: theme.spacing.md,
       backgroundColor: theme.colors.surface,
     },
-    center: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: theme.spacing.xl,
+    // Positioning context for the gallery + its status badge overlay.
+    hero: {
+      position: 'relative',
+    },
+    // Status badge overlay, bottom-left (clear of the carousel chrome).
+    heroBadge: {
+      position: 'absolute',
+      left: theme.spacing.md,
+      bottom: theme.spacing.md,
     },
     // A rounded content card, inset from the screen edges.
     card: {
@@ -31,16 +35,16 @@ export function createListingDetailStyles(theme: AppTheme) {
       padding: theme.spacing.lg,
       gap: theme.spacing.sm,
     },
-    // Uppercase section heading inside a card.
-    sectionTitle: {
-      textTransform: 'uppercase',
+    // Section heading row: an optional icon beside the uppercase title.
+    sectionHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
       marginBottom: theme.spacing.xxs,
     },
-    priceRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      gap: theme.spacing.sm,
-      flexWrap: 'wrap',
+    // Uppercase section heading text.
+    sectionTitle: {
+      textTransform: 'uppercase',
     },
     titleRow: {
       flexDirection: 'row',
@@ -66,11 +70,12 @@ export function createListingDetailStyles(theme: AppTheme) {
       alignItems: 'center',
       gap: theme.spacing.xxs,
     },
-    // Engagement stats: a subtle divided footer at the bottom of the hero card.
+    // Engagement stats: a subtle divided footer inside the hero card.
     statsRow: {
       flexDirection: 'row',
       gap: theme.spacing.lg,
       alignItems: 'center',
+      flexWrap: 'wrap',
       paddingTop: theme.spacing.sm,
       marginTop: theme.spacing.xxs,
       borderTopWidth: StyleSheet.hairlineWidth,
@@ -81,60 +86,40 @@ export function createListingDetailStyles(theme: AppTheme) {
       alignItems: 'center',
       gap: theme.spacing.xxs,
     },
-    // Attribute definition row: label on the left, value on the right, with a
-    // hairline separating adjacent rows.
-    attrRow: {
+    // Inline label/value row: label left, value right, hairline between rows.
+    row: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
     },
-    attrDivider: {
+    rowLabel: {
+      flexShrink: 1,
+    },
+    rowValue: {
+      flexShrink: 1,
+      alignItems: 'flex-end',
+    },
+    rowValueText: {
+      textAlign: 'right',
+    },
+    // Full-width stacked row for long text / multi-value answers.
+    stackedRow: {
+      paddingVertical: theme.spacing.sm,
+      gap: theme.spacing.xxs,
+    },
+    rowDivider: {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.border,
     },
-    attrLabel: {
-      flexShrink: 1,
-    },
-    attrValue: {
-      flexShrink: 1,
-      textAlign: 'right',
-    },
-    // Seller row inside the seller card.
-    sellerCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.md,
-    },
-    sellerAvatar: {
-      width: theme.sizing.avatarMd,
-      height: theme.sizing.avatarMd,
-      borderRadius: theme.radius.pill,
-      backgroundColor: theme.colors.primaryLight,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    sellerInfo: {
-      flex: 1,
-      gap: theme.spacing.xxs,
-      alignItems: 'flex-start',
-    },
-    // Sticky bottom CTA bar.
-    cta: {
-      flexDirection: 'row',
-      gap: theme.spacing.sm,
+    // Sticky footer bar holding the primary action.
+    footer: {
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.md,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.border,
       backgroundColor: theme.colors.card,
-    },
-    ctaContact: {
-      flex: 1,
-    },
-    pressed: {
-      opacity: theme.opacity.pressed,
     },
   });
 }

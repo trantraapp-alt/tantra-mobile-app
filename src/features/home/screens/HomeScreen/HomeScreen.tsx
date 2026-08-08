@@ -22,7 +22,6 @@ import { Screen, Text } from '@/components/ui';
 import { routes } from '@/constants';
 import { localize } from '@/features/sell';
 import { useThemedStyles, useTranslation } from '@/hooks';
-import { logger } from '@/lib';
 import { useTheme } from '@/providers';
 import type { MarketplaceModule, ModuleCategory } from '@/types';
 
@@ -35,6 +34,7 @@ import {
   FlashDeals,
   HomeHeader,
   ListingRow,
+  MandiTicker,
   ModuleTabs,
   MspBanner,
   PromoCarousel,
@@ -130,10 +130,6 @@ export function HomeScreen() {
     router.push(routes.search);
   }, [router]);
 
-  const openNearby = useCallback(() => {
-    router.push(routes.nearby);
-  }, [router]);
-
   const openListing = useCallback(
     (listing: FeedListing) => {
       const id = feedListingId(listing);
@@ -217,13 +213,6 @@ export function HomeScreen() {
 
   const openPromo = useCallback(
     (card: PromoCard) => {
-      // TEMP DIAGNOSTIC — logs the tapped promo card's CTA. Remove later.
-      logger.info('[PromoCarousel tap]', {
-        cardId: card.cardId,
-        title: card.title,
-        ctaType: card.ctaType,
-        ctaValue: card.ctaValue,
-      });
       // App-owned fallback banner: run its predefined action.
       const local = promoBanners.find((p) => p.cardId === card.cardId);
       if (local) {
@@ -262,19 +251,6 @@ export function HomeScreen() {
       openSearch();
     },
     [promoBanners, runPromoAction, router, language, openSearch],
-  );
-
-  // Curated-section handlers. These marketing widgets have no dedicated screens
-  // yet, so they land on Search / Nearby.
-  const onDualBanner = useCallback(
-    (which: 'left' | 'right') => {
-      if (which === 'right') {
-        openNearby();
-      } else {
-        openSearch();
-      }
-    },
-    [openNearby, openSearch],
   );
 
   const onCategorySelect = useCallback(
@@ -319,8 +295,7 @@ export function HomeScreen() {
     const featuredTitle = featured?.title
       ? localize(featured.title, language)
       : t('home.featured.title');
-    const promos =
-      feed.promoCards.length > 0 ? feed.promoCards : promoBanners;
+    const promos = feed.promoCards.length > 0 ? feed.promoCards : promoBanners;
     const isEmpty =
       feed.modules.length === 0 &&
       (featured?.listings.length ?? 0) === 0 &&
@@ -330,22 +305,36 @@ export function HomeScreen() {
 
     return (
       <>
-        {/* Mandi ticker temporarily disabled — re-add <MandiTicker /> and its
-            import from '../../components' to re-enable. */}
+        {/* Live mandi (market price) ticker, pinned to the very top. */}
+        <MandiTicker />
 
         {promos.length > 0 ? (
           <PromoCarousel cards={promos} onPress={openPromo} />
         ) : null}
 
+        <DualBanners />
+
+        {/* Discovery: the two navs paired, then trust, then real inventory. */}
+        <CategoryGrid onSelect={onCategorySelect} />
+        <TrustBar />
+
+        {featured && featured.listings.length > 0 ? (
+          <ListingRow
+            title={featuredTitle}
+            listings={featured.listings}
+            seeAllLabel={t('home.seeAll')}
+            onSeeAll={openSearch}
+            onListingPress={openListing}
+          />
+        ) : null}
+
+        {/* Value-add / marketing sections sit below the first real listings.
+            DualBanners is now the backend-driven "Today's Deals" row. */}
         {feed.modules.length > 0 ? (
           <ModuleTabs modules={feed.modules} onModulePress={openModule} />
         ) : null}
-
-        <TrustBar />
-        <DualBanners onPress={onDualBanner} />
-        <CategoryGrid onSelect={onCategorySelect} />
-        <TrendingSearches onSearch={onTrending} />
         <FlashDeals onPressDeal={openSearch} />
+        <TrendingSearches onSearch={onTrending} />
         <MspBanner />
         <SchemeBanner />
         <SellerStories onPress={onSellerStory} />
@@ -360,53 +349,48 @@ export function HomeScreen() {
           </View>
         ) : null}
 
-        {showBelowFold && featured && featured.listings.length > 0 ? (
-          <ListingRow
-            title={featuredTitle}
-            listings={featured.listings}
-            seeAllLabel={t('home.seeAll')}
-            onSeeAll={openSearch}
-            onListingPress={openListing}
-          />
-        ) : null}
-
-        {showBelowFold ? feed.moduleSections.map((section, sectionIndex) => {
-          if (!section.module) {
-            return null;
-          }
-          const moduleName =
-            language === 'HI'
-              ? section.module.moduleNameHi
-              : section.module.moduleNameEn;
-          const categories = section.topCategories ?? [];
-          const listings = section.listings ?? [];
-          if (categories.length === 0 && listings.length === 0) {
-            return null;
-          }
-          return (
-            <View
-              style={styles.section}
-              key={section.module.id ?? `section-${sectionIndex}`}
-            >
-              <View style={styles.sectionHeaderWrap}>
-                <SectionHeader
-                  title={moduleName}
-                  actionLabel={t('home.seeAll')}
-                  onActionPress={openSearch}
-                />
-              </View>
-              {categories.length > 0 ? (
-                <CategoryChips
-                  categories={categories}
-                  onCategoryPress={openCategory}
-                />
-              ) : null}
-              {listings.length > 0 ? (
-                <ListingRow listings={listings} onListingPress={openListing} />
-              ) : null}
-            </View>
-          );
-        }) : null}
+        {showBelowFold
+          ? feed.moduleSections.map((section, sectionIndex) => {
+              if (!section.module) {
+                return null;
+              }
+              const moduleName =
+                language === 'HI'
+                  ? section.module.moduleNameHi
+                  : section.module.moduleNameEn;
+              const categories = section.topCategories ?? [];
+              const listings = section.listings ?? [];
+              if (categories.length === 0 && listings.length === 0) {
+                return null;
+              }
+              return (
+                <View
+                  style={styles.section}
+                  key={section.module.id ?? `section-${sectionIndex}`}
+                >
+                  <View style={styles.sectionHeaderWrap}>
+                    <SectionHeader
+                      title={moduleName}
+                      actionLabel={t('home.seeAll')}
+                      onActionPress={openSearch}
+                    />
+                  </View>
+                  {categories.length > 0 ? (
+                    <CategoryChips
+                      categories={categories}
+                      onCategoryPress={openCategory}
+                    />
+                  ) : null}
+                  {listings.length > 0 ? (
+                    <ListingRow
+                      listings={listings}
+                      onListingPress={openListing}
+                    />
+                  ) : null}
+                </View>
+              );
+            })
+          : null}
 
         {showBelowFold && feed.featuredProfiles.length > 0 ? (
           <View style={styles.section}>

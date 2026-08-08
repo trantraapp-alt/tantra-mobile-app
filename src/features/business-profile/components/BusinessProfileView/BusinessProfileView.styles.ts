@@ -123,6 +123,10 @@ export function createBusinessProfileViewStyles(theme: AppTheme) {
     coordinates: {
       marginTop: theme.spacing.xs,
     },
+    // Address section content: stacked lines, phones and coordinates.
+    addressGroup: {
+      gap: theme.spacing.xs,
+    },
     // Positioning context for the gallery and its status badge overlay.
     hero: {
       position: 'relative',

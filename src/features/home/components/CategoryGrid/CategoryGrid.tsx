@@ -26,7 +26,7 @@ const TITLE: LocalizedText = { en: 'Browse Categories', hi: 'श्रेणि�
 
 // Curated set of top-level marketplace categories.
 const CATEGORIES: CategoryItem[] = [
-  { key: 'crops', emoji: '🌾', label: { en: 'Crops', hi: 'फसल' } },
+  { key: 'crops', emoji: '🌿', label: { en: 'Crops', hi: 'फसल' } },
   { key: 'seeds', emoji: '🌱', label: { en: 'Seeds', hi: 'बीज' } },
   { key: 'fertilizers', emoji: '🧪', label: { en: 'Fertilizers', hi: 'खाद' } },
   { key: 'equipment', emoji: '🚜', label: { en: 'Equipment', hi: 'उपकरण' } },

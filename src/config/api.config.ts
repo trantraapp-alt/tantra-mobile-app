@@ -108,6 +108,14 @@ export const endpoints = {
   },
   // DB-driven home carousel of category browse buttons (public).
   carousel: '/carousel',
+  // Backend-driven "Today's Deals" cards + the listings behind a deal group.
+  deals: {
+    // The deal cards for the user's location (empty array when none).
+    list: '/deals',
+    // Paginated, price-ascending listings behind a deal group key.
+    listings: (groupKey: string) =>
+      `/deals/${encodeURIComponent(groupKey)}/listings`,
+  },
   masters: {
     // Marketplace modules shown on the Sell sheet.
     modules: '/masters/modules',

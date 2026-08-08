@@ -1,18 +1,29 @@
-// Read-only business profile body: photo gallery, identity, status tags,
-// verified/reason notice, every filled field grouped by the form's own
-// sections (drawn as a lavender attribute grid), and the business address —
-// the same visual pattern as the buyer marketplace listing-detail screen, so
-// a profile reads as the same kind of detail page as a listing. Shared by the
-// owner detail screen and the admin review screen so both read as the same
-// kind of page — the caller supplies the header and the status-specific
-// footer (Edit vs Approve/Reject/Block).
-import { AlertTriangle, BadgeCheck, Ban, MapPin, Phone, User } from 'lucide-react-native';
-import type { ReactNode } from 'react';
+// Read-only business profile body: maps the profile + its resolved model onto
+// the shared ListingDetailView, so a profile reads as exactly the same kind of
+// detail page as a marketplace listing — gallery, hero card, status, owner,
+// verified/reason notice, every filled field grouped by the form's own sections,
+// and the business address. Shared by the owner detail screen and the admin
+// review screen; each caller supplies the header and its own sticky footer
+// (Edit vs Approve/Reject/Block).
+import {
+  AlertTriangle,
+  Ban,
+  FileText,
+  Info,
+  MapPin,
+  Phone,
+  User,
+} from 'lucide-react-native';
 import { useMemo } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
-import { Badge, ImageCarousel, Text } from '@/components/ui';
+import { Badge, Text } from '@/components/ui';
 import { fileUrl } from '@/config';
+import {
+  type DetailSection,
+  type DetailStat,
+  ListingDetailView,
+} from '@/features/marketplace';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 
@@ -25,47 +36,17 @@ import { getStatusLabelKey, getStatusTone } from '../../utils/profileStatus';
 import { withAlpha } from '../../utils/withAlpha';
 import { createBusinessProfileViewStyles } from './BusinessProfileView.styles';
 
-// Props for one rendered attribute-grid box.
-interface AttrItemProps {
-  row: BPDetailRow;
-  yesLabel: string;
-  noLabel: string;
-}
-
-// Renders one label/value box in the attribute grid.
-function AttrItem({ row, yesLabel, noLabel }: AttrItemProps) {
-  const styles = useThemedStyles(createBusinessProfileViewStyles);
+// Formats one field row's value into a display string (prose is hoisted out
+// into descriptions before this, so only text / boolean / tags reach here).
+function rowValueText(row: BPDetailRow, yesLabel: string, noLabel: string) {
   const { value } = row;
-
-  let body: ReactNode;
   if (value.kind === 'boolean') {
-    body = (
-      <Text variant="label" numberOfLines={2}>
-        {value.value ? yesLabel : noLabel}
-      </Text>
-    );
-  } else if (value.kind === 'tags') {
-    body = (
-      <Text variant="label" numberOfLines={2}>
-        {value.items.join(', ')}
-      </Text>
-    );
-  } else {
-    body = (
-      <Text variant="label" numberOfLines={2}>
-        {value.text}
-      </Text>
-    );
+    return value.value ? yesLabel : noLabel;
   }
-
-  return (
-    <View style={[styles.attrItem, row.stacked ? styles.attrItemWide : null]}>
-      <Text variant="overline" color="textTertiary">
-        {row.label}
-      </Text>
-      {body}
-    </View>
-  );
+  if (value.kind === 'tags') {
+    return value.items.join(', ');
+  }
+  return value.text;
 }
 
 // Props for BusinessProfileView.
@@ -90,10 +71,8 @@ export function BusinessProfileView({
   const photoUris = useMemo(() => model.photos.map(fileUrl), [model.photos]);
   const tone = getStatusTone(profile.status);
   const toneColor = theme.colors[tone];
-  // Read directly off attributes rather than relying on the schema-driven
-  // rows below — some profile types' form metadata marks this field in a way
-  // that makes it fall out of the generic section rows, and the owner's name
-  // is important enough that it should never silently go missing.
+  // Read the owner's name directly off attributes: some profile types' form
+  // metadata drops it out of the generic rows, and it should never go missing.
   const ownerName =
     typeof profile.attributes?.ownerName === 'string' &&
     profile.attributes.ownerName.trim() !== ''
@@ -106,51 +85,16 @@ export function BusinessProfileView({
         ? profile.blockReason
         : null;
 
-  return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.content}
-    >
-      <View style={styles.hero}>
-        <ImageCarousel images={photoUris} aspectRatio={4 / 3} contentFit="cover" />
-        <View style={styles.heroBadge} pointerEvents="none">
-          <Badge
-            label={t(getStatusLabelKey(profile.status))}
-            tone={getStatusTone(profile.status)}
-          />
-        </View>
-      </View>
+  const stats: DetailStat[] = ownerName
+    ? [{ key: 'owner', icon: User, text: ownerName }]
+    : [];
 
-      <View style={styles.section}>
-        <Text variant="overline" color="textTertiary">
-          {profileTypeLabel}
-        </Text>
-        <View style={styles.titleRow}>
-          <Text variant="h4" numberOfLines={2} style={styles.title}>
-            {profile.businessName}
-          </Text>
-          {profile.status === 'APPROVED' ? (
-            <BadgeCheck size={theme.sizing.iconSm} color={theme.colors.info} />
-          ) : null}
-        </View>
+  const sections: DetailSection[] = [];
 
-        <View style={styles.tagsRow}>
-          <Badge tone={tone} label={t(getStatusLabelKey(profile.status))} />
-        </View>
-
-        {ownerName ? (
-          <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
-              <User size={theme.sizing.iconXs} color={theme.colors.textTertiary} />
-              <Text variant="caption" color="textSecondary">
-                {ownerName}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-      </View>
-
-      {reason ? (
+  if (reason) {
+    sections.push({
+      key: 'reason',
+      content: (
         <View
           style={[
             styles.reasonBox,
@@ -174,78 +118,102 @@ export function BusinessProfileView({
             <Text variant="body">{reason}</Text>
           </View>
         </View>
-      ) : null}
+      ),
+    });
+  }
 
-      {model.descriptions.length > 0 ? (
-        <View style={[styles.section, styles.sectionBordered]}>
-          <Text variant="overline" color="textSecondary" style={styles.sectionTitle}>
-            {t('businessProfile.description')}
-          </Text>
-          <View style={styles.descriptionGroup}>
-            {model.descriptions.map((entry) => (
-              <View key={entry.key}>
-                {model.descriptions.length > 1 ? (
-                  <Text variant="label" color="textSecondary" style={styles.blockTitle}>
-                    {entry.label}
-                  </Text>
-                ) : null}
-                <Text variant="body" color="textSecondary">
-                  {entry.text}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      ) : null}
-
-      {model.sections.map((section) => (
-        <View key={section.key} style={[styles.section, styles.sectionBordered]}>
-          <Text variant="overline" color="textSecondary" style={styles.sectionTitle}>
-            {section.title}
-          </Text>
-          <View style={styles.attrsGrid}>
-            {section.rows.map((row) => (
-              <AttrItem
-                key={row.key}
-                row={row}
-                yesLabel={t('common.yes')}
-                noLabel={t('common.no')}
-              />
-            ))}
-          </View>
-        </View>
-      ))}
-
-      {model.address ? (
-        <View style={[styles.section, styles.sectionBordered]}>
-          <Text variant="overline" color="textSecondary" style={styles.sectionTitle}>
-            {t('businessProfile.businessAddress')}
-          </Text>
-          <View style={styles.addressCard}>
-            <View style={[styles.addressIcon, { backgroundColor: toneColor }]}>
-              <MapPin size={theme.sizing.iconSm} color={theme.colors.onPrimary} />
-            </View>
-            <View style={styles.addressLines}>
-              {model.address.lines.map((line, position) => (
-                <Text key={`address-${position}`} variant="body">
-                  {line}
-                </Text>
-              ))}
-              {model.address.phones.map((phone) => (
-                <View key={phone} style={styles.contactRow}>
-                  <Phone size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
-                  <Text variant="bodyMedium">{phone}</Text>
-                </View>
-              ))}
-              {model.address.coordinates ? (
-                <Text variant="caption" color="textTertiary" style={styles.coordinates}>
-                  {model.address.coordinates}
+  if (model.descriptions.length > 0) {
+    sections.push({
+      key: 'description',
+      title: t('businessProfile.description'),
+      icon: FileText,
+      content: (
+        <View style={styles.descriptionGroup}>
+          {model.descriptions.map((entry) => (
+            <View key={entry.key}>
+              {model.descriptions.length > 1 ? (
+                <Text
+                  variant="label"
+                  color="textSecondary"
+                  style={styles.blockTitle}
+                >
+                  {entry.label}
                 </Text>
               ) : null}
+              <Text variant="body" color="textSecondary">
+                {entry.text}
+              </Text>
             </View>
-          </View>
+          ))}
         </View>
-      ) : null}
-    </ScrollView>
+      ),
+    });
+  }
+
+  model.sections.forEach((section) => {
+    sections.push({
+      key: `section-${section.key}`,
+      title: section.title,
+      icon: Info,
+      rows: section.rows.map((row) => ({
+        key: row.key,
+        label: row.label,
+        value: rowValueText(row, t('common.yes'), t('common.no')),
+        stacked: row.stacked,
+      })),
+    });
+  });
+
+  if (model.address) {
+    const address = model.address;
+    sections.push({
+      key: 'address',
+      title: t('businessProfile.businessAddress'),
+      icon: MapPin,
+      content: (
+        <View style={styles.addressGroup}>
+          {address.lines.map((line, position) => (
+            <Text key={`address-${position}`} variant="body">
+              {line}
+            </Text>
+          ))}
+          {address.phones.map((phone) => (
+            <View key={phone} style={styles.contactRow}>
+              <Phone
+                size={theme.sizing.iconXs}
+                color={theme.colors.textSecondary}
+              />
+              <Text variant="bodyMedium">{phone}</Text>
+            </View>
+          ))}
+          {address.coordinates ? (
+            <Text
+              variant="caption"
+              color="textTertiary"
+              style={styles.coordinates}
+            >
+              {address.coordinates}
+            </Text>
+          ) : null}
+        </View>
+      ),
+    });
+  }
+
+  return (
+    <ListingDetailView
+      images={photoUris}
+      statusBadge={
+        <Badge
+          label={t(getStatusLabelKey(profile.status))}
+          tone={getStatusTone(profile.status)}
+        />
+      }
+      overline={profileTypeLabel}
+      title={profile.businessName}
+      verified={profile.status === 'APPROVED'}
+      stats={stats}
+      sections={sections}
+    />
   );
 }

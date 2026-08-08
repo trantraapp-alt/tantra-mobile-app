@@ -10,7 +10,6 @@ export function createHomeStyles(theme: AppTheme) {
     // section so listing rails can run edge to edge. No top padding so the mandi
     // ticker sits flush under the fixed header.
     content: {
-      paddingTop: theme.spacing.md,
       paddingBottom: theme.spacing.xxxl,
       gap: theme.spacing.lg,
     },

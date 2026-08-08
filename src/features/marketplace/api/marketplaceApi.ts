@@ -3,7 +3,7 @@
 // injected globally by the http client.
 import { endpoints } from '@/config';
 import type { FeedListing } from '@/features/home';
-import { apiClient, logger } from '@/lib';
+import { apiClient } from '@/lib';
 
 import type {
   ContactRevealResult,
@@ -114,9 +114,6 @@ function browseCategory(
   // No explicit `sort` — the backend 500s on the Spring sort param here, and the
   // working /search endpoint sends none either. Backend orders these by default.
   const params = baseParams(filters, geo, page, size);
-  // Diagnostic: the exact query params sent for a category browse (fires on
-  // Apply and on each page fetch).
-  logger.info('[marketplaceApi] browseCategory', { categoryId, params });
   return apiClient.get<MarketplacePage<FeedListing>>(
     endpoints.listings.category(categoryId),
     { params },
@@ -134,9 +131,6 @@ function browseByKey(
   size: number,
 ): Promise<MarketplacePage<FeedListing>> {
   const params = baseParams(filters, geo, page, size);
-  // Diagnostic: the exact query params sent for a category-key browse (fires on
-  // Apply and on each page fetch).
-  logger.info('[marketplaceApi] browseByKey', { categoryKey, params });
   return apiClient.get<MarketplacePage<FeedListing>>(
     endpoints.listings.browseByKey(categoryKey),
     { params },

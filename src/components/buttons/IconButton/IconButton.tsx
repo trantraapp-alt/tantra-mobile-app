@@ -8,6 +8,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { useThemedStyles } from '@/hooks';
 import { useTheme } from '@/providers';
@@ -62,6 +63,21 @@ function IconButtonComponent({
   const theme = useTheme();
   const styles = useThemedStyles(createIconButtonStyles);
 
+  // A brief press-in scale-down (with opacity, below) so a tap reads as a
+  // tactile, physical press rather than a flat color swap.
+  const scale = useSharedValue(1);
+  const animatedScale = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  const handlePressIn = useCallback(() => {
+    if (!disabled) {
+      scale.value = withTiming(0.9, { duration: theme.animation.fast });
+    }
+  }, [disabled, scale, theme.animation.fast]);
+  const handlePressOut = useCallback(() => {
+    scale.value = withTiming(1, { duration: theme.animation.fast });
+  }, [scale, theme.animation.fast]);
+
   // Renders the circular surface INSIDE the Pressable. The visual styling lives
   // on this inner View (a static style array) rather than the Pressable's
   // function `style`: NativeWind's cssInterop wraps a function `style` into an
@@ -87,17 +103,20 @@ function IconButtonComponent({
   );
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      hitSlop={theme.sizing.hitSlop}
-      onPress={onPress}
-      style={style}
-    >
-      {renderSurface}
-    </Pressable>
+    <Animated.View style={[style, animatedScale]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={{ disabled }}
+        disabled={disabled}
+        hitSlop={theme.sizing.hitSlop}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        {renderSurface}
+      </Pressable>
+    </Animated.View>
   );
 }
 

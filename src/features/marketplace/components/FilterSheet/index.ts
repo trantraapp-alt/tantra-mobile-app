@@ -1,2 +1,6 @@
 // Barrel export for the FilterSheet component.
-export { FilterSheet, type FilterSheetProps } from './FilterSheet';
+export {
+  type FilterSection,
+  FilterSheet,
+  type FilterSheetProps,
+} from './FilterSheet';

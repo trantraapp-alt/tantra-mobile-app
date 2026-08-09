@@ -6,21 +6,27 @@ import { MapPin } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
 import { View } from 'react-native';
 
-import { Header } from '@/components/shared';
 import { type BottomSheetRef, Screen, Text } from '@/components/ui';
 import { appConstants, routes } from '@/constants';
 import type { FeedListing } from '@/features/home';
 import { LocationChip } from '@/features/location';
-import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
+import {
+  useDebouncedValue,
+  useGoBack,
+  useThemedStyles,
+  useTranslation,
+} from '@/hooks';
 import { useTheme } from '@/providers';
 import { useAppSelector } from '@/store/hooks';
 import { selectSearchRadius } from '@/store/selectors';
 
 import { marketplaceApi } from '../../api';
 import {
+  FilterChipsBar,
+  type FilterSection,
   FilterSheet,
+  ListingHeader,
   ListingResults,
-  ResultsHeader,
 } from '../../components';
 import { useListingFeed, useUserGeo } from '../../hooks';
 import type { ListingFilters, MarketplacePage } from '../../types';
@@ -49,14 +55,22 @@ export function NearbyScreen({ showBack = true }: NearbyScreenProps = {}) {
   const [filters, setFilters] = useState<ListingFilters>(() => ({
     radius: radiusKm,
   }));
+  // Which FilterSheet section a tapped chip opens (undefined = full sheet).
+  const [filterSection, setFilterSection] = useState<FilterSection>();
+  const openFilters = useCallback((section?: FilterSection) => {
+    setFilterSection(section);
+    filterRef.current?.present();
+  }, []);
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebouncedValue(query, appConstants.searchDebounceMs);
 
   const size = appConstants.defaultPageSize;
   const fetchPage = useCallback(
     (page: number) =>
       geo
-        ? marketplaceApi.nearby(filters, geo, page, size)
+        ? marketplaceApi.nearby(filters, geo, page, size, debouncedQuery)
         : Promise.resolve(EMPTY_PAGE),
-    [geo, filters, size],
+    [geo, filters, size, debouncedQuery],
   );
   const feed = useListingFeed(fetchPage, { enabled: Boolean(geo) });
 
@@ -75,10 +89,14 @@ export function NearbyScreen({ showBack = true }: NearbyScreenProps = {}) {
 
   return (
     <Screen padded={false}>
-      <Header
+      <ListingHeader
         title={t('market.nearbyTitle')}
+        resultLabel={resultLabel}
         showBack={showBack}
         onBack={goBack}
+        query={query}
+        onQueryChange={setQuery}
+        onOpenFilters={() => openFilters()}
       />
       {geo ? (
         <ListingResults
@@ -87,11 +105,11 @@ export function NearbyScreen({ showBack = true }: NearbyScreenProps = {}) {
           emptyTitle={t('market.emptyTitle')}
           emptyDescription={t('market.emptyDesc')}
           ListHeaderComponent={
-            <ResultsHeader
+            <FilterChipsBar
               filters={filters}
               onFiltersChange={setFilters}
-              onOpenFilters={() => filterRef.current?.present()}
-              resultLabel={resultLabel}
+              onOpenFilters={openFilters}
+              showDistance
             />
           }
         />
@@ -114,6 +132,7 @@ export function NearbyScreen({ showBack = true }: NearbyScreenProps = {}) {
         filters={filters}
         onApply={setFilters}
         showRadius
+        focusSection={filterSection}
       />
     </Screen>
   );

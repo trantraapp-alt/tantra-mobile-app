@@ -33,15 +33,6 @@ export function useDeals(geo: GeoPoint | undefined): UseDealsResult {
     getDeals(lat != null && lng != null ? { lat, lng } : undefined)
       .then((data) => {
         const next = Array.isArray(data) ? data : [];
-        // Diagnostic: how many deal cards the API returned + which groups.
-        logger.info('[Deals] cards loaded', {
-          count: next.length,
-          cards: next.map((card) => ({
-            label: card.labelEn,
-            ctaType: card.ctaType,
-            ctaValue: card.ctaValue,
-          })),
-        });
         if (active) {
           setCards(next);
           setIsLoading(false);

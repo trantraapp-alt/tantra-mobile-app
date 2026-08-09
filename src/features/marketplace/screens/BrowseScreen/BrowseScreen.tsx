@@ -3,36 +3,31 @@
 // key (crop/seed/equipment…) from the DB-driven carousel; a display name and an
 // optional pre-applied listing type arrive as query params.
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Search, SlidersHorizontal } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
 
-import { IconButton } from '@/components/buttons';
-import { type BottomSheetRef, Screen, Text } from '@/components/ui';
+import { type BottomSheetRef, Screen } from '@/components/ui';
 import { appConstants, routes } from '@/constants';
 import type { FeedListing } from '@/features/home';
-import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
-import { useTheme } from '@/providers';
-
-import { marketplaceApi } from '../../api';
 import {
+  FilterChipsBar,
+  type FilterSection,
   FilterSheet,
+  type ListingFilters,
+  ListingHeader,
   ListingResults,
-  ResultsHeader,
+  marketplaceApi,
+  sortListings,
   type SortOptionItem,
-} from '../../components';
-import { useListingFeed, useUserGeo } from '../../hooks';
-import type { ListingFilters } from '../../types';
-import { sortListings } from '../../utils/sortListings';
-import { createBrowseStyles } from './BrowseScreen.styles';
+  useListingFeed,
+  useUserGeo,
+} from '@/features/marketplace';
+import { useDebouncedValue, useGoBack, useTranslation } from '@/hooks';
 
 // Renders the browse-by-category screen.
 export function BrowseScreen() {
   const router = useRouter();
   const goBack = useGoBack();
   const { t } = useTranslation();
-  const theme = useTheme();
-  const styles = useThemedStyles(createBrowseStyles);
   const params = useLocalSearchParams<{
     categoryId?: string;
     name?: string;
@@ -55,6 +50,14 @@ export function BrowseScreen() {
         ? params.type
         : undefined,
   }));
+  // Which FilterSheet section a tapped chip opens (undefined = full sheet).
+  const [filterSection, setFilterSection] = useState<FilterSection>();
+  const openFilters = useCallback((section?: FilterSection) => {
+    setFilterSection(section);
+    filterRef.current?.present();
+  }, []);
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebouncedValue(query, appConstants.searchDebounceMs);
 
   const size = appConstants.defaultPageSize;
   const fetchPage = useCallback(
@@ -70,6 +73,7 @@ export function BrowseScreen() {
             geoForRequest,
             page,
             size,
+            debouncedQuery,
           )
         : marketplaceApi.browseByKey(
             categoryKey,
@@ -77,9 +81,10 @@ export function BrowseScreen() {
             geoForRequest,
             page,
             size,
+            debouncedQuery,
           );
     },
-    [isNumericId, numericId, categoryKey, filters, geo, size],
+    [isNumericId, numericId, categoryKey, filters, geo, size, debouncedQuery],
   );
   const feed = useListingFeed(fetchPage, { enabled });
   // The browse endpoints reject the backend sort param, so order the loaded
@@ -113,49 +118,27 @@ export function BrowseScreen() {
     feed.total > 0 ? t('market.results', { count: feed.total }) : undefined;
 
   return (
-    <Screen padded={false}>
-      <View style={styles.searchRow}>
-        <IconButton
-          icon={ArrowLeft}
-          accessibilityLabel={t('common.back')}
-          onPress={goBack}
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('market.searchPlaceholder')}
-          onPress={() => router.push(routes.search)}
-          style={styles.searchField}
-        >
-          <Search
-            size={theme.sizing.iconSm}
-            color={theme.colors.textTertiary}
-          />
-          <Text
-            variant="body"
-            color="textTertiary"
-            numberOfLines={1}
-            style={styles.searchText}
-          >
-            {title}
-          </Text>
-        </Pressable>
-        <IconButton
-          icon={SlidersHorizontal}
-          accessibilityLabel={t('market.filtersButton')}
-          onPress={() => filterRef.current?.present()}
-        />
-      </View>
+    <Screen padded={false} edges={['bottom']}>
+      <ListingHeader
+        title={title}
+        resultLabel={resultLabel}
+        onBack={goBack}
+        query={query}
+        onQueryChange={setQuery}
+        onOpenFilters={() => openFilters()}
+      />
       <ListingResults
         feed={sortedFeed}
         onListingPress={openListing}
         emptyTitle={t('market.emptyTitle')}
         emptyDescription={t('market.emptyDesc')}
         ListHeaderComponent={
-          <ResultsHeader
+          <FilterChipsBar
             filters={filters}
             onFiltersChange={setFilters}
+            onOpenFilters={openFilters}
             sortOptions={sortOptions}
-            resultLabel={resultLabel}
+            showDistance={Boolean(geo)}
           />
         }
       />
@@ -165,6 +148,7 @@ export function BrowseScreen() {
         onApply={setFilters}
         showRadius={Boolean(geo)}
         categoryId={isNumericId ? numericId : undefined}
+        focusSection={filterSection}
       />
     </Screen>
   );

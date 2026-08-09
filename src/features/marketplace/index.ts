@@ -7,12 +7,18 @@ export {
   type DetailSection,
   type DetailStat,
   type DetailTag,
+  FilterChipsBar,
+  type FilterChipsBarProps,
+  type FilterSection,
   FilterSheet,
   ListingDetailView,
   type ListingDetailViewProps,
+  ListingHeader,
+  type ListingHeaderProps,
   ListingResults,
   ResultsHeader,
   SortBar,
+  type SortOptionItem,
 } from './components';
 export {
   useListingDetail,
@@ -39,3 +45,4 @@ export type {
   SearchResult,
   SellerType,
 } from './types';
+export { sortListings } from './utils/sortListings';

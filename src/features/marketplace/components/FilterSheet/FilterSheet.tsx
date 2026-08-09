@@ -55,6 +55,11 @@ interface Choice {
   value: ChoiceValue;
 }
 
+// Which group of filters a chip-driven open should focus on. 'category' covers
+// the listing-type / seller / freshness / attribute rows; 'price' the price
+// range; 'distance' the radius. Undefined shows every section.
+export type FilterSection = 'category' | 'price' | 'distance';
+
 // Props for the FilterSheet component.
 export interface FilterSheetProps {
   // Currently applied filters (the draft is re-seeded from these on open).
@@ -66,16 +71,29 @@ export interface FilterSheetProps {
   // When set, loads and shows this category's attribute filters (variety,
   // breed, brand…) below the system filters.
   categoryId?: number;
+  // When set, the sheet shows ONLY that section (opened from a filter chip);
+  // undefined shows every section (opened from the Filters button).
+  focusSection?: FilterSection;
 }
 
 // Renders the filter bottom sheet.
 export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
   function FilterSheet(
-    { filters, onApply, showRadius = false, categoryId },
+    { filters, onApply, showRadius = false, categoryId, focusSection },
     ref,
   ) {
     const styles = useThemedStyles(createFilterSheetStyles);
     const { t } = useTranslation();
+    // A section is shown when nothing is focused, or it is the focused one.
+    const shows = (section: FilterSection) =>
+      focusSection == null || focusSection === section;
+    // The sheet title reflects the focused section (or the generic "Filters").
+    const sheetTitle =
+      focusSection === 'price'
+        ? t('market.filters.price')
+        : focusSection === 'distance'
+          ? t('market.filters.radius')
+          : t('market.filters.title');
     const sheetRef = useRef<BottomSheetRef>(null);
     const [draft, setDraft] = useState<ListingFilters>(filters);
     // Live distance read-out (km); the slider maximum means "any distance".
@@ -198,7 +216,7 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
     return (
       <BottomSheet
         ref={sheetRef}
-        title={t('market.filters.title')}
+        title={sheetTitle}
         enableContentPanningGesture={false}
         contentStyle={styles.content}
         footer={
@@ -216,20 +234,23 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
           </View>
         }
       >
-        {renderChoiceRow(
-          t('market.filters.listingType'),
-          typeOptions,
-          draft.listingType,
-          (value) =>
-            setDraft((d) => ({
-              ...d,
-              listingType: value as ListingFilters['listingType'],
-            })),
-        )}
+        {shows('category')
+          ? renderChoiceRow(
+              t('market.filters.listingType'),
+              typeOptions,
+              draft.listingType,
+              (value) =>
+                setDraft((d) => ({
+                  ...d,
+                  listingType: value as ListingFilters['listingType'],
+                })),
+            )
+          : null}
 
-        <View>
-          <View style={styles.rowHeader}>
-            <Text variant="label">{t('market.filters.price')}</Text>
+        {shows('price') ? (
+          <View>
+            <View style={styles.rowHeader}>
+              <Text variant="label">{t('market.filters.price')}</Text>
             <View style={styles.valueBadge}>
               <Text variant="caption" color="primary">
                 {`${formatMoney(draft.minPrice ?? PRICE_MIN)} – ${formatMoney(
@@ -265,9 +286,10 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
               {`${formatMoney(PRICE_MAX)}+`}
             </Text>
           </View>
-        </View>
+          </View>
+        ) : null}
 
-        {showRadius ? (
+        {showRadius && shows('distance') ? (
           <View>
             <View style={styles.rowHeader}>
               <Text variant="label">{t('market.filters.radius')}</Text>
@@ -303,41 +325,45 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
           </View>
         ) : null}
 
-        {renderChoiceRow(
-          t('market.filters.sellerType'),
-          sellerOptions,
-          draft.sellerType,
-          (value) =>
-            setDraft((d) => ({
-              ...d,
-              sellerType: value as ListingFilters['sellerType'],
-            })),
-        )}
+        {shows('category') ? (
+          <>
+            {renderChoiceRow(
+              t('market.filters.sellerType'),
+              sellerOptions,
+              draft.sellerType,
+              (value) =>
+                setDraft((d) => ({
+                  ...d,
+                  sellerType: value as ListingFilters['sellerType'],
+                })),
+            )}
 
-        {renderChoiceRow(
-          t('market.filters.postedWithin'),
-          postedOptions,
-          draft.postedWithin,
-          (value) =>
-            setDraft((d) => ({
-              ...d,
-              postedWithin: value as ListingFilters['postedWithin'],
-            })),
-        )}
+            {renderChoiceRow(
+              t('market.filters.postedWithin'),
+              postedOptions,
+              draft.postedWithin,
+              (value) =>
+                setDraft((d) => ({
+                  ...d,
+                  postedWithin: value as ListingFilters['postedWithin'],
+                })),
+            )}
 
-        {categoryId != null ? (
-          <View style={styles.attrSection}>
-            <AttributeFilters
-              categoryId={categoryId}
-              attributes={draft.attributes ?? {}}
-              onChange={setAttr}
-            />
-          </View>
-        ) : (
-          // No attribute (Crop Type) section on this screen — keep the last row
-          // (Posted Within) off the sticky footer with a little tail spacing.
-          <View style={styles.tailSpacing} />
-        )}
+            {categoryId != null ? (
+              <View style={styles.attrSection}>
+                <AttributeFilters
+                  categoryId={categoryId}
+                  attributes={draft.attributes ?? {}}
+                  onChange={setAttr}
+                />
+              </View>
+            ) : (
+              // No attribute (Crop Type) section — keep the last row off the
+              // sticky footer with a little tail spacing.
+              <View style={styles.tailSpacing} />
+            )}
+          </>
+        ) : null}
       </BottomSheet>
     );
   },

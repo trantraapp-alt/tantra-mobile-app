@@ -4,7 +4,15 @@ export {
   type ActiveFilterChipsProps,
 } from './ActiveFilterChips';
 export { ContactModal, type ContactModalProps } from './ContactModal';
-export { FilterSheet, type FilterSheetProps } from './FilterSheet';
+export {
+  FilterChipsBar,
+  type FilterChipsBarProps,
+} from './FilterChipsBar';
+export {
+  type FilterSection,
+  FilterSheet,
+  type FilterSheetProps,
+} from './FilterSheet';
 export {
   type DetailRow,
   type DetailSection,
@@ -14,6 +22,7 @@ export {
   ListingDetailView,
   type ListingDetailViewProps,
 } from './ListingDetailView';
+export { ListingHeader, type ListingHeaderProps } from './ListingHeader';
 export { ListingResults, type ListingResultsProps } from './ListingResults';
 export { ResultsHeader, type ResultsHeaderProps } from './ResultsHeader';
 export { SortBar, type SortBarProps, type SortOptionItem } from './SortBar';

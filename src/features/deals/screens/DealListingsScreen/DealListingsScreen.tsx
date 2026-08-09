@@ -1,51 +1,81 @@
-// Listings behind a "Today's Deals" group: opens from a deal card. Fetches the
-// group's listings (backend resolves which categories it spans) for the user's
-// location, already price-ascending and paginated, and renders them in the shared
-// 2-column grid with infinite scroll.
+// Listings behind a "Fresh Deals" group, opened from a deal card. A filtered,
+// sorted, infinite grid: the shared ListingHeader (with in-place search), a
+// Sort / Category / Price / Distance chip row, and the shared FilterSheet. With
+// GPS the backend returns the group's listings nearest-first; sort is applied
+// client-side and the search query narrows the group.
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { Header } from '@/components/shared';
-import { Screen } from '@/components/ui';
+import { type BottomSheetRef, Screen } from '@/components/ui';
 import { appConstants, routes } from '@/constants';
 import type { FeedListing } from '@/features/home';
 import {
+  FilterChipsBar,
+  type FilterSection,
+  FilterSheet,
+  type ListingFilters,
+  ListingHeader,
   ListingResults,
+  marketplaceApi,
+  sortListings,
+  type SortOptionItem,
   useListingFeed,
   useUserGeo,
 } from '@/features/marketplace';
 import { localize, type LocalizedText } from '@/features/sell';
-import { useGoBack, useTranslation } from '@/hooks';
+import { useDebouncedValue, useGoBack, useTranslation } from '@/hooks';
 
-import { getDealListings } from '../../api';
-
-// Screen-local bilingual copy (kept out of the global i18n catalog).
+// Screen-local title fallback when the deal card passes no name.
 const TITLE: LocalizedText = { en: 'Deals', hi: 'डील' };
-const EMPTY_TITLE: LocalizedText = {
-  en: 'No deals right now',
-  hi: 'अभी कोई डील नहीं',
-};
-const EMPTY_DESC: LocalizedText = {
-  en: 'Check back soon — new deals appear as sellers list nearby.',
-  hi: 'थोड़ी देर बाद दोबारा देखें — आस-पास नए डील आते रहते हैं।',
-};
 
 // Renders the deal-group listings screen.
 export function DealListingsScreen() {
   const router = useRouter();
   const goBack = useGoBack();
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const params = useLocalSearchParams<{ groupKey?: string; name?: string }>();
   const groupKey = params.groupKey?.trim() ?? '';
   const name = params.name?.trim();
+
   const geo = useUserGeo();
+  const filterRef = useRef<BottomSheetRef>(null);
+  const [filters, setFilters] = useState<ListingFilters>({ sort: 'NEWEST' });
+  const [filterSection, setFilterSection] = useState<FilterSection>();
+  const openFilters = useCallback((section?: FilterSection) => {
+    setFilterSection(section);
+    filterRef.current?.present();
+  }, []);
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebouncedValue(query, appConstants.searchDebounceMs);
   const size = appConstants.defaultPageSize;
 
   const fetchPage = useCallback(
-    (page: number) => getDealListings(groupKey, geo, page, size),
-    [groupKey, geo, size],
+    (page: number) =>
+      marketplaceApi.browseDealGroup(
+        groupKey,
+        filters,
+        geo,
+        page,
+        size,
+        debouncedQuery,
+      ),
+    [groupKey, filters, geo, size, debouncedQuery],
   );
   const feed = useListingFeed(fetchPage, { enabled: groupKey !== '' });
+  // The deal endpoint orders nearest-first; apply the chosen sort client-side.
+  const sortedFeed = useMemo(
+    () => ({ ...feed, listings: sortListings(feed.listings, filters.sort) }),
+    [feed, filters.sort],
+  );
+
+  const sortOptions = useMemo<SortOptionItem[]>(
+    () => [
+      { value: 'NEWEST', label: t('market.sort.newest') },
+      { value: 'PRICE_ASC', label: t('market.sort.priceLow') },
+      { value: 'PRICE_DESC', label: t('market.sort.priceHigh') },
+    ],
+    [t],
+  );
 
   const openListing = useCallback(
     (listing: FeedListing) => {
@@ -57,18 +87,41 @@ export function DealListingsScreen() {
     [router],
   );
 
+  const title = name && name !== '' ? name : localize(TITLE, language);
+  const resultLabel =
+    feed.total > 0 ? t('market.results', { count: feed.total }) : undefined;
+
   return (
-    <Screen padded={false}>
-      <Header
-        title={name && name !== '' ? name : localize(TITLE, language)}
-        showBack
+    <Screen padded={false} edges={['bottom']}>
+      <ListingHeader
+        title={title}
+        resultLabel={resultLabel}
         onBack={goBack}
+        query={query}
+        onQueryChange={setQuery}
+        onOpenFilters={() => openFilters()}
       />
       <ListingResults
-        feed={feed}
+        feed={sortedFeed}
         onListingPress={openListing}
-        emptyTitle={localize(EMPTY_TITLE, language)}
-        emptyDescription={localize(EMPTY_DESC, language)}
+        emptyTitle={t('market.emptyTitle')}
+        emptyDescription={t('market.emptyDesc')}
+        ListHeaderComponent={
+          <FilterChipsBar
+            filters={filters}
+            onFiltersChange={setFilters}
+            onOpenFilters={openFilters}
+            sortOptions={sortOptions}
+            showDistance={Boolean(geo)}
+          />
+        }
+      />
+      <FilterSheet
+        ref={filterRef}
+        filters={filters}
+        onApply={setFilters}
+        showRadius={Boolean(geo)}
+        focusSection={filterSection}
       />
     </Screen>
   );

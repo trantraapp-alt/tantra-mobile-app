@@ -313,11 +313,7 @@ export function HomeScreen() {
         ) : null}
 
         <DualBanners />
-
-        {/* Discovery: the two navs paired, then trust, then real inventory. */}
-        <CategoryGrid onSelect={onCategorySelect} />
         <TrustBar />
-
         {featured && featured.listings.length > 0 ? (
           <ListingRow
             title={featuredTitle}
@@ -327,6 +323,8 @@ export function HomeScreen() {
             onListingPress={openListing}
           />
         ) : null}
+        {/* Discovery: the two navs paired, then trust, then real inventory. */}
+        <CategoryGrid onSelect={onCategorySelect} />
 
         {/* Value-add / marketing sections sit below the first real listings.
             DualBanners is now the backend-driven "Today's Deals" row. */}

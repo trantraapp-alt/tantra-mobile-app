@@ -15,6 +15,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { SectionHeader } from '@/components/shared';
 import { Text } from '@/components/ui';
+import { fileUrl } from '@/config';
 import { routes } from '@/constants';
 import { type DealCardData, useDeals } from '@/features/deals';
 import { useUserGeo } from '@/features/marketplace';
@@ -29,7 +30,7 @@ import { createDualBannersStyles } from './DualBanners.styles';
 export type DualBannersProps = Record<string, never>;
 
 // Section heading (kept out of the global i18n catalog).
-const TITLE: LocalizedText = { en: "Today's Deals", hi: 'आज के डील' };
+const TITLE: LocalizedText = { en: 'Fresh Deals', hi: 'ताज़ा डील' };
 
 // Fixed compact banner height; the gradient Svg needs an explicit height and every
 // tile reads the same so a wrapped row stays even.
@@ -110,8 +111,11 @@ function DealBannerComponent({ card, index, isHi, onPress }: DealBannerProps) {
   const subtitle = price || badge;
   const count = card.listingCount ?? 0;
 
-  // Admin background image wins only when explicitly enabled AND present.
-  const bgUrl = card.backendUi === true ? card.backgroundImageUrl : null;
+  // Admin background image wins only when explicitly enabled AND present. The
+  // API sends a server-relative path (e.g. "/files/.."), so resolve it to an
+  // absolute URL before handing it to expo-image.
+  const rawBg = card.backendUi === true ? card.backgroundImageUrl : null;
+  const bgUrl = rawBg ? fileUrl(rawBg) : null;
 
   const accent = card.accentColor ?? FALLBACK_ACCENT;
   const light = shade(accent, 0.2);

@@ -110,10 +110,14 @@ function browseCategory(
   geo: GeoPoint | undefined,
   page: number,
   size: number,
+  query?: string,
 ): Promise<MarketplacePage<FeedListing>> {
   // No explicit `sort` — the backend 500s on the Spring sort param here, and the
   // working /search endpoint sends none either. Backend orders these by default.
   const params = baseParams(filters, geo, page, size);
+  if (query && query.trim()) {
+    params.q = query.trim();
+  }
   return apiClient.get<MarketplacePage<FeedListing>>(
     endpoints.listings.category(categoryId),
     { params },
@@ -129,10 +133,36 @@ function browseByKey(
   geo: GeoPoint | undefined,
   page: number,
   size: number,
+  query?: string,
 ): Promise<MarketplacePage<FeedListing>> {
   const params = baseParams(filters, geo, page, size);
+  if (query && query.trim()) {
+    params.q = query.trim();
+  }
   return apiClient.get<MarketplacePage<FeedListing>>(
     endpoints.listings.browseByKey(categoryKey),
+    { params },
+  );
+}
+
+// Public listings behind a "Fresh Deals" group (groupKey = deal card ctaValue),
+// filtered / paginated like a category browse. Every listing in the group is
+// returned; with geo the backend sorts nearest-first. No explicit `sort` param
+// (the browse endpoints 500 on it) — order client-side via sortListings().
+function browseDealGroup(
+  groupKey: string,
+  filters: ListingFilters,
+  geo: GeoPoint | undefined,
+  page: number,
+  size: number,
+  query?: string,
+): Promise<MarketplacePage<FeedListing>> {
+  const params = baseParams(filters, geo, page, size);
+  if (query && query.trim()) {
+    params.q = query.trim();
+  }
+  return apiClient.get<MarketplacePage<FeedListing>>(
+    endpoints.deals.listings(groupKey),
     { params },
   );
 }
@@ -143,8 +173,12 @@ function nearby(
   geo: GeoPoint,
   page: number,
   size: number,
+  query?: string,
 ): Promise<MarketplacePage<FeedListing>> {
   const params = baseParams(filters, geo, page, size);
+  if (query && query.trim()) {
+    params.q = query.trim();
+  }
   return apiClient.get<MarketplacePage<FeedListing>>(endpoints.listings.nearby, {
     params,
   });
@@ -156,8 +190,12 @@ function bySeller(
   filters: ListingFilters,
   page: number,
   size: number,
+  query?: string,
 ): Promise<MarketplacePage<FeedListing>> {
   const params = withSort(baseParams(filters, undefined, page, size), filters);
+  if (query && query.trim()) {
+    params.q = query.trim();
+  }
   return apiClient.get<MarketplacePage<FeedListing>>(
     endpoints.listings.bySeller(userId),
     { params },
@@ -188,6 +226,7 @@ export const marketplaceApi = {
   search,
   browseCategory,
   browseByKey,
+  browseDealGroup,
   nearby,
   bySeller,
   getListingDetail,

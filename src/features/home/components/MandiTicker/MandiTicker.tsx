@@ -235,10 +235,22 @@ function MandiTickerComponent(_props: MandiTickerProps) {
 
   return (
     <View style={styles.bar} accessibilityRole="summary">
-      <View style={styles.label}>
-        <Text variant="overline" numberOfLines={1} style={styles.labelText}>
+      <View style={styles.lead}>
+        <View style={styles.liveBadge}>
+          <View style={styles.liveDot} />
+          <Text variant="overline" color="onPrimary" style={styles.liveText}>
+            LIVE
+          </Text>
+        </View>
+        <Text
+          variant="overline"
+          color="onPrimary"
+          numberOfLines={1}
+          style={styles.mandiText}
+        >
           {localize(LABEL, language)}
         </Text>
+        <View style={styles.leadDivider} />
       </View>
 
       <View style={styles.marquee}>

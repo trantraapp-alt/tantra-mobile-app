@@ -3,13 +3,11 @@
 // business cards. With no query, recent searches (or a prompt) are shown.
 import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Clock, SearchX, SlidersHorizontal } from 'lucide-react-native';
+import { Clock, SearchX } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { IconButton } from '@/components/buttons';
 import { EmptyState, ErrorState } from '@/components/empty-state';
-import { SearchBar } from '@/components/inputs';
 import { Spinner } from '@/components/loaders';
 import { SectionHeader } from '@/components/shared';
 import { type BottomSheetRef, Divider, Screen, Text } from '@/components/ui';
@@ -23,10 +21,11 @@ import { selectRecentSearches } from '@/store/selectors';
 import { addRecentSearch, clearRecentSearches } from '@/store/slices';
 
 import {
-  ActiveFilterChips,
+  FilterChipsBar,
+  type FilterSection,
   FilterSheet,
+  ListingHeader,
   ListingResults,
-  ResultsHeader,
 } from '../../components';
 import type { UseListingFeedResult } from '../../hooks';
 import { useSearch, useUserGeo } from '../../hooks';
@@ -103,6 +102,12 @@ export function SearchResultsScreen() {
     parseInitialFilters(params.filters),
   );
   const filterRef = useRef<BottomSheetRef>(null);
+  // Which FilterSheet section a tapped chip opens (undefined = full sheet).
+  const [filterSection, setFilterSection] = useState<FilterSection>();
+  const openFilters = useCallback((section?: FilterSection) => {
+    setFilterSection(section);
+    filterRef.current?.present();
+  }, []);
   // Opened from a Home ModuleTab (scoped to a module): show a plain listing grid
   // — no Listings/Sellers tabs and no results header (the filter still lives on
   // the search-row icon). General search from the search bar keeps both.
@@ -238,22 +243,12 @@ export function SearchResultsScreen() {
             emptyTitle={t('market.search.emptyTitle')}
             emptyDescription={t('market.search.emptyDesc')}
             ListHeaderComponent={
-              scopedToModule ? (
-                // Module browse: no toolbar, but keep the dismissible chips so
-                // an applied filter can be removed with its ×. Grid-aligned so
-                // the first chip lines up with the cards below.
-                <ActiveFilterChips
-                  filters={filters}
-                  onChange={setFilters}
-                  gridAligned
-                />
-              ) : (
-                <ResultsHeader
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  onOpenFilters={() => filterRef.current?.present()}
-                />
-              )
+              <FilterChipsBar
+                filters={filters}
+                onFiltersChange={setFilters}
+                onOpenFilters={openFilters}
+                showDistance={Boolean(geo)}
+              />
             }
           />
         ) : (
@@ -317,32 +312,21 @@ export function SearchResultsScreen() {
   };
 
   return (
-    <Screen padded={false}>
-      <View style={styles.searchRow}>
-        <IconButton
-          icon={ArrowLeft}
-          accessibilityLabel={t('common.back')}
-          onPress={goBack}
-        />
-        <View style={styles.searchInput}>
-          <SearchBar
-            value={query}
-            onChangeText={setQuery}
-            onClear={() => setQuery('')}
-            onSubmit={handleSubmit}
-            placeholder={
-              moduleTitle
-                ? t('market.searchInModule', { module: moduleTitle })
-                : t('market.searchPlaceholder')
-            }
-          />
-        </View>
-        <IconButton
-          icon={SlidersHorizontal}
-          accessibilityLabel={t('market.filtersButton')}
-          onPress={() => filterRef.current?.present()}
-        />
-      </View>
+    <Screen padded={false} edges={['bottom']}>
+      <ListingHeader
+        title={moduleTitle ?? ''}
+        onBack={goBack}
+        query={query}
+        onQueryChange={setQuery}
+        onSubmitQuery={handleSubmit}
+        searchPlaceholder={
+          moduleTitle
+            ? t('market.searchInModule', { module: moduleTitle })
+            : t('market.searchPlaceholder')
+        }
+        onOpenFilters={() => openFilters()}
+        searchAlwaysOpen
+      />
 
       {showResults ? renderResults() : renderIdle()}
 
@@ -351,6 +335,7 @@ export function SearchResultsScreen() {
         filters={filters}
         onApply={setFilters}
         showRadius={Boolean(geo)}
+        focusSection={filterSection}
       />
     </Screen>
   );

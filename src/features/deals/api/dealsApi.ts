@@ -1,9 +1,9 @@
-// Repository for the backend-driven "Today's Deals": the card strip and the
-// paginated listings behind a deal group. The `lang` param is injected globally
-// by the http client; the standard envelope is unwrapped by its interceptor.
+// Repository for the backend-driven "Fresh Deals" cards. The `lang` param is
+// injected globally by the http client; the standard envelope is unwrapped by
+// its interceptor. (The listings behind a deal group are fetched via
+// marketplaceApi.browseDealGroup, so they share the browse filter/sort machinery.)
 import { endpoints } from '@/config';
-import type { FeedListing } from '@/features/home';
-import type { GeoPoint, MarketplacePage } from '@/features/marketplace';
+import type { GeoPoint } from '@/features/marketplace';
 import { apiClient } from '@/lib';
 
 import type { DealCard } from '../types';
@@ -18,19 +18,4 @@ export function getDeals(geo: GeoPoint | undefined): Promise<DealCard[]> {
   return apiClient.get<DealCard[]>(endpoints.deals.list, {
     params: geoParams(geo),
   });
-}
-
-// Fetches one page of listings behind a deal group. Returns EVERY listing in the
-// group (no radius cutoff); when GPS is available the backend sorts them
-// nearest-first (and returns distanceKm), otherwise price-ascending. Paginated.
-export function getDealListings(
-  groupKey: string,
-  geo: GeoPoint | undefined,
-  page: number,
-  size: number,
-): Promise<MarketplacePage<FeedListing>> {
-  return apiClient.get<MarketplacePage<FeedListing>>(
-    endpoints.deals.listings(groupKey),
-    { params: { ...geoParams(geo), page, size } },
-  );
 }

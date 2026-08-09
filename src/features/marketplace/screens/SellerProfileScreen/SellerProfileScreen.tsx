@@ -4,17 +4,18 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { Header } from '@/components/shared';
 import { type BottomSheetRef, Screen } from '@/components/ui';
 import { appConstants, routes } from '@/constants';
 import type { FeedListing } from '@/features/home';
-import { useGoBack, useTranslation } from '@/hooks';
+import { useDebouncedValue, useGoBack, useTranslation } from '@/hooks';
 
 import { marketplaceApi } from '../../api';
 import {
+  FilterChipsBar,
+  type FilterSection,
   FilterSheet,
+  ListingHeader,
   ListingResults,
-  ResultsHeader,
   type SortOptionItem,
 } from '../../components';
 import { useListingFeed } from '../../hooks';
@@ -31,11 +32,20 @@ export function SellerProfileScreen() {
 
   const filterRef = useRef<BottomSheetRef>(null);
   const [filters, setFilters] = useState<ListingFilters>({ sort: 'NEWEST' });
+  // Which FilterSheet section a tapped chip opens (undefined = full sheet).
+  const [filterSection, setFilterSection] = useState<FilterSection>();
+  const openFilters = useCallback((section?: FilterSection) => {
+    setFilterSection(section);
+    filterRef.current?.present();
+  }, []);
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebouncedValue(query, appConstants.searchDebounceMs);
 
   const size = appConstants.defaultPageSize;
   const fetchPage = useCallback(
-    (page: number) => marketplaceApi.bySeller(userId, filters, page, size),
-    [userId, filters, size],
+    (page: number) =>
+      marketplaceApi.bySeller(userId, filters, page, size, debouncedQuery),
+    [userId, filters, size, debouncedQuery],
   );
   const feed = useListingFeed(fetchPage, { enabled });
 
@@ -63,24 +73,35 @@ export function SellerProfileScreen() {
     feed.total > 0 ? t('market.results', { count: feed.total }) : undefined;
 
   return (
-    <Screen padded={false}>
-      <Header title={title} showBack onBack={goBack} />
+    <Screen padded={false} edges={['bottom']}>
+      <ListingHeader
+        title={title}
+        resultLabel={resultLabel}
+        onBack={goBack}
+        query={query}
+        onQueryChange={setQuery}
+        onOpenFilters={() => openFilters()}
+      />
       <ListingResults
         feed={feed}
         onListingPress={openListing}
         emptyTitle={t('market.seller.emptyTitle')}
         emptyDescription={t('market.seller.emptyDesc')}
         ListHeaderComponent={
-          <ResultsHeader
+          <FilterChipsBar
             filters={filters}
             onFiltersChange={setFilters}
-            onOpenFilters={() => filterRef.current?.present()}
+            onOpenFilters={openFilters}
             sortOptions={sortOptions}
-            resultLabel={resultLabel}
           />
         }
       />
-      <FilterSheet ref={filterRef} filters={filters} onApply={setFilters} />
+      <FilterSheet
+        ref={filterRef}
+        filters={filters}
+        onApply={setFilters}
+        focusSection={filterSection}
+      />
     </Screen>
   );
 }

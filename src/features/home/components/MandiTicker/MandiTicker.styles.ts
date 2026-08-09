@@ -3,30 +3,59 @@ import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
 
+// Fixed decorative whites layered on the dark ticker bar.
+const DOT = '#FFFFFF';
+const LEAD_DIVIDER = 'rgba(255,255,255,0.3)';
+
 // Builds MandiTicker styles from the active theme.
 export function createMandiTickerStyles(theme: AppTheme) {
   return StyleSheet.create({
-    // Full-bleed dark ticker bar hosting the fixed label and scrolling rail.
+    // Full-bleed dark ticker bar hosting the fixed lead and scrolling rail.
     bar: {
       flexDirection: 'row',
       alignItems: 'center',
-      // ~28px thin bar composed from spacing tokens (24 + 4).
-      height: theme.spacing.xxl + theme.spacing.xs,
+      // A touch taller to seat the LIVE badge comfortably (28 + a little).
+      height: theme.spacing.xxl + theme.spacing.sm,
       backgroundColor: theme.colors.primaryDark,
       paddingLeft: theme.spacing.lg,
       overflow: 'hidden',
     },
-    // Fixed leading "MANDI LIVE" gold pill (does not scroll).
-    label: {
+    // Fixed leading block: LIVE badge + "MANDI LIVE" + divider (does not scroll).
+    lead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+      paddingRight: theme.spacing.sm,
+    },
+    // Orange "● LIVE" badge.
+    liveBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
       backgroundColor: theme.colors.secondary,
-      borderRadius: theme.radius.xs,
+      borderRadius: theme.radius.pill,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.xxs,
-      marginRight: theme.spacing.sm,
     },
-    // Dark, on-brand text for the gold label pill.
-    labelText: {
-      color: theme.colors.primaryDark,
+    // Small white live dot.
+    liveDot: {
+      width: 6,
+      height: 6,
+      borderRadius: theme.radius.pill,
+      backgroundColor: DOT,
+    },
+    liveText: {
+      letterSpacing: 0.5,
+    },
+    // "MANDI LIVE" wordmark.
+    mandiText: {
+      letterSpacing: 0.4,
+    },
+    // Thin divider before the scrolling prices.
+    leadDivider: {
+      width: StyleSheet.hairlineWidth,
+      height: 14,
+      backgroundColor: LEAD_DIVIDER,
     },
     // Clipping viewport for the marquee track.
     marquee: {

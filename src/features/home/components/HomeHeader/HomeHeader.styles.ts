@@ -1,33 +1,42 @@
-// Style factory for the HomeHeader.
+// Style factory for the HomeHeader — a hero header: a violet→light gradient (with
+// an optional farmer illustration) carrying the brand, a greeting, a search bar
+// with a mic, and a white location / radius / weather bar.
 import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
 
-// The search field is a fixed white pill on the colored header, so its ink is
-// fixed (theme-independent) to stay legible in both light and dark.
+// White pills sit on the colored header, so their ink is fixed (theme-independent)
+// to stay legible regardless of the active scheme.
 const FIELD_BG = '#FFFFFF';
-const FIELD_INK = '#1B1630';
-const FIELD_PLACEHOLDER = '#7A748C';
-// Translucent "glass" surfaces layered on the primary header.
-const GLASS = 'rgba(255,255,255,0.14)';
-const GLASS_BORDER = 'rgba(255,255,255,0.24)';
-const GLASS_SOFT = 'rgba(255,255,255,0.10)';
-// Orange (secondary) tint for the radius pill.
-const SECONDARY_TINT = 'rgba(249,115,22,0.22)';
+const INK = '#1B1630';
+const INK_SOFT = '#6B6577';
+// Translucent "glass" surfaces layered on the header for the top-row actions.
+const GLASS = 'rgba(255,255,255,0.16)';
+const GLASS_BORDER = 'rgba(255,255,255,0.30)';
+// Hairline divider between the segments of the white location bar.
+const DIVIDER = 'rgba(20,10,40,0.08)';
+// Soft shadow lifting the white bars off the colored header.
+const CARD_SHADOW = {
+  shadowColor: '#2E1065',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.18,
+  shadowRadius: 12,
+  elevation: 4,
+};
 
-export { FIELD_INK, FIELD_PLACEHOLDER };
+export { INK, INK_SOFT };
 
 // Builds HomeHeader styles from the active theme.
 export function createHomeHeaderStyles(theme: AppTheme) {
   return StyleSheet.create({
-    // Colored header shell; the top inset is applied inline so the color fills
-    // the status-bar area.
+    // Header shell; the top inset is applied inline so the gradient fills the
+    // status-bar area. Clips the gradient + hero illustration.
     container: {
       backgroundColor: theme.colors.primary,
-      ...theme.shadows.medium,
+      overflow: 'hidden',
       zIndex: 10,
     },
-    // Logo + actions row.
+    // Brand + actions row.
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -35,119 +44,135 @@ export function createHomeHeaderStyles(theme: AppTheme) {
       gap: theme.spacing.sm,
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.sm,
-      paddingBottom: theme.spacing.xs,
-    },
-    // Second row: full-width search field.
-    searchRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: theme.spacing.lg,
-      paddingBottom: theme.spacing.sm,
     },
     logo: {
       flexDirection: 'row',
       alignItems: 'center',
     },
-    // White search field (full-width on its own row).
-    searchField: {
-      flex: 1,
-      height: 40,
-      backgroundColor: FIELD_BG,
-      borderRadius: theme.radius.sm,
+    actions: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.sm,
+      gap: theme.spacing.sm,
+    },
+    // Round translucent action (notification bell).
+    glassIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: theme.radius.pill,
+      backgroundColor: GLASS,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: GLASS_BORDER,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // Unread notification dot.
+    notifDot: {
+      position: 'absolute',
+      top: 9,
+      right: 9,
+      width: 9,
+      height: 9,
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.danger,
+      borderWidth: 1.5,
+      borderColor: '#FFFFFF',
+    },
+    // Language pill.
+    langPill: {
+      minWidth: 44,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: GLASS,
+      borderRadius: theme.radius.pill,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: GLASS_BORDER,
+      paddingHorizontal: theme.spacing.md,
+    },
+    // Greeting block.
+    greeting: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.md,
+      paddingBottom: theme.spacing.md,
+    },
+    greetingSub: {
+      marginTop: theme.spacing.xxs,
+      opacity: 0.9,
+    },
+    // Search row.
+    searchRow: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.sm,
+    },
+    // White search pill with a trailing mic button.
+    searchField: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: 42,
+      backgroundColor: FIELD_BG,
+      borderRadius: theme.radius.pill,
+      paddingLeft: theme.spacing.lg,
+      paddingRight: theme.spacing.xxs,
+      ...CARD_SHADOW,
+    },
+    // The tap-to-search area (icon + placeholder) fills the pill.
+    searchTap: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+      height: '100%',
     },
     searchText: {
       flex: 1,
     },
-    actions: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-    },
-    glassIcon: {
-      width: 30,
-      height: 30,
+    // Violet mic circle at the pill's trailing edge.
+    mic: {
+      width: 34,
+      height: 34,
       borderRadius: theme.radius.pill,
-      backgroundColor: GLASS,
+      backgroundColor: theme.colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    notifDot: {
-      position: 'absolute',
-      top: 5,
-      right: 5,
-      width: 8,
-      height: 8,
-      borderRadius: theme.radius.pill,
-      backgroundColor: theme.colors.danger,
-      borderWidth: 1.5,
-      borderColor: theme.colors.primary,
-    },
-    langPill: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xxs,
-      backgroundColor: GLASS,
-      borderRadius: theme.radius.pill,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xxs,
-    },
-    // Second row: location + radius + weather + state.
+    // White location / radius / weather bar.
     locBar: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.lg,
-      paddingBottom: theme.spacing.sm,
+      height: 44,
+      marginHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
+      backgroundColor: FIELD_BG,
+      borderRadius: theme.cardRadius.lg,
+      paddingHorizontal: theme.spacing.xs,
+      ...CARD_SHADOW,
     },
-    // The location field sizes to its content (not full width) and shrinks to
-    // make room for the radius + weather pills when space is tight.
-    locPressable: {
-      flexShrink: 1,
-      minWidth: 0,
-    },
-    // Location rendered as a tappable, bordered field on the violet header.
-    locRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-      height: 34,
-      backgroundColor: GLASS,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: GLASS_BORDER,
-      borderRadius: theme.radius.sm,
-      paddingHorizontal: theme.spacing.md,
-    },
-    locContent: {
-      flexShrink: 1,
+    // Location segment grows to take the free width; the others size to content.
+    locSeg: {
+      flex: 1,
       minWidth: 0,
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.xxs,
+      paddingHorizontal: theme.spacing.sm,
+      height: '100%',
     },
     locValue: {
       flexShrink: 1,
     },
-    // Radius + weather share the field's height so all three items align.
-    radiusPill: {
+    // Radius / weather segments size to their content.
+    seg: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 2,
-      height: 34,
-      backgroundColor: SECONDARY_TINT,
-      borderRadius: theme.radius.sm,
+      gap: theme.spacing.xxs,
       paddingHorizontal: theme.spacing.sm,
+      height: '100%',
     },
-    weatherPill: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: 34,
-      backgroundColor: GLASS_SOFT,
-      borderRadius: theme.radius.sm,
-      paddingHorizontal: theme.spacing.sm,
+    // Thin vertical divider between segments.
+    divider: {
+      width: StyleSheet.hairlineWidth,
+      height: 26,
+      backgroundColor: DIVIDER,
     },
     pressed: {
       opacity: theme.opacity.pressed,

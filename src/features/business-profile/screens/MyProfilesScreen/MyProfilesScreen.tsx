@@ -57,7 +57,6 @@ export function MyProfilesScreen() {
     isEmpty,
     loadMore,
     refresh,
-    patchLocal,
     removeLocal,
   } = useMyProfiles();
 
@@ -77,37 +76,6 @@ export function MyProfilesScreen() {
       router.push(routes.businessProfile.detail(profile.profileId));
     },
     [router],
-  );
-
-  const toggleVisibility = useCallback(
-    async (profile: BusinessProfile) => {
-      try {
-        const next = !profile.isVisible;
-        const result = await businessProfileApi.update(profile.profileId, {
-          profileType: profile.profileType,
-          businessName: profile.businessName,
-          isVisible: next,
-          address: profile.address,
-          attributes: profile.attributes,
-        });
-        // Trust the server's returned status — editing a profile (including
-        // toggling visibility) can send it back to PENDING for re-approval.
-        patchLocal(profile.profileId, { isVisible: next, status: result.status });
-        if (result.status === 'PENDING' && profile.status !== 'PENDING') {
-          showSuccess(t('businessProfile.editSuccess'));
-        } else {
-          showSuccess(
-            next
-              ? t('businessProfile.visibilityShown')
-              : t('businessProfile.visibilityHidden'),
-          );
-        }
-      } catch (error) {
-        logger.warn('[BusinessProfile] Toggle visibility failed', error);
-        showError(t('businessProfile.submitError'));
-      }
-    },
-    [patchLocal, showSuccess, showError, t],
   );
 
   const performDelete = useCallback(
@@ -147,11 +115,10 @@ export function MyProfilesScreen() {
         profileTypes={profileTypes}
         onPress={() => goToDetail(item)}
         onEdit={() => goToEdit(item)}
-        onToggleVisibility={() => void toggleVisibility(item)}
         onDelete={() => confirmDelete(item)}
       />
     ),
-    [profileTypes, goToDetail, goToEdit, toggleVisibility, confirmDelete],
+    [profileTypes, goToDetail, goToEdit, confirmDelete],
   );
 
   const renderBody = () => {

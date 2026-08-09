@@ -1,5 +1,5 @@
-// Paginated list of the current user's own business profiles, with optimistic
-// local mutators (patchLocal / removeLocal) mirroring the useMyListings pattern.
+// Paginated list of the current user's own business profiles, with an
+// optimistic local mutator (removeLocal) mirroring the useMyListings pattern.
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { appConstants } from '@/constants';
@@ -117,17 +117,6 @@ export function useMyProfiles() {
     void fetchPage(0, 'refresh');
   }, [fetchPage]);
 
-  const patchLocal = useCallback(
-    (profileId: string, updated: Partial<BusinessProfile>) => {
-      setProfiles((prev) =>
-        prev.map((p) =>
-          p.profileId === profileId ? { ...p, ...updated } : p,
-        ),
-      );
-    },
-    [],
-  );
-
   const removeLocal = useCallback((profileId: string) => {
     setProfiles((prev) => prev.filter((p) => p.profileId !== profileId));
   }, []);
@@ -142,7 +131,6 @@ export function useMyProfiles() {
     hasMore: !last,
     loadMore,
     refresh,
-    patchLocal,
     removeLocal,
   };
 }

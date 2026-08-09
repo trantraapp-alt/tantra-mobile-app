@@ -8,6 +8,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { Text } from '@/components/ui';
 import { useThemedStyles } from '@/hooks';
@@ -70,6 +71,21 @@ function ButtonComponent({
   const styles = useThemedStyles(createButtonStyles);
   const isInteractive = !disabled && !loading;
 
+  // A brief press-in scale-down (with opacity, below) so a tap reads as a
+  // tactile, physical press rather than a flat color swap.
+  const scale = useSharedValue(1);
+  const animatedScale = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  const handlePressIn = useCallback(() => {
+    if (isInteractive) {
+      scale.value = withTiming(0.96, { duration: theme.animation.fast });
+    }
+  }, [isInteractive, scale, theme.animation.fast]);
+  const handlePressOut = useCallback(() => {
+    scale.value = withTiming(1, { duration: theme.animation.fast });
+  }, [scale, theme.animation.fast]);
+
   // Foreground color used for label and spinner based on the variant.
   const foregroundColor =
     variant === 'outline' || variant === 'ghost'
@@ -128,16 +144,19 @@ function ButtonComponent({
   );
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled: !isInteractive, busy: loading }}
-      disabled={!isInteractive}
-      onPress={onPress}
-      style={[fullWidth && styles.fullWidth, style]}
-    >
-      {renderSurface}
-    </Pressable>
+    <Animated.View style={[fullWidth && styles.fullWidth, style, animatedScale]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityState={{ disabled: !isInteractive, busy: loading }}
+        disabled={!isInteractive}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        {renderSurface}
+      </Pressable>
+    </Animated.View>
   );
 }
 

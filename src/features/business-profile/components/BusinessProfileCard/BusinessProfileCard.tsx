@@ -7,8 +7,6 @@ import {
   BadgeCheck,
   Ban,
   Clock,
-  Eye,
-  EyeOff,
   type LucideIcon,
   Trash2,
   User,
@@ -33,6 +31,7 @@ import { firstImageUrl } from '../../utils/profileImage';
 import { getStatusLabelKey, getStatusTone } from '../../utils/profileStatus';
 import { getProfileTypeLabel } from '../../utils/profileTypeLabels';
 import { resolveProfileStatus } from '../../utils/status';
+import { CardToneGradient } from '../CardToneGradient';
 import { createBusinessProfileCardStyles } from './BusinessProfileCard.styles';
 
 // Semantic color keys used for a status accent.
@@ -82,7 +81,6 @@ export interface BusinessProfileCardProps {
   profileTypes?: ProfileTypeOption[];
   onPress: () => void;
   onEdit: () => void;
-  onToggleVisibility: () => void;
   onDelete: () => void;
 }
 
@@ -91,7 +89,6 @@ function BusinessProfileCardComponent({
   profileTypes = [],
   onPress,
   onEdit,
-  onToggleVisibility,
   onDelete,
 }: BusinessProfileCardProps) {
   const styles = useThemedStyles(createBusinessProfileCardStyles);
@@ -133,6 +130,9 @@ function BusinessProfileCardComponent({
 
   return (
     <Card padded={false} radius="lg" style={styles.card}>
+      <View style={styles.gradientLayer} pointerEvents="none">
+        <CardToneGradient color={statusColor} />
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
@@ -144,6 +144,7 @@ function BusinessProfileCardComponent({
               <Badge label={t(getStatusLabelKey(profile.status))} tone={tone} />
             </View>
             <View style={styles.iconWrap}>
+              <CardToneGradient color={statusColor} intensity={theme.opacity.subtle} />
               {imageUri ? (
                 <Image
                   source={{ uri: imageUri }}
@@ -181,7 +182,7 @@ function BusinessProfileCardComponent({
                     <IconButton
                       icon={Trash2}
                       size="sm"
-                      color={theme.colors.textPrimary}
+                      color={theme.colors.danger}
                       accessibilityLabel={t('businessProfile.delete')}
                       onPress={onDelete}
                     />
@@ -222,45 +223,17 @@ function BusinessProfileCardComponent({
                     {t('businessProfile.blockedEditHint')}
                   </Text>
                 ) : (
-                  <>
-                    {status === 'APPROVED' ? (
-                      <Button
-                        label={
-                          profile.isVisible
-                            ? t('businessProfile.visible')
-                            : t('businessProfile.hidden')
-                        }
-                        variant="ghost"
-                        size="sm"
-                        fullWidth={false}
-                        leftIcon={
-                          profile.isVisible ? (
-                            <Eye
-                              size={theme.sizing.iconSm}
-                              color={theme.colors.textSecondary}
-                            />
-                          ) : (
-                            <EyeOff
-                              size={theme.sizing.iconSm}
-                              color={theme.colors.textTertiary}
-                            />
-                          )
-                        }
-                        onPress={onToggleVisibility}
-                      />
-                    ) : null}
-                    <Button
-                      label={
-                        status === 'REJECTED'
-                          ? t('businessProfile.editResubmit')
-                          : t('businessProfile.editProfile')
-                      }
-                      variant={status === 'REJECTED' ? 'primary' : 'outline'}
-                      size="sm"
-                      fullWidth={false}
-                      onPress={onEdit}
-                    />
-                  </>
+                  <Button
+                    label={
+                      status === 'REJECTED'
+                        ? t('businessProfile.editResubmit')
+                        : t('businessProfile.editProfile')
+                    }
+                    variant={status === 'REJECTED' ? 'primary' : 'outline'}
+                    size="sm"
+                    fullWidth={false}
+                    onPress={onEdit}
+                  />
                 )}
               </View>
             </View>

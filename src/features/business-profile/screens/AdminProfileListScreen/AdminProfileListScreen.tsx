@@ -20,6 +20,7 @@ import { useTheme } from '@/providers';
 import { commonStyles, formatDate } from '@/utils';
 
 import { businessProfileApi } from '../../api/businessProfileApi';
+import { CardToneGradient } from '../../components/CardToneGradient';
 import { useAdminProfiles } from '../../hooks/useAdminProfiles';
 import type { BusinessProfile, ProfileTypeOption } from '../../types/businessProfile.types';
 import { firstImageUrl } from '../../utils/profileImage';
@@ -113,6 +114,7 @@ export function AdminProfileListScreen() {
       return (
         <Card
           style={styles.card}
+          radius="lg"
           onPress={() => {
             router.push({
               pathname: routes.admin.businessProfileReview(item.profileId),
@@ -120,11 +122,15 @@ export function AdminProfileListScreen() {
             });
           }}
         >
+          <View style={styles.gradientLayer} pointerEvents="none">
+            <CardToneGradient color={toneColor} />
+          </View>
           <View style={styles.cardRow}>
             <View style={styles.cornerBadge} pointerEvents="none">
               <Badge label={t(getStatusLabelKey(item.status))} tone={tone} />
             </View>
             <View style={styles.iconWrap}>
+              <CardToneGradient color={toneColor} intensity={theme.opacity.subtle} />
               {imageUri ? (
                 <Image
                   source={{ uri: imageUri }}

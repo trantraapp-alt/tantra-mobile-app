@@ -20,6 +20,15 @@ export function createAdminProfileListStyles(theme: AppTheme) {
     card: {
       marginBottom: theme.spacing.sm,
     },
+    // Tone-tinted gradient wash sitting behind the whole card, clipped to its
+    // rounded corners. A separate absolutely-positioned layer (rather than
+    // living inside `cardRow`) so its own overflow:hidden clips only the
+    // gradient, never the corner badge straddling the card's edge.
+    gradientLayer: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: theme.cardRadius.lg,
+      overflow: 'hidden',
+    },
     // Relative so the status badge can pin to the card's top-right corner.
     cardRow: {
       flexDirection: 'row',

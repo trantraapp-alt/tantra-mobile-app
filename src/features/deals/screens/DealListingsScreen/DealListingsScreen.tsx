@@ -62,11 +62,12 @@ export function DealListingsScreen() {
     [groupKey, filters, geo, size, debouncedQuery],
   );
   const feed = useListingFeed(fetchPage, { enabled: groupKey !== '' });
-  // The deal endpoint orders nearest-first; apply the chosen sort client-side.
-  const sortedFeed = useMemo(
-    () => ({ ...feed, listings: sortListings(feed.listings, filters.sort) }),
-    [feed, filters.sort],
-  );
+  // Sort is applied client-side (the deal endpoint 500s on Spring's sort param);
+  // filtering is expected to happen server-side via the request params above.
+  const displayFeed = useMemo(() => {
+    const listings = sortListings(feed.listings, filters.sort);
+    return { ...feed, listings };
+  }, [feed, filters.sort]);
 
   const sortOptions = useMemo<SortOptionItem[]>(
     () => [
@@ -89,7 +90,9 @@ export function DealListingsScreen() {
 
   const title = name && name !== '' ? name : localize(TITLE, language);
   const resultLabel =
-    feed.total > 0 ? t('market.results', { count: feed.total }) : undefined;
+    displayFeed.total > 0
+      ? t('market.results', { count: displayFeed.total })
+      : undefined;
 
   return (
     <Screen padded={false} edges={['bottom']}>
@@ -102,7 +105,7 @@ export function DealListingsScreen() {
         onOpenFilters={() => openFilters()}
       />
       <ListingResults
-        feed={sortedFeed}
+        feed={displayFeed}
         onListingPress={openListing}
         emptyTitle={t('market.emptyTitle')}
         emptyDescription={t('market.emptyDesc')}
@@ -113,6 +116,7 @@ export function DealListingsScreen() {
             onOpenFilters={openFilters}
             sortOptions={sortOptions}
             showDistance={Boolean(geo)}
+            showCategory={false}
           />
         }
       />
@@ -122,6 +126,7 @@ export function DealListingsScreen() {
         onApply={setFilters}
         showRadius={Boolean(geo)}
         focusSection={filterSection}
+        showPostedWithin={false}
       />
     </Screen>
   );

@@ -23,3 +23,11 @@ export type {
   PromoCard,
   SellerPlanKey,
 } from './types';
+export {
+  feedDescription,
+  feedLocationLabel,
+  firstFeedImage,
+  formatDistanceKm,
+  isSold,
+  resolveFeedTitle,
+} from './utils/feedListing';

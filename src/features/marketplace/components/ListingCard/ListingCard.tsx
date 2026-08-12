@@ -13,25 +13,27 @@ import {
   ShieldCheck,
   UserRound,
 } from 'lucide-react-native';
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { Pressable, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { Card, Text } from '@/components/ui';
 import { appConstants } from '@/constants';
-import type { FeedListing } from '@/features/home';
+import type { FeedListing } from '@/features/home/types';
 import {
   feedDescription,
   firstFeedImage,
   formatDistanceKm,
   isSold,
   resolveFeedTitle,
-} from '@/features/home';
+} from '@/features/home/utils/feedListing';
 import { getCategoryVisual, localize, type LocalizedText } from '@/features/sell';
+import { useSavedListing } from '@/features/wishlist/hooks/useSavedListing';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 import { formatCurrency } from '@/utils';
 
+import { useUserGeo } from '../../hooks';
 import {
   createListingCardStyles,
   LISTING_CARD_WAVE_HEIGHT,
@@ -44,24 +46,57 @@ const NO_DESCRIPTION: LocalizedText = {
 };
 const VERIFIED: LocalizedText = { en: 'Verified Seller', hi: 'सत्यापित विक्रेता' };
 const UNVERIFIED: LocalizedText = {
-  en: 'Unverified Seller',
-  hi: 'असत्यापित विक्रेता',
+  en: 'Not Verified',
+  hi: 'सत्यापित नहीं',
 };
+
+// Parses a stored coordinate (string or number) to a finite number, or null.
+function parseCoord(value: string | number | null | undefined): number | null {
+  if (value == null || value === '') {
+    return null;
+  }
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Great-circle distance (km) between two lat/lng points (haversine).
+function haversineKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 // Props for the ListingCard component.
 export interface ListingCardProps {
   // The listing to render.
   listing: FeedListing;
+  // Fixed width (points) for a horizontal rail (e.g. similar listings). Omit to
+  // flex to the grid cell's width.
+  width?: number;
   // Called with the listing when the card is pressed.
   onPress?: (listing: FeedListing) => void;
 }
 
-// Renders a single full-width marketplace listing card.
-function ListingCardComponent({ listing, onPress }: ListingCardProps) {
+// Renders a single marketplace listing card.
+function ListingCardComponent({ listing, width, onPress }: ListingCardProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createListingCardStyles);
   const { t, language } = useTranslation();
-  const [saved, setSaved] = useState(false);
+  const geo = useUserGeo();
+  const { saved, toggle: toggleSaved } = useSavedListing(listing.listingId);
 
   const currency = appConstants.currencyCode;
   const imageUri = firstFeedImage(listing);
@@ -80,6 +115,9 @@ function ListingCardComponent({ listing, onPress }: ListingCardProps) {
         : '';
   const accentColor =
     theme.colors[getCategoryVisual(categoryKey || title).accent];
+  // The wave always carries Tantra's brand gradient (violet → orange), stable
+  // across cards; a per-listing id avoids gradient id collisions in the grid.
+  const waveGradientId = `lc-wave-${listing.listingId || 'x'}`;
 
   const discount =
     listing.discountPct != null && listing.discountPct > 0
@@ -93,16 +131,17 @@ function ListingCardComponent({ listing, onPress }: ListingCardProps) {
     listing.actualPrice != null &&
     listing.actualPrice > listing.offeredPrice;
 
-  // Distance badge (title row) and the full listing address on one line.
-  const distance = formatDistanceKm(listing.distanceKm);
-  const address = listing.address;
-  const addressText = address
-    ? [address.village, address.district, address.state, address.pincode]
-        .map((part) => (part ?? '').trim())
-        .filter(Boolean)
-        .join(', ')
-    : '';
-  const metaText = addressText || null;
+  // Distance shown below the description: prefer the server value, else compute
+  // it from the address coordinates and the user's location (haversine).
+  const listingLat = parseCoord(listing.address?.latitude);
+  const listingLng = parseCoord(listing.address?.longitude);
+  const distanceKm =
+    listing.distanceKm != null
+      ? listing.distanceKm
+      : geo && listingLat != null && listingLng != null
+        ? haversineKm(geo.lat, geo.lng, listingLat, listingLng)
+        : null;
+  const distance = formatDistanceKm(distanceKm);
 
   // Attribute chips: quantity, then organic / a labelled attribute.
   const quantityLabel =
@@ -121,10 +160,14 @@ function ListingCardComponent({ listing, onPress }: ListingCardProps) {
   const ShieldIcon = verified ? ShieldCheck : ShieldAlert;
 
   return (
-    <Card padded={false} radius="xl" style={styles.card}>
+    <Card
+      padded={false}
+      radius="xl"
+      style={[styles.card, width != null ? { width } : null]}
+    >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={[title, metaText].filter(Boolean).join(', ')}
+        accessibilityLabel={[title, distance].filter(Boolean).join(', ')}
         onPress={onPress ? () => onPress(listing) : undefined}
         disabled={!onPress}
       >
@@ -146,18 +189,10 @@ function ListingCardComponent({ listing, onPress }: ListingCardProps) {
                 />
               )}
 
-              {discount != null ? (
-                <View style={styles.discountBadge}>
-                  <Text variant="overline" color="onPrimary">
-                    {t('common.percentOff', { value: discount }).toUpperCase()}
-                  </Text>
-                </View>
-              ) : null}
-
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('tab.wishlist')}
-                onPress={() => setSaved((value) => !value)}
+                onPress={toggleSaved}
                 style={styles.heartButton}
               >
                 <Heart
@@ -176,15 +211,35 @@ function ListingCardComponent({ listing, onPress }: ListingCardProps) {
                 preserveAspectRatio="none"
                 style={styles.wave}
               >
+                <Defs>
+                  <LinearGradient
+                    id={waveGradientId}
+                    x1="0"
+                    y1="0"
+                    x2="1"
+                    y2="0"
+                  >
+                    <Stop offset="0" stopColor={theme.colors.primary} />
+                    <Stop offset="1" stopColor={theme.colors.secondary} />
+                  </LinearGradient>
+                </Defs>
                 <Path
                   d="M0 16 C 60 0 130 0 200 14 C 270 28 340 32 400 12 L 400 40 L 0 40 Z"
                   fill={theme.colors.card}
                 />
                 <Path
                   d="M0 16 C 60 0 130 0 200 14 C 270 28 340 32 400 12 L 400 13.5 C 340 33.5 270 31 200 18 C 130 4 60 5 0 22 Z"
-                  fill={accentColor}
+                  fill={`url(#${waveGradientId})`}
                 />
               </Svg>
+
+              {discount != null ? (
+                <View style={styles.discountBadge}>
+                  <Text variant="overline" color="onPrimary">
+                    {t('common.percentOff', { value: discount }).toUpperCase()}
+                  </Text>
+                </View>
+              ) : null}
 
               {sold ? (
                 <View style={styles.soldOverlay}>
@@ -198,22 +253,9 @@ function ListingCardComponent({ listing, onPress }: ListingCardProps) {
             </View>
 
             <View style={styles.body}>
-              <View style={styles.titleRow}>
-                <Text variant="h4" numberOfLines={1} style={styles.title}>
-                  {title}
-                </Text>
-                {distance ? (
-                  <View style={styles.kmBadge}>
-                    <MapPin
-                      size={theme.sizing.iconXxs}
-                      color={accentColor}
-                    />
-                    <Text variant="caption" color="textSecondary">
-                      {distance}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
+              <Text variant="h4" numberOfLines={1}>
+                {title}
+              </Text>
 
               <Text
                 variant="caption"
@@ -224,10 +266,26 @@ function ListingCardComponent({ listing, onPress }: ListingCardProps) {
                 {description ?? localize(NO_DESCRIPTION, language)}
               </Text>
 
+              <View style={styles.metaRow}>
+                {distance ? (
+                  <>
+                    <MapPin size={theme.sizing.iconXs} color={accentColor} />
+                    <Text
+                      variant="caption"
+                      color="textSecondary"
+                      numberOfLines={1}
+                      style={styles.metaText}
+                    >
+                      {distance}
+                    </Text>
+                  </>
+                ) : null}
+              </View>
+
               <View style={styles.priceRow}>
                 {hasPrice ? (
                   <>
-                    <Text variant="h4" style={{ color: accentColor }}>
+                    <Text variant="h4" color="success">
                       {formatCurrency(listing.offeredPrice ?? 0, currency)}
                     </Text>
                     {hasCompare ? (
@@ -247,22 +305,6 @@ function ListingCardComponent({ listing, onPress }: ListingCardProps) {
                 )}
               </View>
 
-              <View style={styles.metaRow}>
-                {metaText ? (
-                  <>
-                    <MapPin size={theme.sizing.iconXs} color={accentColor} />
-                    <Text
-                      variant="caption"
-                      color="textSecondary"
-                      numberOfLines={1}
-                      style={styles.metaText}
-                    >
-                      {metaText}
-                    </Text>
-                  </>
-                ) : null}
-              </View>
-
               <View style={styles.chipsRow}>
                 {quantityLabel ? (
                   <View style={styles.chip}>
@@ -278,11 +320,16 @@ function ListingCardComponent({ listing, onPress }: ListingCardProps) {
                     {
                       backgroundColor: negotiable
                         ? theme.colors.success
-                        : accentColor,
+                        : theme.colors.danger,
                     },
                   ]}
                 >
-                  <Text variant="label" color="onPrimary" numberOfLines={1}>
+                  <Text
+                    variant="overline"
+                    color="onPrimary"
+                    numberOfLines={1}
+                    style={styles.negotiablePillText}
+                  >
                     {negotiable
                       ? t('home.tagNegotiable')
                       : t('home.tagNotNegotiable')}
@@ -307,7 +354,7 @@ function ListingCardComponent({ listing, onPress }: ListingCardProps) {
                 <ShieldIcon
                   size={18}
                   color={
-                    verified ? theme.colors.success : theme.colors.textSecondary
+                    verified ? theme.colors.success : theme.colors.danger
                   }
                 />
               </View>

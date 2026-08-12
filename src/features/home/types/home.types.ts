@@ -18,17 +18,27 @@ export type SellerPlanKey = 'BASIC' | 'STANDARD' | 'PREMIUM' | 'ENTERPRISE';
 // Structured address carried on a feed listing.
 export interface FeedAddress {
   // Village / locality.
-  village?: string;
+  village?: string | null;
   // District.
-  district?: string;
+  district?: string | null;
   // State.
-  state?: string;
+  state?: string | null;
   // PIN / postal code.
-  pincode?: string;
+  pincode?: string | null;
   // Latitude, when known.
   lat?: number | null;
   // Longitude, when known.
   lng?: number | null;
+  // Additional fields as returned by the listing / deal endpoints (the address
+  // stores coordinates as strings and carries a free-text full address).
+  city?: string | null;
+  country?: string | null;
+  fullAddress?: string | null;
+  pinCode?: string | null;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
+  mobileNumber?: string | null;
+  altMobileNumber?: string | null;
 }
 
 // A single listing tile as returned in every home-feed section.

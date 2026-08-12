@@ -14,7 +14,6 @@ import { Badge, type BadgeTone, Screen, Text } from '@/components/ui';
 import { fileUrl } from '@/config';
 import { routes } from '@/constants';
 import type { FeedListing } from '@/features/home';
-import { ListingRow } from '@/features/home';
 import {
   feedDescription,
   feedLocationLabel,
@@ -32,6 +31,7 @@ import {
   type DetailStat,
   type DetailTag,
   ListingDetailView,
+  SimilarListings,
 } from '../../components';
 import { useListingDetail } from '../../hooks';
 import type { ContactRevealResult } from '../../types';
@@ -129,7 +129,19 @@ export function MarketplaceListingDetailScreen() {
     const title =
       listing.listingTitle?.trim() ||
       resolveFeedTitle(listing, language, t('home.listingFallback'));
-    const locality = feedLocationLabel(listing.address);
+    // Full address on the detail page (the card only shows distance now).
+    const addressParts = listing.address
+      ? [
+          listing.address.village,
+          listing.address.district,
+          listing.address.state,
+          listing.address.pincode,
+        ]
+          .map((part) => (part ?? '').trim())
+          .filter(Boolean)
+      : [];
+    const locality =
+      addressParts.join(', ') || feedLocationLabel(listing.address);
     const agoRaw = relativeTime(listing.createdAt);
     const ago = agoRaw === 'now' ? t('detail.justNow') : agoRaw;
     const type = String(listing.listingType ?? '').toUpperCase();
@@ -252,13 +264,11 @@ export function MarketplaceListingDetailScreen() {
         stats={stats}
         sections={sections}
         extras={
-          similar.length > 0 ? (
-            <ListingRow
-              title={t('detail.similar')}
-              listings={similar}
-              onListingPress={openListing}
-            />
-          ) : null
+          <SimilarListings
+            title={t('detail.similar')}
+            listings={similar}
+            onListingPress={openListing}
+          />
         }
         footer={
           <Button

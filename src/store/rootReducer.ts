@@ -6,6 +6,7 @@ import {
   cartReducer,
   locationReducer,
   modulesReducer,
+  savedReducer,
   uiReducer,
   wishlistReducer,
 } from './slices';
@@ -15,6 +16,8 @@ export const rootReducer = combineReducers({
   auth: authReducer,
   cart: cartReducer,
   wishlist: wishlistReducer,
+  // Backend wishlist ids; transient (re-fetched on launch), so not persisted.
+  saved: savedReducer,
   ui: uiReducer,
   modules: modulesReducer,
   location: locationReducer,

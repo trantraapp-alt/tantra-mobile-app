@@ -25,6 +25,7 @@ export type {
 } from './types';
 export {
   feedDescription,
+  feedListingId,
   feedLocationLabel,
   firstFeedImage,
   formatDistanceKm,

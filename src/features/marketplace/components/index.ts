@@ -26,4 +26,8 @@ export {
 export { ListingHeader, type ListingHeaderProps } from './ListingHeader';
 export { ListingResults, type ListingResultsProps } from './ListingResults';
 export { ResultsHeader, type ResultsHeaderProps } from './ResultsHeader';
+export {
+  SimilarListings,
+  type SimilarListingsProps,
+} from './SimilarListings';
 export { SortBar, type SortBarProps, type SortOptionItem } from './SortBar';

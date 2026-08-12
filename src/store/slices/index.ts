@@ -39,6 +39,14 @@ export {
   type ModulesState,
 } from './modulesSlice';
 export {
+  markSaved,
+  resetSaved,
+  savedReducer,
+  type SavedState,
+  setSavedIds,
+  unmarkSaved,
+} from './savedSlice';
+export {
   addRecentSearch,
   clearRecentSearches,
   completeOnboarding,

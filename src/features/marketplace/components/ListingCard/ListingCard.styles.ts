@@ -22,11 +22,11 @@ export function createListingCardStyles(theme: AppTheme) {
     pressed: {
       opacity: theme.opacity.pressed,
     },
-    // Photo frame with a neutral placeholder behind it. A wider ratio keeps the
-    // photo (and so the whole card) shorter in the two-per-row grid.
+    // Photo frame with a neutral placeholder behind it. A taller photo; the body
+    // spacing below is trimmed to keep the overall card height about the same.
     imageWrap: {
       width: '100%',
-      aspectRatio: 1.35,
+      aspectRatio: 1.2,
       backgroundColor: theme.colors.surfaceVariant,
       alignItems: 'center',
       justifyContent: 'center',
@@ -35,12 +35,13 @@ export function createListingCardStyles(theme: AppTheme) {
       width: '100%',
       height: '100%',
     },
-    // Top-left discount pill (vivid red to read as a deal).
+    // Discount badge on the photo, bottom-right, sitting just above the wave.
     discountBadge: {
       position: 'absolute',
-      top: theme.spacing.sm,
-      left: theme.spacing.sm,
-      backgroundColor: theme.colors.danger,
+      right: theme.spacing.sm,
+      bottom: LISTING_CARD_WAVE_HEIGHT + theme.spacing.xxs,
+      zIndex: 2,
+      backgroundColor: theme.colors.success,
       borderRadius: theme.radius.sm,
       paddingHorizontal: theme.spacing.xs,
       paddingVertical: theme.spacing.xxs,
@@ -80,33 +81,13 @@ export function createListingCardStyles(theme: AppTheme) {
       paddingVertical: theme.spacing.xs,
       transform: [{ rotate: '-8deg' }],
     },
-    // Content block below the photo. Minimal top padding so the title sits
-    // right under the wave with little empty space above it.
+    // Content block below the photo. Minimal top/bottom padding so the taller
+    // photo doesn't push the overall card height up.
     body: {
       paddingHorizontal: theme.spacing.md,
       paddingTop: theme.spacing.xxs,
-      paddingBottom: theme.spacing.md,
+      paddingBottom: theme.spacing.sm,
       gap: theme.spacing.xxs,
-    },
-    // Title + distance badge on one line.
-    titleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-    },
-    // Title takes the remaining width so the km badge hugs the right edge.
-    title: {
-      flex: 1,
-    },
-    // Small distance badge aligned to the right of the title.
-    kmBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xxs,
-      backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: theme.radius.pill,
-      paddingHorizontal: theme.spacing.xs,
-      paddingVertical: theme.spacing.xxs,
     },
     // Short description under the title; one line reserved so rows align.
     description: {
@@ -158,21 +139,28 @@ export function createListingCardStyles(theme: AppTheme) {
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,
     },
-    // Negotiability pill (accent = firm, green = negotiable). Sits inline in the
-    // tags row next to the quantity chip.
+    // Negotiability pill (red = firm, green = negotiable). Sits inline in the
+    // tags row next to the quantity chip; a touch smaller than the chip.
     negotiablePill: {
       flexShrink: 1,
       minWidth: 0,
+      alignSelf: 'center',
       borderRadius: theme.radius.sm,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.xs,
+      paddingVertical: theme.spacing.xxs,
+    },
+    // Extra-small label inside the negotiability pill so "Not Negotiable" fits.
+    negotiablePillText: {
+      fontSize: 10,
+      lineHeight: 13,
+      letterSpacing: 0.2,
     },
     // Thin divider before the seller row.
     divider: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: theme.colors.border,
-      marginTop: theme.spacing.sm,
-      marginBottom: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
+      marginBottom: theme.spacing.xs,
     },
     // Seller identity + trust shield.
     sellerRow: {

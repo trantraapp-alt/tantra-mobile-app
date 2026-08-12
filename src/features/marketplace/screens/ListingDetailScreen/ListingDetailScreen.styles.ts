@@ -1,4 +1,9 @@
-// Style factory for the buyer ListingDetailScreen.
+// Style factory for the buyer ListingDetailScreen — Design 1.
+// Structure (top → bottom):
+//   dark-green header  →  full-bleed hero image with Fresh Deal badge
+//   →  white content area (price / title / tags / meta / stats box /
+//      quality banner / accordion sections)
+//   →  sticky dual-CTA footer
 import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
@@ -6,102 +11,179 @@ import type { AppTheme } from '@/theme';
 // Builds ListingDetailScreen styles from the active theme.
 export function createListingDetailStyles(theme: AppTheme) {
   return StyleSheet.create({
-    flex: {
+    root: {
       flex: 1,
+      backgroundColor: theme.colors.background,
     },
-    // Scroll content on a subtle page background so the white cards lift off it.
-    content: {
-      paddingBottom: theme.spacing.xxl,
-      gap: theme.spacing.md,
-      backgroundColor: theme.colors.surface,
+    flex: { flex: 1 },
+
+    // ── Header (solid primary-green bar) ──────────────────────────────
+    headerSafe: {
+      backgroundColor: theme.colors.primary,
     },
-    center: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: theme.spacing.xl,
-    },
-    // A rounded content card, inset from the screen edges.
-    card: {
-      marginHorizontal: theme.spacing.lg,
-      backgroundColor: theme.colors.card,
-      borderRadius: theme.radius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.border,
-      padding: theme.spacing.lg,
-      gap: theme.spacing.sm,
-    },
-    // Uppercase section heading inside a card.
-    sectionTitle: {
-      textTransform: 'uppercase',
-      marginBottom: theme.spacing.xxs,
-    },
-    priceRow: {
+    header: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
-      gap: theme.spacing.sm,
-      flexWrap: 'wrap',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.sm,
+      paddingTop: theme.spacing.xs,
+      paddingBottom: theme.spacing.xs,
+      gap: theme.spacing.xs,
     },
-    titleRow: {
+    // Back button gets a white-circle background; heart/share are plain icons.
+    backBtn: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.pill,
+    },
+
+    // ── Hero image area ───────────────────────────────────────────────
+    heroWrap: {
+      // Relative by default — absolute badge is positioned inside this.
+    },
+    // "Fresh Deal" white pill with green border — top-left of the image.
+    freshDealBadge: {
+      position: 'absolute',
+      top: theme.spacing.sm,
+      left: theme.spacing.sm,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.pill,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xxs,
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.xxs,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.success,
     },
-    title: {
-      flexShrink: 1,
+    freshDealText: {
+      // Color is applied inline via theme.colors.success
     },
+
+    // ── White content area ────────────────────────────────────────────
+    // Scrollable section that follows the image; full-width, no card border.
+    content: {
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.md,
+      paddingBottom: theme.spacing.xs,
+      gap: theme.spacing.md,
+    },
+
+    // Price row: large price + strikethrough + OFF badge from PriceTag.
+    // (PriceTag component handles its own layout.)
+
+    // Title text + optional verified check.
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+    },
+    titleText: { flex: 1 },
+
+    // Listing-type + negotiable badge pills.
     tagsRow: {
       flexDirection: 'row',
       gap: theme.spacing.xs,
       flexWrap: 'wrap',
     },
+
+    // Location pin + vertical divider + store/seller name.
     metaRow: {
       flexDirection: 'row',
-      gap: theme.spacing.md,
-      flexWrap: 'wrap',
       alignItems: 'center',
+      gap: theme.spacing.sm,
+      flexWrap: 'wrap',
     },
     metaItem: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.xxs,
     },
-    // Engagement stats: a subtle divided footer at the bottom of the hero card.
-    statsRow: {
-      flexDirection: 'row',
-      gap: theme.spacing.lg,
-      alignItems: 'center',
-      paddingTop: theme.spacing.sm,
-      marginTop: theme.spacing.xxs,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.border,
+    metaDivider: {
+      width: StyleSheet.hairlineWidth,
+      height: theme.sizing.iconSm,
+      backgroundColor: theme.colors.border,
     },
-    statItem: {
+
+    // ── Stats box (bordered 4-column card) ───────────────────────────
+    statsBox: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radius.md,
+      paddingVertical: theme.spacing.sm,
+    },
+    // Each column: icon+number row on top, label below — centered.
+    statCol: {
+      flex: 1,
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+    },
+    statNumRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.xxs,
     },
-    // Attribute definition row: label on the left, value on the right, with a
-    // hairline separating adjacent rows.
+    statColDivider: {
+      width: StyleSheet.hairlineWidth,
+      alignSelf: 'stretch',
+      backgroundColor: theme.colors.border,
+    },
+
+    // ── Quality Assured banner ────────────────────────────────────────
+    qualityBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+      backgroundColor: theme.colors.successLight,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.success,
+    },
+    qualityTitle: {
+      // green text — set via theme.colors.success inline
+    },
+    qualityText: {
+      flex: 1,
+      gap: theme.spacing.xxs,
+    },
+
+    // ── Thin separator between content sections ──────────────────────
+    sectionDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.border,
+    },
+
+    // ── Accordion section header row ─────────────────────────────────
+    accordionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    accordionTitleText: { flex: 1 },
+    // Expanded body area — padding only at the bottom (header has top space).
+    accordionBody: {
+      paddingBottom: theme.spacing.md,
+    },
+
+    // ── Attribute table rows (Product Details) ───────────────────────
     attrRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      paddingVertical: theme.spacing.xs,
       gap: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
     },
-    attrDivider: {
+    attrRowDivider: {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.border,
     },
-    attrLabel: {
-      flexShrink: 1,
-    },
-    attrValue: {
-      flexShrink: 1,
-      textAlign: 'right',
-    },
-    // Seller row inside the seller card.
+    attrLabel: { flex: 1 },
+    attrValue: { flexShrink: 1 },
+
+    // ── Seller row (Seller Information accordion) ────────────────────
     sellerCard: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -118,23 +200,33 @@ export function createListingDetailStyles(theme: AppTheme) {
     sellerInfo: {
       flex: 1,
       gap: theme.spacing.xxs,
-      alignItems: 'flex-start',
     },
-    // Sticky bottom CTA bar.
-    cta: {
-      flexDirection: 'row',
-      gap: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
+
+    // ── Sticky dual-CTA footer ────────────────────────────────────────
+    footerSafe: {
+      backgroundColor: theme.colors.card,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.border,
-      backgroundColor: theme.colors.card,
     },
-    ctaContact: {
+    footer: {
+      flexDirection: 'row',
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.md,
+      paddingBottom: theme.spacing.sm,
+    },
+    footerBtn: { flex: 1 },
+
+    // ── Loading / error ───────────────────────────────────────────────
+    center: {
       flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: theme.spacing.xl,
+      minHeight: 400,
     },
-    pressed: {
-      opacity: theme.opacity.pressed,
+    scrollPad: {
+      height: theme.spacing.xl,
     },
   });
 }

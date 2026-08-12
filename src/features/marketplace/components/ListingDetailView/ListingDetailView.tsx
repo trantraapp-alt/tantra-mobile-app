@@ -82,6 +82,8 @@ export interface ListingDetailViewProps {
   stats?: DetailStat[];
   // Card sections (description, specs, address, record…).
   sections?: DetailSection[];
+  // Optional banner rendered between the hero card and sections (e.g. quality assured).
+  qualityBanner?: ReactNode;
   // Full-bleed content after the sections (e.g. a similar-listings rail).
   extras?: ReactNode;
   // Sticky footer content (the primary action).
@@ -105,6 +107,7 @@ export function ListingDetailView({
   timeAgo,
   stats,
   sections,
+  qualityBanner,
   extras,
   footer,
 }: ListingDetailViewProps) {
@@ -250,6 +253,8 @@ export function ListingDetailView({
             </View>
           ) : null}
         </View>
+
+        {qualityBanner}
 
         {(sections ?? []).map((section) => {
           const SectionIcon = section.icon;

@@ -88,7 +88,7 @@ export function NearbyScreen({ showBack = true }: NearbyScreenProps = {}) {
     feed.total > 0 ? t('market.results', { count: feed.total }) : undefined;
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['bottom']}>
       <ListingHeader
         title={t('market.nearbyTitle')}
         resultLabel={resultLabel}

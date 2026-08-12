@@ -6,15 +6,19 @@ import type { AppTheme } from '@/theme';
 // Builds ListingHeader styles from the active theme.
 export function createListingHeaderStyles(theme: AppTheme) {
   return StyleSheet.create({
-    // Light-violet bar that fills into the status bar (paddingTop applied inline
-    // from the safe-area inset). Row: back, title/search, then the actions.
+    // SafeAreaView wrapper that paints primaryLight behind the status bar and
+    // consumes only the remaining top inset (handles any parent navigator).
+    safeWrap: {
+      backgroundColor: theme.colors.primaryLight,
+    },
+    // Row: back button, title/search block, action icons.
     header: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.xs,
       paddingHorizontal: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing.sm,
-      backgroundColor: theme.colors.primaryLight,
     },
     // White circular button on the violet header (icon color set per button).
     iconBtn: {

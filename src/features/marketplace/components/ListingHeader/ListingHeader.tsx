@@ -7,7 +7,7 @@
 import { ArrowLeft, Search, SlidersHorizontal } from 'lucide-react-native';
 import { memo, useState } from 'react';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/buttons';
 import { SearchBar } from '@/components/inputs';
@@ -56,7 +56,6 @@ function ListingHeaderComponent({
 }: ListingHeaderProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createListingHeaderStyles);
-  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -74,9 +73,8 @@ function ListingHeaderComponent({
   };
 
   return (
-    <View
-      style={[styles.header, { paddingTop: insets.top + theme.spacing.sm }]}
-    >
+    <SafeAreaView edges={['top']} style={styles.safeWrap}>
+    <View style={styles.header}>
       {showLeading ? (
         <IconButton
           icon={ArrowLeft}
@@ -105,7 +103,11 @@ function ListingHeaderComponent({
               {title}
             </Text>
             {resultLabel ? (
-              <Text variant="caption" color="textSecondary" numberOfLines={1}>
+              <Text
+                variant="caption"
+                color="textSecondary"
+                numberOfLines={1}
+              >
                 {resultLabel}
               </Text>
             ) : null}
@@ -128,6 +130,7 @@ function ListingHeaderComponent({
         color={theme.colors.primary}
       />
     </View>
+    </SafeAreaView>
   );
 }
 

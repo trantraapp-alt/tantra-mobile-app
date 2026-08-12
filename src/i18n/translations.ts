@@ -191,8 +191,10 @@ const en = {
   // Wishlist screen.
   'wishlist.title': 'Wishlist',
   'wishlist.emptyTitle': 'Your wishlist is empty',
-  'wishlist.emptyDesc': 'Tap the heart on any product to save it here.',
-  'wishlist.browse': 'Browse products',
+  'wishlist.emptyDesc': 'Tap the heart on any listing to save it here.',
+  'wishlist.browse': 'Browse listings',
+  'wishlist.loginRequired': 'Log in to save listings to your wishlist.',
+  'wishlist.unavailable': 'No longer available',
 
   // Cart screen.
   'cart.title': 'Cart',
@@ -617,8 +619,10 @@ const hi: Record<TranslationKey, string> = {
 
   'wishlist.title': 'विशलिस्ट',
   'wishlist.emptyTitle': 'आपकी विशलिस्ट खाली है',
-  'wishlist.emptyDesc': 'इसे यहां सहेजने के लिए किसी भी उत्पाद पर दिल दबाएं।',
-  'wishlist.browse': 'उत्पाद ब्राउज़ करें',
+  'wishlist.emptyDesc': 'इसे यहां सहेजने के लिए किसी भी लिस्टिंग पर दिल दबाएं।',
+  'wishlist.browse': 'लिस्टिंग ब्राउज़ करें',
+  'wishlist.loginRequired': 'लिस्टिंग सहेजने के लिए लॉग इन करें।',
+  'wishlist.unavailable': 'अब उपलब्ध नहीं',
 
   'cart.title': 'कार्ट',
   'cart.emptyTitle': 'आपकी कार्ट खाली है',

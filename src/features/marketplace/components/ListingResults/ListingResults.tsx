@@ -11,11 +11,11 @@ import { RefreshControl, View } from 'react-native';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { Spinner } from '@/components/loaders';
 import type { FeedListing } from '@/features/home';
-import { FeedListingCard } from '@/features/home';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 
 import type { UseListingFeedResult } from '../../hooks';
+import { ListingCard } from '../ListingCard';
 import { createListingResultsStyles } from './ListingResults.styles';
 
 // Props for the ListingResults component.
@@ -82,7 +82,7 @@ function ListingResultsComponent({
         keyExtractor={listingKey}
         renderItem={({ item }) => (
           <View style={styles.cell}>
-            <FeedListingCard listing={item} onPress={onListingPress} />
+            <ListingCard listing={item} onPress={onListingPress} />
           </View>
         )}
         contentContainerStyle={styles.content}

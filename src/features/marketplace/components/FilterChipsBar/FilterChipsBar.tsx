@@ -41,6 +41,9 @@ export interface FilterChipsBarProps {
   sortOptions?: SortOptionItem[];
   // Whether to show the Distance chip (needs a known GPS point).
   showDistance?: boolean;
+  // Whether to show the Category chip (default true). Deal groups already scope
+  // to a single category, so Fresh Deals hides it.
+  showCategory?: boolean;
   // Optional result-count label rendered above the chips (e.g. "128 results").
   resultLabel?: string;
 }
@@ -52,6 +55,7 @@ function FilterChipsBarComponent({
   onOpenFilters,
   sortOptions,
   showDistance = false,
+  showCategory = true,
   resultLabel,
 }: FilterChipsBarProps) {
   const theme = useTheme();
@@ -73,10 +77,11 @@ function FilterChipsBarComponent({
     key: FilterSection;
     label: LocalizedText;
     active: boolean;
-  }[] = [
-    { key: 'category', label: LABELS.category, active: hasCategory },
-    { key: 'price', label: LABELS.price, active: hasPrice },
-  ];
+  }[] = [];
+  if (showCategory) {
+    chips.push({ key: 'category', label: LABELS.category, active: hasCategory });
+  }
+  chips.push({ key: 'price', label: LABELS.price, active: hasPrice });
   if (showDistance) {
     chips.push({ key: 'distance', label: LABELS.distance, active: hasDistance });
   }

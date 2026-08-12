@@ -49,8 +49,12 @@ export const endpoints = {
     item: (id: string) => `/cart/items/${id}`,
   },
   wishlist: {
+    // All wishlist items for the user (newest saved first).
     root: '/wishlist',
-    item: (productId: string) => `/wishlist/${productId}`,
+    // Add (POST) / remove (DELETE) a listing from the wishlist by id.
+    item: (listingId: string) => `/wishlist/${listingId}`,
+    // Whether a single listing is wishlisted (GET) — for the heart state.
+    status: (listingId: string) => `/wishlist/${listingId}/status`,
   },
   orders: {
     list: '/orders',

@@ -26,3 +26,4 @@ export {
 export { useModuleCategories, useModules } from './hooks';
 export { SellCategoriesScreen } from './screens/SellCategoriesScreen';
 export { modulesService } from './services';
+export { type CategoryVisual, getCategoryVisual } from './utils';

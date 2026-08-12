@@ -1,3 +1,9 @@
 // Public API barrel for the wishlist feature.
-export { useWishlist } from './hooks';
+export { wishlistApi } from './api';
+export { useSavedListing, useWishlist } from './hooks';
 export { WishlistScreen } from './screens/WishlistScreen';
+export type {
+  WishlistItem,
+  WishlistMessage,
+  WishlistStatus,
+} from './types';

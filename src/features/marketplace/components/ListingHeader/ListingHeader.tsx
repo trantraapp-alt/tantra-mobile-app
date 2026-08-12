@@ -61,6 +61,9 @@ function ListingHeaderComponent({
   const [searchOpen, setSearchOpen] = useState(false);
 
   const showSearch = searchAlwaysOpen || searchOpen;
+  // Show the leading button to navigate back, OR to close an open in-place
+  // search — the latter even on tab screens that otherwise hide the back button.
+  const showLeading = showBack || (searchOpen && !searchAlwaysOpen);
   const handleBack = () => {
     if (searchOpen && !searchAlwaysOpen) {
       setSearchOpen(false);
@@ -74,7 +77,7 @@ function ListingHeaderComponent({
     <View
       style={[styles.header, { paddingTop: insets.top + theme.spacing.sm }]}
     >
-      {showBack ? (
+      {showLeading ? (
         <IconButton
           icon={ArrowLeft}
           accessibilityLabel={t('common.back')}

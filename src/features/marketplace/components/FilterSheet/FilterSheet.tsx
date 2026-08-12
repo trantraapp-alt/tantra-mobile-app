@@ -74,12 +74,22 @@ export interface FilterSheetProps {
   // When set, the sheet shows ONLY that section (opened from a filter chip);
   // undefined shows every section (opened from the Filters button).
   focusSection?: FilterSection;
+  // Whether to show the "Posted within" freshness row (default true). Fresh
+  // Deals hides it (the group is already a curated, recent set).
+  showPostedWithin?: boolean;
 }
 
 // Renders the filter bottom sheet.
 export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
   function FilterSheet(
-    { filters, onApply, showRadius = false, categoryId, focusSection },
+    {
+      filters,
+      onApply,
+      showRadius = false,
+      categoryId,
+      focusSection,
+      showPostedWithin = true,
+    },
     ref,
   ) {
     const styles = useThemedStyles(createFilterSheetStyles);
@@ -338,16 +348,18 @@ export const FilterSheet = forwardRef<BottomSheetRef, FilterSheetProps>(
                 })),
             )}
 
-            {renderChoiceRow(
-              t('market.filters.postedWithin'),
-              postedOptions,
-              draft.postedWithin,
-              (value) =>
-                setDraft((d) => ({
-                  ...d,
-                  postedWithin: value as ListingFilters['postedWithin'],
-                })),
-            )}
+            {showPostedWithin
+              ? renderChoiceRow(
+                  t('market.filters.postedWithin'),
+                  postedOptions,
+                  draft.postedWithin,
+                  (value) =>
+                    setDraft((d) => ({
+                      ...d,
+                      postedWithin: value as ListingFilters['postedWithin'],
+                    })),
+                )
+              : null}
 
             {categoryId != null ? (
               <View style={styles.attrSection}>

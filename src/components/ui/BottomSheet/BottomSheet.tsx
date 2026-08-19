@@ -64,6 +64,10 @@ export interface BottomSheetProps {
   // Whether the scrollable body can scroll. Set false while a child (e.g. a
   // slider) is being dragged so the drag doesn't scroll the sheet content.
   scrollEnabled?: boolean;
+  // Called once the sheet has finished closing — including a swipe-down or a
+  // backdrop tap, which the parent cannot otherwise observe. Sheets driven by
+  // parent state need this to clear that state when the user closes by gesture.
+  onDismiss?: () => void;
 }
 
 // Renders a themed, safe-area-aware bottom sheet modal.
@@ -79,6 +83,7 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
       contentStyle,
       enableContentPanningGesture = true,
       scrollEnabled = true,
+      onDismiss,
     },
     ref,
   ) {
@@ -110,7 +115,8 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
 
     const handleDismiss = useCallback(() => {
       setIsOpen(false);
-    }, []);
+      onDismiss?.();
+    }, [onDismiss]);
 
     // Android hardware back closes the sheet instead of navigating away.
     // `@gorhom/bottom-sheet` ships no back-button integration of its own, so

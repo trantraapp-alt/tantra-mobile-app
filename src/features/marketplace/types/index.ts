@@ -1,5 +1,6 @@
 // Barrel export for marketplace types.
 export type {
+  ContactRevealAction,
   ContactRevealResult,
   GeoPoint,
   ListingFilters,

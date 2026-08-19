@@ -27,8 +27,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Activity,
   ArrowLeft,
-  BadgeCheck,
   Calendar,
+  Check,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -36,8 +36,8 @@ import {
   FileText,
   Heart,
   Home,
+  type LucideIcon,
   MapPin,
-  MessageCircle,
   Monitor,
   Navigation,
   Package,
@@ -47,17 +47,23 @@ import {
   ShieldCheck,
   Truck,
   Users,
-  type LucideIcon,
 } from 'lucide-react-native';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import {
+  memo,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
-  LayoutAnimation,
+  type LayoutChangeEvent,
   Linking,
   ScrollView,
+  type StyleProp,
   TouchableOpacity,
   View,
-  type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import Animated, {
@@ -65,12 +71,15 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/buttons';
 import { ErrorState } from '@/components/empty-state';
 import { Spinner } from '@/components/loaders';
-import { Badge, type BadgeTone, ImageCarousel, PriceTag, Text } from '@/components/ui';
+import { ImageCarousel, Text } from '@/components/ui';
 import { fileUrl } from '@/config';
 import { appConstants, routes } from '@/constants';
 import type { FeedListing } from '@/features/home';
@@ -81,8 +90,9 @@ import {
   resolveFeedTitle,
 } from '@/features/home/utils/feedListing';
 import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
-import { logger } from '@/lib';
+import { logger, toApiError } from '@/lib';
 import { useTheme, useToast } from '@/providers';
+import { formatCurrency } from '@/utils';
 
 import { marketplaceApi } from '../../api';
 import { ContactModal, SimilarListings } from '../../components';
@@ -109,20 +119,36 @@ interface AccordionSectionProps {
   iconColor?: string;
   title: string;
   expanded: boolean;
-  onToggle: () => void;
+  /** Identifies this section to the parent's toggle handler. */
+  sectionKey: string;
+  /** Stable handler — receives `sectionKey`, so no inline closure is needed. */
+  onToggle: (key: string) => void;
   children: ReactNode;
   /** Wrapper style applied to the root View — use styles.card to make a card. */
   style?: StyleProp<ViewStyle>;
 }
 
-// Tappable header row that reveals its children with smooth animation.
-// Height change → LayoutAnimation (platform-native, no measurement needed).
-// Chevron rotation → Reanimated withTiming (JS-driven, frame-perfect).
-function AccordionSection({
+// Tappable header row that reveals its children with a smooth height animation.
+//
+// Both the body height and the chevron rotation are driven by ONE shared value
+// (`progress`, 0 = collapsed → 1 = expanded) animated with Reanimated, so the
+// whole transition runs on the UI thread and never touches the JS bridge
+// mid-gesture.
+//
+// Three things make this cheap:
+//   1. Children stay MOUNTED across toggles — collapsing clips them to height 0
+//      instead of unmounting, so reopening costs no remount/re-layout.
+//   2. The measuring wrapper is absolutely positioned, so its height never
+//      feeds back into the animated container (no measure → animate → measure
+//      loop) and `onLayout` fires only when the content itself changes.
+//   3. The component is memoized and takes a stable `onToggle`, so tapping one
+//      section does not re-render the other three.
+function AccordionSectionComponent({
   icon: Icon,
   iconColor,
   title,
   expanded,
+  sectionKey,
   onToggle,
   children,
   style,
@@ -130,31 +156,41 @@ function AccordionSection({
   const theme = useTheme();
   const styles = useThemedStyles(createListingDetailStyles);
 
-  // Chevron: 0° = pointing down (expanded ∨), -90° = pointing right (collapsed ▶).
-  const chevronAngle = useSharedValue(expanded ? 0 : -90);
-  const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${chevronAngle.value}deg` }],
+  // 0 = fully collapsed, 1 = fully expanded. Drives height, opacity and chevron.
+  const progress = useSharedValue(expanded ? 1 : 0);
+  // Natural height of the body content, measured once by the inner wrapper.
+  const contentHeight = useSharedValue(0);
+
+  // Animate whenever the parent flips `expanded`. Keeping the animation here
+  // (rather than in the press handler) means the section stays correct even if
+  // something else toggles it.
+  useEffect(() => {
+    progress.value = withTiming(expanded ? 1 : 0, {
+      duration: theme.animation.normal,
+      easing: theme.easing.standard,
+    });
+  }, [expanded, progress, theme.animation.normal, theme.easing.standard]);
+
+  const bodyStyle = useAnimatedStyle(() => ({
+    height: contentHeight.value * progress.value,
+    opacity: progress.value,
   }));
 
+  // -90° = pointing right (collapsed ▶), 0° = pointing down (expanded ∨).
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${-90 + progress.value * 90}deg` }],
+  }));
+
+  const onContentLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      contentHeight.value = e.nativeEvent.layout.height;
+    },
+    [contentHeight],
+  );
+
   const handleToggle = useCallback(() => {
-    LayoutAnimation.configureNext({
-      duration: theme.animation.normal,
-      create: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.opacity,
-      },
-      update: { type: LayoutAnimation.Types.easeInEaseOut },
-      delete: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.opacity,
-      },
-    });
-    chevronAngle.value = withTiming(expanded ? -90 : 0, {
-      duration: theme.animation.normal,
-      easing: theme.easing.decelerate,
-    });
-    onToggle();
-  }, [expanded, onToggle, chevronAngle, theme]);
+    onToggle(sectionKey);
+  }, [onToggle, sectionKey]);
 
   return (
     <View style={style}>
@@ -162,6 +198,8 @@ function AccordionSection({
         style={styles.sectionHeader}
         onPress={handleToggle}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
       >
         <Icon
           size={theme.sizing.iconSm}
@@ -177,12 +215,20 @@ function AccordionSection({
           />
         </Animated.View>
       </TouchableOpacity>
-      {expanded ? (
-        <View style={styles.accordionBody}>{children}</View>
-      ) : null}
+
+      {/* Clipping window — its height is animated; content never unmounts. */}
+      <Animated.View style={[styles.accordionClip, bodyStyle]}>
+        {/* Absolute so this wrapper's height does not drive the parent's. */}
+        <View style={styles.accordionMeasure} onLayout={onContentLayout}>
+          {children}
+        </View>
+      </Animated.View>
     </View>
   );
 }
+
+// Memoized so toggling one section doesn't re-render its siblings.
+const AccordionSection = memo(AccordionSectionComponent);
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -194,14 +240,23 @@ export function MarketplaceListingDetailScreen() {
   const router = useRouter();
   const goBack = useGoBack();
   const { showError } = useToast();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string }>();
   const listingId = params.id?.trim() ?? '';
+
+  // Footer bottom padding. `SafeAreaView edges={['bottom']}` would add the full
+  // home-indicator inset (~34pt) on top of the footer's own padding, leaving a
+  // visibly large dead zone under the button on iOS. Trimming a step off the
+  // inset keeps the button clear of the indicator without the extra air, and
+  // the floor keeps Android (inset 0) off the screen edge.
+  const footerPadBottom = Math.max(insets.bottom - theme.spacing.sm, theme.spacing.sm);
 
   const { listing, similar, isLoading, isError, reload } =
     useListingDetail(listingId);
 
+  // A non-null contact opens the sheet; clearing it on dismiss lets the next
+  // reveal open it again.
   const [contact, setContact] = useState<ContactRevealResult | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
   const [revealing, setRevealing] = useState(false);
 
   // "About this product" starts open; all others start collapsed.
@@ -237,16 +292,32 @@ export function MarketplaceListingDetailScreen() {
     [router],
   );
 
+  // Clearing the contact on dismiss is what lets a second tap re-open the sheet.
+  const clearContact = useCallback(() => setContact(null), []);
+
+  // Revealing is deliberately on-tap only — never on page load, since each
+  // reveal is recorded against the buyer (deduped server-side for 24h).
   const onViewContact = useCallback(async () => {
     if (!listingId) return;
     setRevealing(true);
     try {
       const res = await marketplaceApi.revealContact(listingId);
+      // Setting the contact is what opens the sheet — see ContactModal.
       setContact(res);
-      setModalVisible(true);
     } catch (error) {
       logger.warn('[Contact] reveal failed', error);
-      showError(t('contact.error'));
+      const apiError = toApiError(error);
+      // A 401 already ended the session and routed to login in the HTTP layer,
+      // so the only thing left to do here is stay quiet.
+      if (apiError.status !== 401) {
+        showError(
+          apiError.status === 404
+            ? t('contact.notFound')
+            : apiError.status === 400
+              ? t('contact.inactive')
+              : apiError.message || t('contact.error'),
+        );
+      }
     } finally {
       setRevealing(false);
     }
@@ -327,11 +398,24 @@ export function MarketplaceListingDetailScreen() {
   const locality =
     addressParts.join(', ') || feedLocationLabel(listing.address);
 
+  // Compact label for the price-card meta row: only the most specific part
+  // (village → district) plus the state, e.g. "Jabalpur, Madhya Pradesh".
+  // The full `locality` above is still used for the map search and seller row.
+  const shortLocality = (() => {
+    const state = (listing.address?.state ?? '').trim();
+    const first = [listing.address?.village, listing.address?.district]
+      .map((p) => (p ?? '').trim())
+      .find(Boolean);
+    if (first && state && first !== state) {
+      return `${first}, ${state}`;
+    }
+    return first || state || feedLocationLabel(listing.address);
+  })();
+
   const agoRaw = relativeTime(listing.createdAt);
   const ago = agoRaw === 'now' ? t('detail.justNow') : agoRaw;
 
   const type = String(listing.listingType ?? '').toUpperCase();
-  const typeTone: BadgeTone = type === 'RENT' ? 'warning' : 'success';
   const typeLabel =
     type === 'RENT'
       ? t('market.type.rent')
@@ -341,7 +425,6 @@ export function MarketplaceListingDetailScreen() {
 
   const description = feedDescription(listing);
   const attrs = listingAttributeEntries(listing).slice(0, 12);
-  const contactHidden = listing.showContact === false;
   const isVerified = listing.sellerVerified === true;
   const isNegotiable = listing.isNegotiable === true;
   const discount =
@@ -354,6 +437,54 @@ export function MarketplaceListingDetailScreen() {
     listing.sellerPlanKey &&
     String(listing.sellerPlanKey).toUpperCase() !== 'BASIC';
   const planLabel = hasPlan ? String(listing.sellerPlanKey) : null;
+
+  // The four seller badges from the HTML design. Only Status and Plan come from
+  // the API today — Response Rate and Delivery have no backing field yet, so
+  // they render an em dash rather than an invented number.
+  //
+  // NOTE: plain values, not useMemo/useCallback — everything below this point
+  // runs after the `isLoading` / `isError` guards above, so a hook here would
+  // change the hook count between renders ("Rendered more hooks than during the
+  // previous render"). Both are cheap enough that memoizing buys nothing.
+  const sellerBadges: {
+    icon: LucideIcon;
+    label: string;
+    value: string;
+    tone?: 'success' | 'textSecondary';
+  }[] = [
+    {
+      icon: ShieldCheck,
+      label: t('detail.statusLabel'),
+      value: isVerified
+        ? t('detail.verifiedLabel')
+        : t('detail.unverifiedLabel'),
+      tone: isVerified ? 'success' : 'textSecondary',
+    },
+    {
+      icon: Calendar,
+      label: t('detail.memberSince'),
+      value: planLabel ?? '—',
+    },
+    {
+      icon: Activity,
+      label: t('detail.responseRate'),
+      value: '—',
+    },
+    {
+      icon: Truck,
+      label: t('detail.delivery'),
+      value: '—',
+    },
+  ];
+
+  const openSellerProfile = () => {
+    if (!listing.userId) {
+      return;
+    }
+    router.push(
+      routes.seller(String(listing.userId), listing.sellerName ?? undefined),
+    );
+  };
 
   const onViewOnMap = () => {
     const query = locality || addressParts.join(', ');
@@ -388,151 +519,154 @@ export function MarketplaceListingDetailScreen() {
           </View>
         </View>
 
-        {/* ── Price card ──────────────────────────────── */}
-        <View style={styles.card}>
+        {/* ── Price card (matches HTML reference design) ───── */}
+        <View style={styles.priceCard}>
 
-          {/* Price row — PriceTag handles formatting & currency */}
-          {listing.offeredPrice != null ? (
-            <PriceTag
-              size="lg"
-              price={listing.offeredPrice}
-              compareAtPrice={listing.actualPrice ?? undefined}
-              discountPercentage={discount}
-              currency={appConstants.currencyCode}
-            />
-          ) : (
-            <Text variant="h3" color="textTertiary">
-              {t('home.askPrice')}
-            </Text>
-          )}
+          {/* ① Price row — large bold price · strikethrough · amber pill */}
+          <View style={styles.priceRow}>
+            {listing.offeredPrice != null ? (
+              <Text variant="h2" style={styles.priceMain}>
+                {formatCurrency(listing.offeredPrice, appConstants.currencyCode)}
+              </Text>
+            ) : (
+              <Text variant="h2" color="textTertiary">
+                {t('home.askPrice')}
+              </Text>
+            )}
+            {listing.actualPrice != null &&
+              listing.offeredPrice != null &&
+              listing.actualPrice > listing.offeredPrice ? (
+              <Text variant="body" color="textTertiary" style={styles.priceStrike}>
+                {formatCurrency(listing.actualPrice, appConstants.currencyCode)}
+              </Text>
+            ) : null}
+            {discount ? (
+              <View style={styles.discountBadge}>
+                <Text variant="overline" style={styles.discountText}>
+                  {discount}% OFF
+                </Text>
+              </View>
+            ) : null}
+          </View>
 
-          {/* Title + verified checkmark */}
+          {/* ② Title + filled-circle verified badge */}
           <View style={styles.titleRow}>
             <Text variant="h3" numberOfLines={2} style={styles.titleText}>
               {title}
             </Text>
             {isVerified ? (
-              <BadgeCheck
-                size={theme.sizing.iconSm}
-                color={theme.colors.success}
-              />
+              <View style={styles.verifiedCircle}>
+                <Check
+                  size={10}
+                  color={theme.colors.onPrimary}
+                  strokeWidth={3.5}
+                />
+              </View>
             ) : null}
           </View>
 
-          {/* Tags: type Badge (component-managed tone) + negotiable pill */}
+          {/* ③ Tags: type pill + negotiable pill */}
           <View style={styles.tagsRow}>
+            {/* Listing type — SELL = green filled, RENT = amber filled */}
             {type ? (
-              <Badge tone={typeTone} label={typeLabel} />
+              <View style={type === 'RENT' ? styles.tagRent : styles.tagSell}>
+                <Text variant="overline" color="onPrimary" style={styles.tagText}>
+                  {typeLabel}
+                </Text>
+              </View>
             ) : null}
+            {/* Negotiable = outlined green; Not Negotiable = filled amber */}
             {isNegotiable ? (
               <View style={styles.tagNegotiable}>
-                {/* Outlined — text gets the green color directly */}
-                <Text
-                  variant="overline"
-                  style={{ color: theme.colors.success }}
-                >
+                <Text variant="overline" style={[styles.tagText, { color: theme.colors.success }]}>
                   {t('home.tagNegotiable')}
                 </Text>
               </View>
             ) : (
               <View style={styles.tagNotNegotiable}>
-                <Text variant="overline" color="onPrimary">
+                <Text variant="overline" color="onPrimary" style={styles.tagText}>
                   {t('home.tagNotNegotiable')}
                 </Text>
               </View>
             )}
           </View>
 
-          {/* Meta: 📍 location  ●  ⏰ time ago */}
-          {locality || ago ? (
+          {/* ④ Meta — one row: 📍 City, State   ⏰ time ago */}
+          {shortLocality || ago ? (
             <View style={styles.metaRow}>
-              {locality ? (
+              {shortLocality ? (
                 <View style={styles.metaItem}>
-                  <MapPin
-                    size={theme.sizing.iconXs}
-                    color={theme.colors.danger}
-                  />
-                  <Text variant="body" color="textSecondary">
-                    {locality}
+                  <MapPin size={theme.sizing.iconXs} color={theme.colors.danger} />
+                  <Text variant="body" color="textSecondary" numberOfLines={1}>
+                    {shortLocality}
                   </Text>
                 </View>
               ) : null}
-              {locality && ago ? <View style={styles.metaDot} /> : null}
               {ago ? (
                 <View style={styles.metaItem}>
-                  <Clock
-                    size={theme.sizing.iconXs}
-                    color={theme.colors.secondary}
-                  />
-                  <Text variant="body" color="textSecondary">
-                    {ago}
-                  </Text>
+                  <Clock size={theme.sizing.iconXs} color={theme.colors.secondary} />
+                  <Text variant="body" color="textSecondary">{ago}</Text>
                 </View>
               ) : null}
             </View>
           ) : null}
         </View>
 
-        {/* ── Stats card: 4 columns — gray icons, dark numerals ─── */}
+        {/* ── Stats card: 4 columns — 20px muted icons, 15px bold values ─── */}
         <View style={styles.statsCard}>
 
           {/* Col 1: Views */}
           <View style={styles.statItem}>
-            <Eye size={theme.sizing.iconXs} color={theme.colors.textTertiary} />
-            <Text variant="h4" color="textPrimary">
+            <Eye size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
+            <Text variant="h4" color="textPrimary" style={styles.statValue}>
               {listing.viewCount ?? 0}
             </Text>
-            <Text variant="caption" color="textSecondary" align="center">
+            <Text variant="label" color="textSecondary" align="center">
               {t('detail.views')}
             </Text>
           </View>
 
           {/* Col 2: Contacts */}
           <View style={[styles.statItem, styles.statItemBorder]}>
-            <Users
-              size={theme.sizing.iconXs}
-              color={theme.colors.textTertiary}
-            />
-            <Text variant="h4" color="textPrimary">
+            <Users size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
+            <Text variant="h4" color="textPrimary" style={styles.statValue}>
               {listing.contactRevealCount ?? 0}
             </Text>
-            <Text variant="caption" color="textSecondary" align="center">
+            <Text variant="label" color="textSecondary" align="center">
               {t('detail.contacts')}
             </Text>
           </View>
 
           {/* Col 3: Quintal / unit */}
           <View style={[styles.statItem, styles.statItemBorder]}>
-            <Monitor
-              size={theme.sizing.iconXs}
-              color={theme.colors.textTertiary}
-            />
-            <Text variant="h4" color="textPrimary">
+            <Monitor size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
+            <Text variant="h4" color="textPrimary" style={styles.statValue}>
               {listing.quantity ?? 0}
             </Text>
-            <Text variant="caption" color="textSecondary" align="center">
+            <Text variant="label" color="textSecondary" align="center">
               {listing.unit?.trim() || t('detail.quintal')}
             </Text>
           </View>
 
-          {/* Col 4: Quality Assured — special visual (green when verified) */}
+          {/* Col 4: Quality Assured — word value, green when verified */}
           <View style={[styles.statItem, styles.statItemBorder]}>
             <ShieldCheck
               size={theme.sizing.iconXs}
               color={
-                isVerified ? theme.colors.success : theme.colors.textTertiary
+                isVerified ? theme.colors.success : theme.colors.textSecondary
               }
             />
             <Text
-              variant="label"
-              style={
-                isVerified ? { color: theme.colors.success } : undefined
-              }
+              variant="bodyMedium"
+              style={[
+                styles.statValueQuality,
+                isVerified ? { color: theme.colors.success } : undefined,
+              ]}
               color={isVerified ? undefined : 'textTertiary'}
             >
               {t('detail.quality')}
             </Text>
-            <Text variant="caption" color="textSecondary" align="center">
+            <Text variant="label" color="textSecondary" align="center">
               {t('detail.assured')}
             </Text>
           </View>
@@ -573,7 +707,8 @@ export function MarketplaceListingDetailScreen() {
             iconColor={theme.colors.info}
             title={t('detail.description')}
             expanded={expanded.has('description')}
-            onToggle={() => toggleSection('description')}
+            sectionKey="description"
+            onToggle={toggleSection}
             style={styles.card}
           >
             <Text
@@ -602,7 +737,8 @@ export function MarketplaceListingDetailScreen() {
             iconColor={theme.colors.secondary}
             title={t('detail.details')}
             expanded={expanded.has('details')}
-            onToggle={() => toggleSection('details')}
+            sectionKey="details"
+            onToggle={toggleSection}
             style={styles.card}
           >
             <View style={styles.detailsGrid}>
@@ -636,136 +772,82 @@ export function MarketplaceListingDetailScreen() {
           iconColor={theme.colors.warning}
           title={t('detail.seller')}
           expanded={expanded.has('seller')}
-          onToggle={() => toggleSection('seller')}
+          sectionKey="seller"
+          onToggle={toggleSection}
           style={styles.card}
         >
-          {/* Seller header row: avatar · name+subtitle · profile arrow */}
-          <View style={styles.sellerHeaderRow}>
-            <View style={styles.sellerAvatar}>
-              <Home size={theme.sizing.iconMd} color={theme.colors.primary} />
-            </View>
-            <View style={styles.sellerInfo}>
-              <View style={styles.sellerNameRow}>
-                <Text variant="h4" numberOfLines={1}>
-                  {sellerName}
-                </Text>
-                {isVerified ? (
-                  <BadgeCheck
-                    size={theme.sizing.iconXs}
-                    color={theme.colors.success}
-                  />
-                ) : null}
+          {/* Header row: avatar · name + subtitle · profile chevron */}
+          <TouchableOpacity
+            style={styles.sellerHeaderRow}
+            activeOpacity={listing.userId ? 0.7 : 1}
+            disabled={!listing.userId}
+            onPress={openSellerProfile}
+            accessibilityRole={listing.userId ? 'button' : undefined}
+          >
+            <View style={styles.sellerInfoRow}>
+              <View style={styles.sellerAvatar}>
+                <Home size={26} color={theme.colors.primary} />
               </View>
-              <Text variant="caption" color="textSecondary">
-                {planLabel
-                  ? `${planLabel} · ${locality || t('detail.seller')}`
-                  : locality || t('detail.seller')}
-              </Text>
+              <View style={styles.sellerInfo}>
+                <View style={styles.sellerNameRow}>
+                  <Text variant="bodyMedium" numberOfLines={1}>
+                    {sellerName}
+                  </Text>
+                  {isVerified ? (
+                    <View style={styles.verifiedCircle}>
+                      <Check
+                        size={10}
+                        color={theme.colors.onPrimary}
+                        strokeWidth={3.5}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+                <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                  {planLabel
+                    ? `${planLabel} · ${shortLocality || t('detail.seller')}`
+                    : shortLocality || t('detail.seller')}
+                </Text>
+              </View>
             </View>
             {listing.userId ? (
-              <TouchableOpacity
-                onPress={() =>
-                  router.push(
-                    routes.seller(
-                      String(listing.userId),
-                      listing.sellerName ?? undefined,
-                    ),
-                  )
-                }
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <ChevronRight
-                  size={theme.sizing.iconSm}
-                  color={theme.colors.textTertiary}
-                />
-              </TouchableOpacity>
+              <ChevronRight
+                size={theme.sizing.iconSm}
+                color={theme.colors.textSecondary}
+              />
             ) : null}
-          </View>
+          </TouchableOpacity>
 
-          {/* Divider */}
           <View style={styles.sellerDivider} />
 
-          {/* Seller badges — 2×2 grid matching HTML design */}
+          {/* Badge grid — 2×2. Values the API doesn't expose render as "—". */}
           <View style={styles.sellerBadgeGrid}>
-            {/* Row 1 */}
-            <View style={styles.sellerBadgeRow}>
-              {/* Status */}
-              <View style={styles.sellerBadge}>
-                <ShieldCheck
-                  size={theme.sizing.iconXs}
-                  color={
-                    isVerified
-                      ? theme.colors.success
-                      : theme.colors.textTertiary
-                  }
-                />
-                <View style={styles.sellerBadgeTexts}>
-                  <Text variant="caption" color="textTertiary">
-                    {t('detail.statusLabel')}
-                  </Text>
-                  <Text
-                    variant="label"
-                    style={{
-                      color: isVerified
-                        ? theme.colors.success
-                        : theme.colors.textSecondary,
-                    }}
-                  >
-                    {isVerified
-                      ? t('detail.verifiedLabel')
-                      : t('detail.unverifiedLabel')}
-                  </Text>
-                </View>
-              </View>
-              {/* Member Since */}
-              <View style={styles.sellerBadge}>
-                <Calendar
-                  size={theme.sizing.iconXs}
+            {sellerBadges.map((badge) => (
+              <View key={badge.label} style={styles.sellerBadge}>
+                <badge.icon
+                  size={theme.sizing.iconSm}
                   color={theme.colors.primary}
                 />
                 <View style={styles.sellerBadgeTexts}>
-                  <Text variant="caption" color="textTertiary">
-                    {t('detail.memberSince')}
+                  <Text
+                    variant="overline"
+                    color="textSecondary"
+                    style={styles.sellerBadgeLabel}
+                    numberOfLines={1}
+                  >
+                    {badge.label}
                   </Text>
-                  <Text variant="label" color="textPrimary">
-                    {planLabel ?? '—'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-            {/* Row 2 */}
-            <View style={styles.sellerBadgeRow}>
-              {/* Response Rate */}
-              <View style={styles.sellerBadge}>
-                <Activity
-                  size={theme.sizing.iconXs}
-                  color={theme.colors.info}
-                />
-                <View style={styles.sellerBadgeTexts}>
-                  <Text variant="caption" color="textTertiary">
-                    {t('detail.responseRate')}
-                  </Text>
-                  <Text variant="label" color="textPrimary">
-                    —
+                  <Text
+                    variant="caption"
+                    color={badge.tone ?? 'textPrimary'}
+                    style={styles.sellerBadgeValue}
+                    numberOfLines={1}
+                  >
+                    {badge.value}
                   </Text>
                 </View>
               </View>
-              {/* Delivery */}
-              <View style={styles.sellerBadge}>
-                <Truck
-                  size={theme.sizing.iconXs}
-                  color={theme.colors.secondary}
-                />
-                <View style={styles.sellerBadgeTexts}>
-                  <Text variant="caption" color="textTertiary">
-                    {t('detail.delivery')}
-                  </Text>
-                  <Text variant="label" color="textPrimary">
-                    —
-                  </Text>
-                </View>
-              </View>
-            </View>
+            ))}
           </View>
         </AccordionSection>
 
@@ -776,7 +858,8 @@ export function MarketplaceListingDetailScreen() {
             iconColor={theme.colors.danger}
             title={t('listing.location')}
             expanded={expanded.has('location')}
-            onToggle={() => toggleSection('location')}
+            sectionKey="location"
+            onToggle={toggleSection}
             style={styles.card}
           >
             <View style={styles.locationContent}>
@@ -815,70 +898,54 @@ export function MarketplaceListingDetailScreen() {
       </ScrollView>
 
       {/* ── Sticky footer: Chat + View Contact ──────── */}
-      <SafeAreaView edges={['bottom']} style={styles.footerSafe}>
-        <View style={styles.footer}>
+      <View style={styles.footerSafe}>
+        <View style={[styles.footer, { paddingBottom: footerPadBottom }]}>
 
-          {/* Chat with Seller — outlined primary (violet) */}
-          <TouchableOpacity
-            style={styles.chatBtn}
-            activeOpacity={0.8}
-            onPress={() => {}}
-            accessibilityRole="button"
-            accessibilityLabel={t('contact.chat')}
-          >
-            <MessageCircle size={theme.sizing.iconSm} color={theme.colors.primary} />
-            <Text variant="button" style={{ color: theme.colors.primary }}>
-              {t('contact.chat')}
-            </Text>
-          </TouchableOpacity>
+          {/* Chat with Seller — hidden for now, do not delete.
+              To restore: re-import `MessageCircle` from lucide-react-native.
+              <TouchableOpacity
+                style={styles.chatBtn}
+                activeOpacity={0.8}
+                onPress={() => {}}
+                accessibilityRole="button"
+                accessibilityLabel={t('contact.chat')}
+              >
+                <MessageCircle size={theme.sizing.iconSm} color={theme.colors.primary} />
+                <Text variant="button" style={{ color: theme.colors.primary }}>
+                  {t('contact.chat')}
+                </Text>
+              </TouchableOpacity> */}
 
-          {/* View Contact Details — filled green with subtitle */}
+          {/* Reveal CTA — icon + label only */}
           <TouchableOpacity
             style={[
               styles.contactBtn,
-              (contactHidden || revealing) && { opacity: 0.6 },
+              revealing && { opacity: 0.6 },
             ]}
             activeOpacity={0.8}
             onPress={onViewContact}
-            disabled={contactHidden || revealing}
+            disabled={revealing}
             accessibilityRole="button"
-            accessibilityLabel={
-              contactHidden ? t('contact.hidden') : t('contact.view')
-            }
+            accessibilityLabel={t('contact.view')}
           >
             {revealing ? (
               <ActivityIndicator color={theme.colors.onPrimary} />
             ) : (
-              <>
-                <View style={styles.contactBtnInner}>
-                  <Phone
-                    size={theme.sizing.iconSm}
-                    color={theme.colors.onPrimary}
-                  />
-                  <Text variant="button" color="onPrimary">
-                    {contactHidden ? t('contact.hidden') : t('contact.view')}
-                  </Text>
-                </View>
-                {!contactHidden ? (
-                  <Text
-                    variant="caption"
-                    color="onPrimary"
-                    style={{ opacity: 0.8 }}
-                  >
-                    {t('contact.viewHint')}
-                  </Text>
-                ) : null}
-              </>
+              <View style={styles.contactBtnInner}>
+                <Phone
+                  size={theme.sizing.iconSm}
+                  color={theme.colors.onPrimary}
+                />
+                <Text variant="button" color="onPrimary">
+                  {t('contact.view')}
+                </Text>
+              </View>
             )}
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
 
-      <ContactModal
-        visible={modalVisible}
-        contact={contact}
-        onClose={() => setModalVisible(false)}
-      />
+      <ContactModal contact={contact} onClose={clearContact} />
     </View>
   );
 }

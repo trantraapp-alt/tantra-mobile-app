@@ -19,7 +19,10 @@ export function createListingDetailStyles(theme: AppTheme) {
   return StyleSheet.create({
     root: {
       flex: 1,
-      backgroundColor: theme.colors.background,
+      // `background` is pure white in the light scheme — identical to `card`,
+      // which makes the cards invisible. `surfaceVariant` is the muted gray
+      // that lets each white card read as a distinct block.
+      backgroundColor: theme.colors.surfaceVariant,
     },
     flex: { flex: 1 },
 
@@ -81,28 +84,65 @@ export function createListingDetailStyles(theme: AppTheme) {
     },
 
     // ── Price card ────────────────────────────────────────────────────
+    // Separate padding for the price card (16px vs shared 12px).
+    priceCard: {
+      backgroundColor: theme.colors.card,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.lg,
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.lg,
+      ...theme.shadows.low,
+    },
+    // Row 1: price + strike + discount badge — center-aligned so the badge
+    // (a View) lines up with the text correctly.
     priceRow: {
       flexDirection: 'row',
-      alignItems: 'baseline',
-      gap: theme.spacing.xs,
+      alignItems: 'center',
       flexWrap: 'wrap',
+      gap: theme.spacing.sm,
     },
+    // Hero price — large, bold, tight letter-spacing.
+    priceMain: {
+      letterSpacing: -1,
+      fontVariant: ['tabular-nums'],
+    },
+    // Compare-at price — body size, muted, struck through.
     priceStrike: {
       textDecorationLine: 'line-through',
     },
+    // Amber tint pill for discount % — light bg, amber text.
     discountBadge: {
-      backgroundColor: theme.colors.warning,
+      backgroundColor: 'rgba(245,158,11,0.15)',
       borderRadius: theme.radius.xs,
-      paddingHorizontal: theme.spacing.xs,
-      paddingVertical: theme.spacing.xxs,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 3,
     },
+    discountText: {
+      color: theme.colors.warning,
+      fontWeight: '700',
+    },
+    // Row 2: title text + filled green verified circle sitting right beside it.
     titleRow: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: theme.spacing.xs,
+      alignItems: 'center',
+      gap: theme.spacing.sm,         // 8px — breathing room between title and tick
       marginTop: theme.spacing.xs,
     },
-    titleText: { flex: 1 },
+    // `flexShrink` (not `flex: 1`) so the tick sits next to the text rather
+    // than being pushed to the far right of the card.
+    titleText: { flexShrink: 1 },
+    // Filled success-green circle with white checkmark inside — small, so it
+    // reads as a marker beside the title rather than competing with it.
+    verifiedCircle: {
+      width: 15,
+      height: 15,
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.success,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    // Row 3: type pill + negotiable pill.
     tagsRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -110,27 +150,45 @@ export function createListingDetailStyles(theme: AppTheme) {
       marginTop: theme.spacing.sm,
       flexWrap: 'wrap',
     },
-    // Negotiable — OUTLINED green (transparent bg, colored border + text).
-    // NOTE: Listing type (Sell / Rent) uses the <Badge> component — no style here.
+    // Listing type: SELL — filled success green, white text.
+    tagSell: {
+      backgroundColor: theme.colors.success,
+      borderRadius: theme.radius.xs,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 4,
+    },
+    // Listing type: RENT — filled warning amber, white text.
+    tagRent: {
+      backgroundColor: theme.colors.warning,
+      borderRadius: theme.radius.xs,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 4,
+    },
+    // Negotiable — OUTLINED green (transparent bg, green border + text).
     tagNegotiable: {
       borderWidth: 1.5,
       borderColor: theme.colors.success,
       borderRadius: theme.radius.xs,
       paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xxs,
+      paddingVertical: 3,
     },
-    // Not Negotiable — filled amber (same as FeedListingCard).
+    // Not Negotiable — filled amber.
     tagNotNegotiable: {
       backgroundColor: theme.colors.warning,
       borderRadius: theme.radius.xs,
       paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xxs,
+      paddingVertical: 4,
     },
+    // Shared text style for all tag pills — slight letter-spacing like HTML.
+    tagText: {
+      letterSpacing: 0.4,
+    },
+    // Row 4: 📍 City, State  and  ⏰ time ago — single row, wraps if tight.
     metaRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
-      marginTop: theme.spacing.sm,
+      gap: theme.spacing.xl,          // 20px between location and time
+      marginTop: theme.spacing.md,
       flexWrap: 'wrap',
     },
     metaItem: {
@@ -156,17 +214,30 @@ export function createListingDetailStyles(theme: AppTheme) {
       overflow: 'hidden',
       ...theme.shadows.low,
     },
+    // HTML: padding 14px 6px, gap 4px, centered column.
     statItem: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: theme.spacing.md,
-      gap: theme.spacing.xxs,
+      paddingHorizontal: theme.spacing.xs,
+      gap: theme.spacing.xs,
     },
-    // Left border for all stat columns except the first.
+    // Left border for all stat columns except the first (HTML uses border-right
+    // on all but the last — visually identical).
     statItemBorder: {
       borderLeftWidth: StyleSheet.hairlineWidth,
       borderLeftColor: theme.colors.border,
+    },
+    // HTML .stat-value — 15px, weight 700, ink, tabular-nums, line-height 1.
+    statValue: {
+      fontWeight: '700',
+      fontVariant: ['tabular-nums'],
+    },
+    // The 4th column's "Quality" value is a word, not a numeral — HTML renders
+    // it smaller and in green rather than the default dark numeral style.
+    statValueQuality: {
+      fontWeight: '700',
     },
 
     // ── Quality Assured card (green-tint, pressable row) ──────────────
@@ -203,9 +274,19 @@ export function createListingDetailStyles(theme: AppTheme) {
       gap: theme.spacing.sm,
     },
     sectionTitleText: { flex: 1 },
-    // Expanded accordion body — top margin only (header gives the visual top gap).
-    accordionBody: {
-      marginTop: theme.spacing.md,
+    // Animated clipping window. Its height is driven by Reanimated; `hidden`
+    // keeps the (still-mounted) content from spilling out while collapsed.
+    accordionClip: {
+      overflow: 'hidden',
+    },
+    // Absolutely positioned so the content's natural height is measurable via
+    // onLayout without feeding back into the animated parent's height.
+    accordionMeasure: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      paddingTop: theme.spacing.md,
     },
 
     // "Read more / Read less" link below the About description.
@@ -231,22 +312,31 @@ export function createListingDetailStyles(theme: AppTheme) {
       borderColor: theme.colors.border,
     },
     detailCellAlt: {
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.surfaceVariant,
     },
 
     // ── Seller Information ─────────────────────────────────────────────
+    // HTML .seller-header — avatar + info on the left, chevron pinned right.
     sellerHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
+    },
+    // HTML .seller-info — avatar and the text block travel together.
+    sellerInfoRow: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
     },
-    // Rounded-square avatar (not a pill) — primary/violet tint bg + primary border.
+    // HTML .seller-avatar — 48×48 rounded square, tinted fill + 2px border.
     sellerAvatar: {
       width: 48,
       height: 48,
       borderRadius: theme.radius.md,
       backgroundColor: theme.colors.primaryLight,
-      borderWidth: 1.5,
+      borderWidth: 2,
       borderColor: theme.colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
@@ -256,35 +346,51 @@ export function createListingDetailStyles(theme: AppTheme) {
       flex: 1,
       gap: theme.spacing.xxs,
     },
+    // HTML .seller-name — name text with the verified tick right beside it.
     sellerNameRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.xs,
     },
+    // HTML .divider — hairline rule, 12px of air on each side.
     sellerDivider: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: theme.colors.border,
       marginVertical: theme.spacing.md,
     },
-    // Outer container: stacks the two badge rows vertically.
+    // HTML .seller-badges — 2-column grid, 8px gutters both axes.
+    // RN has no grid, so: wrap row + 48.5% cells leaves a ~3% gutter.
     sellerBadgeGrid: {
-      gap: theme.spacing.xs,
-    },
-    // 2-column grid row for seller badge items.
-    sellerBadgeRow: {
       flexDirection: 'row',
-      gap: theme.spacing.xs,
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      rowGap: theme.spacing.sm,
     },
+    // HTML .seller-badge-item — tinted tile, 8px radius, 8×10 padding.
     sellerBadge: {
-      flex: 1,
+      width: '48.5%',
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.xs,
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.surfaceVariant,
       borderRadius: theme.radius.sm,
-      padding: theme.spacing.xs,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
     },
-    sellerBadgeTexts: { gap: theme.spacing.xxs },
+    // Text column shrinks so a long value truncates instead of pushing the icon.
+    sellerBadgeTexts: {
+      flex: 1,
+      gap: theme.spacing.xxs,
+    },
+    // HTML .badge-label — uppercase, tracked-out micro label.
+    sellerBadgeLabel: {
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    // HTML .badge-val — bold value line.
+    sellerBadgeValue: {
+      fontWeight: '700',
+    },
 
     // ── Location card ─────────────────────────────────────────────────
     locationContent: {
@@ -312,12 +418,13 @@ export function createListingDetailStyles(theme: AppTheme) {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.border,
     },
+    // `paddingBottom` is applied inline from the safe-area inset — see
+    // `footerPadBottom` in the screen.
     footer: {
       flexDirection: 'row',
       gap: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
-      paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
     },
     // "Chat with Seller" — outlined primary (violet), flex 1.
     chatBtn: {
@@ -332,20 +439,20 @@ export function createListingDetailStyles(theme: AppTheme) {
       paddingVertical: theme.spacing.md,
       backgroundColor: 'transparent',
     },
-    // "View Contact Details" — filled primary (violet), flex 1.6 (wider).
+    // "View Contact Details" — filled primary (violet), full width (chat hidden).
     contactBtn: {
-      flex: 1.6,
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.primary,
       borderRadius: theme.radius.sm,
-      paddingVertical: theme.spacing.sm,
+      paddingVertical: theme.spacing.lg,  // taller than before (lg = 16px)
       gap: theme.spacing.xxs,
     },
     contactBtnInner: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.xs,
+      gap: theme.spacing.sm,
     },
 
     // ── Loading / error ───────────────────────────────────────────────

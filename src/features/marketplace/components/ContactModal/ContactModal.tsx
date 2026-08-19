@@ -1,12 +1,24 @@
-// Modal shown after a successful contact reveal: the seller's phone number with
-// Call, WhatsApp and Copy actions. Purely presentational — the caller performs
-// the reveal request and passes the result in.
+// Bottom sheet shown after a successful contact reveal.
+//
+// The reveal response always carries the seller's number plus a server-built
+// WhatsApp deep link, so the sheet offers three actions per number:
+//   Call     → tel:+91XXXXXXXXXX
+//   WhatsApp → opens `whatsappUrl` verbatim (never rebuilt client-side)
+//   Copy     → puts +91XXXXXXXXXX on the clipboard
+//
+// An alternate number, when the seller listed one, gets its own Call and Copy.
+// It deliberately has no WhatsApp button: the response carries a single
+// `whatsappUrl` built for the primary number, and reusing it there would open a
+// chat with the wrong line while showing the alternate one.
+//
+// Purely presentational — the caller performs the reveal request and passes the
+// result in.
 import * as Clipboard from 'expo-clipboard';
 import { Copy, MessageCircle, Phone } from 'lucide-react-native';
-import { memo, useEffect, useState } from 'react';
-import { Linking, Modal, Pressable, View } from 'react-native';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { Linking, Pressable, View } from 'react-native';
 
-import { Text } from '@/components/ui';
+import { BottomSheet, type BottomSheetRef, Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
 
@@ -15,75 +27,107 @@ import { createContactModalStyles } from './ContactModal.styles';
 
 // Props for the ContactModal component.
 export interface ContactModalProps {
-  // Whether the modal is shown.
-  visible: boolean;
-  // The revealed contact, or null.
+  // The revealed contact, or null. Setting a non-null value opens the sheet —
+  // the caller does not present it manually.
   contact: ContactRevealResult | null;
-  // Called to dismiss the modal.
+  // Called once the sheet has finished closing (button, swipe-down or backdrop
+  // tap). Clear the contact here so the next reveal re-opens the sheet.
   onClose: () => void;
 }
 
-// Renders the revealed-contact modal.
-function ContactModalComponent({ visible, contact, onClose }: ContactModalProps) {
+// Normalizes a revealed number to the +91XXXXXXXXXX form used for dialling and
+// copying. Numbers arrive as bare 10 digits, but tolerate separators or a
+// country code already being present.
+function toDialNumber(raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+  return `+91${digits.length > 10 ? digits.slice(-10) : digits}`;
+}
+
+// Spaces a dial number out for display: +91 98765 43210.
+function toDisplayNumber(dial: string): string {
+  const local = dial.slice(3);
+  return local.length === 10
+    ? `+91 ${local.slice(0, 5)} ${local.slice(5)}`
+    : dial;
+}
+
+// Renders the revealed-contact bottom sheet.
+function ContactModalComponent({ contact, onClose }: ContactModalProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createContactModalStyles);
   const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
+  const sheetRef = useRef<BottomSheetRef>(null);
+  // The number last copied — keyed by dial string so the primary and alternate
+  // rows each show their own confirmation.
+  const [copied, setCopied] = useState<string | null>(null);
 
-  // Reset the "copied" affordance whenever the modal reopens.
+  // Present when a contact arrives. Keying the effect on `contact` (rather than
+  // on a separate `visible` flag set by the caller) guarantees the number is
+  // already committed to the tree before the sheet opens — the sheet sizes
+  // itself to its content, so presenting it while the body was still empty
+  // would open it collapsed.
   useEffect(() => {
-    if (!visible) {
-      setCopied(false);
+    if (contact) {
+      setCopied(null);
+      sheetRef.current?.present();
     }
-  }, [visible]);
+  }, [contact]);
 
-  const phone = contact?.phone ?? '';
-  const dialDigits = phone.replace(/[^0-9+]/g, '');
-  const waDigits = phone.replace(/[^0-9]/g, '');
-  const waUrl = contact?.whatsappUrl || `https://wa.me/${waDigits}`;
+  const primary = contact?.mobileNumber?.trim()
+    ? toDialNumber(contact.mobileNumber)
+    : '';
+  const alternate = contact?.altMobileNumber?.trim()
+    ? toDialNumber(contact.altMobileNumber)
+    : '';
 
-  const call = () => {
-    void Linking.openURL(`tel:${dialDigits}`);
-  };
-  const whatsapp = () => {
-    void Linking.openURL(waUrl);
-  };
-  const copy = async () => {
-    await Clipboard.setStringAsync(phone);
-    setCopied(true);
-  };
+  const call = useCallback((dial: string) => {
+    void Linking.openURL(`tel:${dial}`);
+  }, []);
+
+  const copy = useCallback(async (dial: string) => {
+    await Clipboard.setStringAsync(dial);
+    setCopied(dial);
+  }, []);
+
+  // The link always arrives prefilled — open it as-is, never rebuild it.
+  const whatsapp = useCallback(() => {
+    if (contact?.whatsappUrl) {
+      void Linking.openURL(contact.whatsappUrl);
+    }
+  }, [contact?.whatsappUrl]);
+
+  const callPrimary = useCallback(() => call(primary), [call, primary]);
+  const copyPrimary = useCallback(() => void copy(primary), [copy, primary]);
+  const callAlternate = useCallback(() => call(alternate), [call, alternate]);
+  const copyAlternate = useCallback(
+    () => void copy(alternate),
+    [copy, alternate],
+  );
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
+    <BottomSheet
+      ref={sheetRef}
+      title={t('contact.title')}
+      subtitle={contact?.listingTitle ?? undefined}
+      onDismiss={onClose}
+      contentStyle={styles.sheet}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.dialog} onPress={() => undefined}>
-          <View style={styles.iconCircle}>
-            <Phone size={theme.sizing.iconLg} color={theme.colors.success} />
-          </View>
-
+      {/* ── Primary number ───────────────────────────────── */}
+      {primary ? (
+        <View style={styles.numberBlock}>
           <Text variant="overline" color="textTertiary">
-            {t('contact.title')}
+            {t('contact.primary')}
           </Text>
-          <Text variant="h2" align="center" style={styles.phone}>
-            {phone}
+          <Text variant="h2" style={styles.phone}>
+            {toDisplayNumber(primary)}
           </Text>
-          {contact?.alreadyRevealed ? (
-            <Text variant="caption" color="textTertiary" align="center">
-              {t('contact.already')}
-            </Text>
-          ) : null}
 
           <View style={styles.actions}>
             <Pressable
+              style={styles.actionSlot}
               accessibilityRole="button"
               accessibilityLabel={t('contact.call')}
-              onPress={call}
+              onPress={callPrimary}
             >
               {({ pressed }) => (
                 <View
@@ -103,7 +147,9 @@ function ContactModalComponent({ visible, contact, onClose }: ContactModalProps)
                 </View>
               )}
             </Pressable>
+
             <Pressable
+              style={styles.actionSlot}
               accessibilityRole="button"
               accessibilityLabel="WhatsApp"
               onPress={whatsapp}
@@ -116,7 +162,10 @@ function ContactModalComponent({ visible, contact, onClose }: ContactModalProps)
                     pressed ? styles.pressed : null,
                   ]}
                 >
-                  <MessageCircle size={theme.sizing.iconSm} color="#FFFFFF" />
+                  <MessageCircle
+                    size={theme.sizing.iconSm}
+                    color={theme.colors.onPrimary}
+                  />
                   <Text variant="label" color="onPrimary">
                     WhatsApp
                   </Text>
@@ -128,46 +177,105 @@ function ContactModalComponent({ visible, contact, onClose }: ContactModalProps)
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('contact.copy')}
-            onPress={copy}
+            onPress={copyPrimary}
           >
             {({ pressed }) => (
-              <View
-                style={[styles.copyButton, pressed ? styles.pressed : null]}
-              >
+              <View style={[styles.copyButton, pressed ? styles.pressed : null]}>
                 <Copy
                   size={theme.sizing.iconSm}
-                  color={copied ? theme.colors.success : theme.colors.primary}
+                  color={
+                    copied === primary
+                      ? theme.colors.success
+                      : theme.colors.primary
+                  }
                 />
                 <Text
                   variant="label"
-                  color={copied ? 'success' : 'primary'}
+                  color={copied === primary ? 'success' : 'primary'}
                 >
-                  {copied ? t('contact.copied') : t('contact.copy')}
+                  {copied === primary ? t('contact.copied') : t('contact.copy')}
                 </Text>
               </View>
             )}
           </Pressable>
+        </View>
+      ) : null}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.cancel')}
-            onPress={onClose}
-          >
-            {({ pressed }) => (
-              <View
-                style={[styles.closeButton, pressed ? styles.pressed : null]}
-              >
-                <Text variant="label" color="textSecondary">
-                  {t('common.close')}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      {/* ── Alternate number — Call + Copy only (see file header) ── */}
+      {alternate ? (
+        <View style={styles.numberBlock}>
+          <Text variant="overline" color="textTertiary">
+            {t('contact.alt')}
+          </Text>
+          <Text variant="h4" style={styles.altNumber}>
+            {toDisplayNumber(alternate)}
+          </Text>
+
+          <View style={styles.actions}>
+            <Pressable
+              style={styles.actionSlot}
+              accessibilityRole="button"
+              accessibilityLabel={t('contact.call')}
+              onPress={callAlternate}
+            >
+              {({ pressed }) => (
+                <View
+                  style={[
+                    styles.actionButton,
+                    styles.callButton,
+                    pressed ? styles.pressed : null,
+                  ]}
+                >
+                  <Phone
+                    size={theme.sizing.iconSm}
+                    color={theme.colors.onPrimary}
+                  />
+                  <Text variant="label" color="onPrimary">
+                    {t('contact.call')}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+
+            <Pressable
+              style={styles.actionSlot}
+              accessibilityRole="button"
+              accessibilityLabel={t('contact.copy')}
+              onPress={copyAlternate}
+            >
+              {({ pressed }) => (
+                <View
+                  style={[
+                    styles.actionButton,
+                    styles.outlineButton,
+                    pressed ? styles.pressed : null,
+                  ]}
+                >
+                  <Copy
+                    size={theme.sizing.iconSm}
+                    color={
+                      copied === alternate
+                        ? theme.colors.success
+                        : theme.colors.primary
+                    }
+                  />
+                  <Text
+                    variant="label"
+                    color={copied === alternate ? 'success' : 'primary'}
+                  >
+                    {copied === alternate
+                      ? t('contact.copied')
+                      : t('contact.copy')}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+    </BottomSheet>
   );
 }
 
-// Memoized contact-reveal modal.
+// Memoized contact-reveal sheet.
 export const ContactModal = memo(ContactModalComponent);

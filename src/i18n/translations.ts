@@ -162,10 +162,18 @@ const en = {
   'contact.call': 'Call',
   'contact.copy': 'Copy number',
   'contact.copied': 'Copied!',
-  'contact.already': 'You already viewed this contact.',
+  'contact.primary': 'Primary number',
+  'contact.alt': 'Alternate number',
   'contact.view': 'View Contact Details',
   'contact.chat': 'Chat with Seller',
-  'contact.hidden': "Seller hasn't enabled contact",
+  // Shown when the seller keeps their number private (showContact = false).
+  'contact.whatsapp': 'Contact via WhatsApp',
+  'contact.whatsappHint': 'Chat with the seller on WhatsApp',
+  'contact.whatsappTitle': 'Contact on WhatsApp',
+  'contact.whatsappOnly':
+    'This seller prefers to be contacted on WhatsApp. Tap below to start a chat.',
+  'contact.notFound': 'This listing is no longer available.',
+  'contact.inactive': 'This listing is currently inactive.',
   'contact.error': "Couldn't get the contact. Please try again.",
 
   // Sell sheet.
@@ -618,10 +626,17 @@ const hi: Record<TranslationKey, string> = {
   'contact.call': 'कॉल',
   'contact.copy': 'नंबर कॉपी करें',
   'contact.copied': 'कॉपी हो गया!',
-  'contact.already': 'आप यह संपर्क पहले देख चुके हैं।',
+  'contact.primary': 'मुख्य नंबर',
+  'contact.alt': 'वैकल्पिक नंबर',
   'contact.view': 'संपर्क विवरण देखें',
   'contact.chat': 'विक्रेता से चैट करें',
-  'contact.hidden': 'विक्रेता ने संपर्क सक्षम नहीं किया',
+  'contact.whatsapp': 'WhatsApp पर संपर्क करें',
+  'contact.whatsappHint': 'विक्रेता से WhatsApp पर चैट करें',
+  'contact.whatsappTitle': 'WhatsApp पर संपर्क करें',
+  'contact.whatsappOnly':
+    'यह विक्रेता WhatsApp पर संपर्क करना पसंद करते हैं। चैट शुरू करने के लिए नीचे टैप करें।',
+  'contact.notFound': 'यह लिस्टिंग अब उपलब्ध नहीं है।',
+  'contact.inactive': 'यह लिस्टिंग फ़िलहाल निष्क्रिय है।',
   'contact.error': 'संपर्क नहीं मिल सका। कृपया पुनः प्रयास करें।',
 
   'sell.title': 'Tantra पर बेचें',

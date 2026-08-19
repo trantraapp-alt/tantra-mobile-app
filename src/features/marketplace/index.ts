@@ -35,6 +35,7 @@ export {
   SellerProfileScreen,
 } from './screens';
 export type {
+  ContactRevealAction,
   ContactRevealResult,
   GeoPoint,
   ListingFilters,

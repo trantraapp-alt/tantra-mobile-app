@@ -93,13 +93,23 @@ export interface SearchResult {
   businessProfiles: FeaturedBusiness[];
 }
 
-// Result of a contact reveal.
+// What the reveal endpoint chose to expose, driven by the seller's
+// `showContact` preference on the listing.
+export type ContactRevealAction = 'REVEALED_FULL' | 'WHATSAPP_ONLY';
+
+// Result of a contact reveal (POST /contacts/reveal/{listingId}).
 export interface ContactRevealResult {
-  // The revealed phone number.
-  phone: string;
-  // Deep link to open WhatsApp chat with the seller, when provided.
-  whatsappUrl?: string;
-  // True when the buyer already revealed this contact in the last 24h (no extra
-  // quota consumed).
-  alreadyRevealed?: boolean;
+  // REVEALED_FULL ships the numbers; WHATSAPP_ONLY ships only the chat link.
+  action: ContactRevealAction;
+  // The seller's primary number — present only with REVEALED_FULL.
+  mobileNumber?: string;
+  // Optional secondary number; may be absent or null even on REVEALED_FULL.
+  altMobileNumber?: string | null;
+  // Prefilled wa.me deep link. Always sent — open it as-is, never rebuild it.
+  whatsappUrl: string;
+  // Title of the listing the reveal was for.
+  listingTitle?: string;
+  // False when the same buyer already revealed this listing within 24h.
+  // Informational only: the backend dedupes silently.
+  freshReveal?: boolean;
 }

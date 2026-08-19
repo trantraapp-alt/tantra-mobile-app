@@ -149,12 +149,16 @@ export const endpoints = {
     nearby: '/listings/nearby',
     // Up to N similar listings from the same category.
     similar: (id: string | number) => `/listings/${id}/similar`,
-    // Reveals the seller's phone number (auth; deduped per buyer per 24h).
-    contact: (id: string | number) => `/listings/${id}/reveal-contact`,
     // All active listings by a given seller (their public profile page).
     bySeller: (userId: string) => `/listings/by-seller/${userId}`,
     // Uploads image files; returns relative `/files/...` URLs.
     uploads: '/uploads',
+  },
+  contacts: {
+    // Reveals the seller's contact for a listing (auth required; deduped per
+    // buyer per listing per 24h). Returns either the full number or a
+    // WhatsApp-only link, depending on the seller's `showContact` setting.
+    reveal: (listingId: string | number) => `/contacts/reveal/${listingId}`,
   },
   businessProfiles: {
     // Authenticated metadata form for a business-profile type (e.g. vet_clinic);

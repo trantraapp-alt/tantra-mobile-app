@@ -214,10 +214,11 @@ function getSimilar(listingId: string, limit = 6): Promise<FeedListing[]> {
   });
 }
 
-// Reveals the seller's phone number for a listing (auth required).
+// Reveals the seller's contact for a listing (auth required). The response is
+// either REVEALED_FULL (numbers + WhatsApp link) or WHATSAPP_ONLY (link only).
 function revealContact(listingId: string): Promise<ContactRevealResult> {
   return apiClient.post<ContactRevealResult>(
-    endpoints.listings.contact(listingId),
+    endpoints.contacts.reveal(listingId),
   );
 }
 

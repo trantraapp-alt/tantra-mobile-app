@@ -26,9 +26,13 @@ export function createListingDetailStyles(theme: AppTheme) {
     },
     flex: { flex: 1 },
 
-    // ── Header (solid primary / violet bar) ───────────────────────────
+    // ── Header (violet gradient bar w/ agri motifs) ───────────────────
+    // The flat `primary` fill stays as the paint-behind while the SVG backdrop
+    // mounts, so the bar never flashes white. `overflow: hidden` clips the
+    // deliberately over-tall backdrop to the header's real height.
     headerSafe: {
       backgroundColor: theme.colors.primary,
+      overflow: 'hidden',
     },
     header: {
       flexDirection: 'row',

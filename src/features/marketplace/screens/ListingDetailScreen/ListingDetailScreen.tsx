@@ -64,6 +64,7 @@ import {
   Share,
   type StyleProp,
   TouchableOpacity,
+  useWindowDimensions,
   View,
   type ViewStyle,
 } from 'react-native';
@@ -101,6 +102,7 @@ import { ContactModal, SimilarListings } from '../../components';
 import { useListingDetail } from '../../hooks';
 import type { ContactRevealResult } from '../../types';
 import { createListingDetailStyles } from './ListingDetailScreen.styles';
+import { ListingHeaderBackdrop } from './ListingHeaderBackdrop';
 
 // Short relative-time label from an ISO timestamp.
 function relativeTime(iso: string | undefined): string {
@@ -243,6 +245,7 @@ export function MarketplaceListingDetailScreen() {
   const goBack = useGoBack();
   const { showError } = useToast();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const params = useLocalSearchParams<{ id?: string }>();
   const listingId = params.id?.trim() ?? '';
 
@@ -350,9 +353,10 @@ export function MarketplaceListingDetailScreen() {
     }
   }, [listingId, showError, t]);
 
-  // Violet primary header — shared between all states (loading, error, content).
+  // Violet gradient header — shared between all states (loading, error, content).
   const headerBar = (
     <SafeAreaView edges={['top']} style={styles.headerSafe}>
+      <ListingHeaderBackdrop width={windowWidth} />
       <View style={styles.header}>
         {/* Back: white pill so it reads clearly on the violet bar */}
         <IconButton

@@ -20,6 +20,9 @@ const palette = {
   orange500: '#F97316',
   orange600: '#EA580C',
   ember500: '#F4432C',
+  // Violet↔orange midpoint of the logo sweep, used to keep brand gradients
+  // on a sunset path instead of graduating through grey.
+  plum600: '#B34D77',
   // Neutrals (violet-tinted charcoals for dark mode cohesion).
   white: '#FFFFFF',
   black: '#000000',
@@ -61,6 +64,9 @@ export interface ColorScheme {
   // Secondary accent color.
   secondary: string;
   // Foreground color rendered on top of the secondary color.
+  // Midpoint between primary and secondary, for brand gradients that span
+  // both logo colours. Decorative only — never a text or surface colour.
+  plum: string;
   onSecondary: string;
   // Root screen background color.
   background: string;
@@ -117,6 +123,7 @@ export const lightColors: ColorScheme = {
   onPrimary: palette.white,
   secondary: palette.orange500,
   onSecondary: palette.white,
+  plum: palette.plum600,
   background: palette.white,
   surface: palette.neutral50,
   surfaceVariant: palette.neutral100,
@@ -149,6 +156,7 @@ export const darkColors: ColorScheme = {
   onPrimary: palette.white,
   secondary: palette.orange400,
   onSecondary: palette.ink900,
+  plum: palette.plum600,
   background: palette.ink950,
   surface: palette.ink900,
   surfaceVariant: palette.ink800,

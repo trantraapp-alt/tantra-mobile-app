@@ -150,37 +150,28 @@ export function createListingDetailStyles(theme: AppTheme) {
       marginTop: theme.spacing.sm,
       flexWrap: 'wrap',
     },
+    // Shared pill base — identical geometry to FeedListingCard's `tag`, so the
+    // pills here read the same as the ones on the listing cards.
+    tag: {
+      borderRadius: theme.radius.xs,
+      paddingHorizontal: theme.spacing.xs,
+      paddingVertical: theme.spacing.xxs / 2,
+    },
     // Listing type: SELL — filled success green, white text.
     tagSell: {
       backgroundColor: theme.colors.success,
-      borderRadius: theme.radius.xs,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 4,
     },
-    // Listing type: RENT — filled warning amber, white text.
+    // Listing type: RENT — violet tint with primary text, as on the cards.
     tagRent: {
-      backgroundColor: theme.colors.warning,
-      borderRadius: theme.radius.xs,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 4,
+      backgroundColor: theme.colors.primaryLight,
     },
-    // Negotiable / Not Negotiable — same treatment as FeedListingCard:
-    // filled success green / filled warning amber, both with white text.
+    // Negotiable = green (success); Not Negotiable = red (danger), so a firm
+    // price reads as a hard "no" rather than a soft caution.
     tagNegotiable: {
       backgroundColor: theme.colors.success,
-      borderRadius: theme.radius.xs,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 4,
     },
     tagNotNegotiable: {
-      backgroundColor: theme.colors.warning,
-      borderRadius: theme.radius.xs,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 4,
-    },
-    // Shared text style for all tag pills — slight letter-spacing like HTML.
-    tagText: {
-      letterSpacing: 0.4,
+      backgroundColor: theme.colors.danger,
     },
     // Row 4: 📍 City, State  and  ⏰ time ago — single row, wraps if tight.
     metaRow: {

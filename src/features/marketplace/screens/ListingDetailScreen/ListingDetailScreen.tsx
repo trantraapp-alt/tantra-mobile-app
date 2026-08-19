@@ -61,6 +61,7 @@ import {
   type LayoutChangeEvent,
   Linking,
   ScrollView,
+  Share,
   type StyleProp,
   TouchableOpacity,
   View,
@@ -89,6 +90,7 @@ import {
   listingAttributeEntries,
   resolveFeedTitle,
 } from '@/features/home/utils/feedListing';
+import { useSavedListing } from '@/features/wishlist/hooks/useSavedListing';
 import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import { logger, toApiError } from '@/lib';
 import { useTheme, useToast } from '@/providers';
@@ -254,6 +256,11 @@ export function MarketplaceListingDetailScreen() {
   const { listing, similar, isLoading, isError, reload } =
     useListingDetail(listingId);
 
+  // Wishlist state for the header heart. Backed by the shared `saved` slice, so
+  // a listing hearted on a card already reads as saved here (and vice versa) —
+  // nothing needs to be threaded through navigation params.
+  const { saved, toggle: toggleSaved } = useSavedListing(listingId);
+
   // A non-null contact opens the sheet; clearing it on dismiss lets the next
   // reveal open it again.
   const [contact, setContact] = useState<ContactRevealResult | null>(null);
@@ -294,6 +301,26 @@ export function MarketplaceListingDetailScreen() {
 
   // Clearing the contact on dismiss is what lets a second tap re-open the sheet.
   const clearContact = useCallback(() => setContact(null), []);
+
+  // Shares the listing. There is no public web URL for a listing yet, so the
+  // message carries the app deep link (`tantra://…`), which opens the same
+  // screen for anyone who already has the app.
+  const onShare = useCallback(async () => {
+    if (!listingId) {
+      return;
+    }
+    const name = listing?.listingTitle?.trim() || t('home.listingFallback');
+    try {
+      await Share.share({
+        title: name,
+        message: `${name}\n${t('detail.shareVia')}\ntantra:/${routes.marketListing(listingId)}`,
+      });
+    } catch (error) {
+      // A user cancelling the share sheet also lands here on some platforms —
+      // log it, never surface a toast for what may be a deliberate dismissal.
+      logger.warn('[Share] listing share failed', error);
+    }
+  }, [listingId, listing?.listingTitle, t]);
 
   // Revealing is deliberately on-tap only — never on page load, since each
   // reveal is recorded against the buyer (deduped server-side for 24h).
@@ -339,18 +366,20 @@ export function MarketplaceListingDetailScreen() {
         <Text variant="h4" color="onPrimary" style={styles.headerTitle}>
           {t('detail.listingDetails')}
         </Text>
-        {/* Heart + Share: plain white icons on the violet bar — no circle */}
+        {/* Heart + Share: plain white icons on the violet bar — no circle.
+            Saved state is a solid red heart, same as the listing cards. */}
         <View style={styles.headerActions}>
           <IconButton
             icon={Heart}
-            accessibilityLabel="Save"
-            onPress={() => {}}
-            color={theme.colors.onPrimary}
+            accessibilityLabel={t('tab.wishlist')}
+            onPress={toggleSaved}
+            color={saved ? theme.colors.danger : theme.colors.onPrimary}
+            fill={saved ? theme.colors.danger : undefined}
           />
           <IconButton
             icon={Share2}
-            accessibilityLabel="Share"
-            onPress={() => {}}
+            accessibilityLabel={t('detail.share')}
+            onPress={onShare}
             color={theme.colors.onPrimary}
           />
         </View>
@@ -565,26 +594,34 @@ export function MarketplaceListingDetailScreen() {
             ) : null}
           </View>
 
-          {/* ③ Tags: type pill + negotiable pill */}
+          {/* ③ Tags — same pill treatment as the listing cards */}
           <View style={styles.tagsRow}>
-            {/* Listing type — SELL = green filled, RENT = amber filled */}
+            {/* Listing type — SELL = filled green, RENT = violet tint */}
             {type ? (
-              <View style={type === 'RENT' ? styles.tagRent : styles.tagSell}>
-                <Text variant="overline" color="onPrimary" style={styles.tagText}>
+              <View
+                style={[
+                  styles.tag,
+                  type === 'RENT' ? styles.tagRent : styles.tagSell,
+                ]}
+              >
+                <Text
+                  variant="overline"
+                  color={type === 'RENT' ? 'primary' : 'onPrimary'}
+                >
                   {typeLabel}
                 </Text>
               </View>
             ) : null}
-            {/* Negotiable = outlined green; Not Negotiable = filled amber */}
+            {/* Negotiable = filled green, Not Negotiable = filled amber */}
             {isNegotiable ? (
-              <View style={styles.tagNegotiable}>
-                <Text variant="overline" color="onPrimary" style={styles.tagText}>
+              <View style={[styles.tag, styles.tagNegotiable]}>
+                <Text variant="overline" color="onPrimary">
                   {t('home.tagNegotiable')}
                 </Text>
               </View>
             ) : (
-              <View style={styles.tagNotNegotiable}>
-                <Text variant="overline" color="onPrimary" style={styles.tagText}>
+              <View style={[styles.tag, styles.tagNotNegotiable]}>
+                <Text variant="overline" color="onPrimary">
                   {t('home.tagNotNegotiable')}
                 </Text>
               </View>

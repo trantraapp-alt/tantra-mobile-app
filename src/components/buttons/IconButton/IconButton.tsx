@@ -28,6 +28,9 @@ export interface IconButtonProps {
   size?: IconButtonSize;
   // Optional icon color override; defaults to primary text color.
   color?: string;
+  // Optional fill for the icon's interior (e.g. a solid heart when saved).
+  // Lucide icons are stroke-only by default; pass a color to fill them.
+  fill?: string;
   // Whether to render a filled surface background.
   filled?: boolean;
   // Whether the control is disabled.
@@ -55,6 +58,7 @@ function IconButtonComponent({
   onPress,
   size = 'md',
   color,
+  fill,
   filled = false,
   disabled = false,
   accessibilityLabel,
@@ -96,10 +100,11 @@ function IconButtonComponent({
         <Icon
           size={resolveIconSize(theme, size)}
           color={color ?? theme.colors.textPrimary}
+          fill={fill ?? 'none'}
         />
       </View>
     ),
-    [styles, size, filled, disabled, Icon, theme, color],
+    [styles, size, filled, disabled, Icon, theme, color, fill],
   );
 
   return (

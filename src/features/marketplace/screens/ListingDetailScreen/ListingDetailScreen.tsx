@@ -578,7 +578,7 @@ export function MarketplaceListingDetailScreen() {
             {/* Negotiable = outlined green; Not Negotiable = filled amber */}
             {isNegotiable ? (
               <View style={styles.tagNegotiable}>
-                <Text variant="overline" style={[styles.tagText, { color: theme.colors.success }]}>
+                <Text variant="overline" color="onPrimary" style={styles.tagText}>
                   {t('home.tagNegotiable')}
                 </Text>
               </View>

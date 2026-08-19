@@ -164,15 +164,14 @@ export function createListingDetailStyles(theme: AppTheme) {
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: 4,
     },
-    // Negotiable — OUTLINED green (transparent bg, green border + text).
+    // Negotiable / Not Negotiable — same treatment as FeedListingCard:
+    // filled success green / filled warning amber, both with white text.
     tagNegotiable: {
-      borderWidth: 1.5,
-      borderColor: theme.colors.success,
+      backgroundColor: theme.colors.success,
       borderRadius: theme.radius.xs,
       paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 3,
+      paddingVertical: 4,
     },
-    // Not Negotiable — filled amber.
     tagNotNegotiable: {
       backgroundColor: theme.colors.warning,
       borderRadius: theme.radius.xs,

@@ -48,23 +48,36 @@ export function ProfileScreen() {
     dispatch(setThemePreference(next ?? 'system'));
   }, [dispatch, themePreference]);
 
-  // Navigation menu configuration.
-  const menu = useMemo(
-    () => [
-      { icon: Store, label: 'My listings', onPress: () => router.push(routes.listings) },
-      { icon: Briefcase, label: 'My Business Profiles', onPress: () => router.push(routes.businessProfile.list) },
-      { icon: Package, label: 'My orders', onPress: () => router.push(routes.orders) },
-      { icon: Heart, label: 'Wishlist', onPress: () => router.push(routes.tabs.wishlist) },
-      { icon: Ticket, label: 'Coupons', onPress: () => router.push(routes.coupons) },
-      { icon: Bell, label: 'Notifications', onPress: () => router.push(routes.notifications) },
-      { icon: MapPin, label: 'Addresses', onPress: () => router.push(routes.addresses) },
-      { icon: Settings, label: 'Settings', onPress: () => router.push(routes.settings) },
-      ...((user?.appUsageRole as string) === 'ADMIN'
-        ? [{ icon: ShieldCheck, label: 'Business Profile Admin', onPress: () => router.push(routes.admin.businessProfile) }]
-        : []),
-    ],
-    [router, user],
-  );
+  const isAdmin = user?.appUsageRole === 'ADMIN';
+
+  // Navigation menu configuration. An admin account only moderates business
+  // profiles — it has no listings, orders, wishlist or saved addresses of its
+  // own, so those buyer/seller-only entries are dropped for it, and the
+  // admin's own moderation dashboard is added instead.
+  const menu = useMemo(() => {
+    const items = [
+      { key: 'listings', icon: Store, label: 'My listings', onPress: () => router.push(routes.listings), hideForAdmin: true },
+      { key: 'businessProfiles', icon: Briefcase, label: 'My Business Profiles', onPress: () => router.push(routes.businessProfile.list), hideForAdmin: true },
+      { key: 'orders', icon: Package, label: 'My orders', onPress: () => router.push(routes.orders), hideForAdmin: true },
+      { key: 'wishlist', icon: Heart, label: 'Wishlist', onPress: () => router.push(routes.tabs.wishlist), hideForAdmin: true },
+      { key: 'coupons', icon: Ticket, label: 'Coupons', onPress: () => router.push(routes.coupons) },
+      { key: 'notifications', icon: Bell, label: 'Notifications', onPress: () => router.push(routes.notifications) },
+      { key: 'addresses', icon: MapPin, label: 'Addresses', onPress: () => router.push(routes.addresses), hideForAdmin: true },
+      { key: 'settings', icon: Settings, label: 'Settings', onPress: () => router.push(routes.settings) },
+    ].filter((item) => !item.hideForAdmin || !isAdmin);
+
+    return isAdmin
+      ? [
+          ...items,
+          {
+            key: 'businessProfileAdmin',
+            icon: ShieldCheck,
+            label: 'Business Profile Admin',
+            onPress: () => router.push(routes.admin.businessProfile),
+          },
+        ]
+      : items;
+  }, [router, isAdmin]);
 
   return (
     <Screen padded={false}>
@@ -94,7 +107,7 @@ export function ProfileScreen() {
         <View style={styles.menu}>
           {menu.map((entry) => (
             <MenuRow
-              key={entry.label}
+              key={entry.key}
               icon={entry.icon}
               label={entry.label}
               onPress={entry.onPress}

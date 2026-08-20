@@ -38,7 +38,6 @@ export function NotificationsScreen() {
     markRead,
     markAllRead,
   } = useNotifications();
-
   const profileNames = useBusinessProfileNames(notifications);
 
   // Marks read and deep-links to the referenced entity when known.

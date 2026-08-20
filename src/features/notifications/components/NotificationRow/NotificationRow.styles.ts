@@ -31,6 +31,14 @@ export function createNotificationRowStyles(theme: AppTheme) {
       borderRadius: theme.radius.pill,
       backgroundColor: theme.colors.primary,
     },
+    // Tone-tinted circle behind the notification-type icon.
+    iconWrap: {
+      width: theme.sizing.avatarSm,
+      height: theme.sizing.avatarSm,
+      borderRadius: theme.radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     // Text column.
     body: {
       flex: 1,

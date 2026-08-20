@@ -70,6 +70,16 @@ export function getStatusTone(status: BusinessProfileStatus): ProfileStatusTone 
   }
 }
 
+// Tone for the card-style presentations (BusinessProfileCard, the admin
+// review list) only: BLOCKED reads amber here, distinct from REJECTED's red,
+// so a permanently-blocked profile doesn't look identical to a fixable
+// rejection on the one card an owner or admin keeps coming back to.
+// Everywhere else (reason notices, action buttons, the detail view) keeps
+// getStatusTone's red for BLOCKED.
+export function getCardTone(status: BusinessProfileStatus): ProfileStatusTone {
+  return status === 'BLOCKED' ? 'warning' : getStatusTone(status);
+}
+
 export function getStatusLabelKey(status: BusinessProfileStatus): TranslationKey {
   switch (status) {
     case 'APPROVED':

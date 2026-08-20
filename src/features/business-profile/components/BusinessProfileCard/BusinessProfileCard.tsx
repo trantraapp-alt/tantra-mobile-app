@@ -1,79 +1,30 @@
-// A business-profile card: a bordered status/photo tile on the left, then a
-// details column reading owner name → business name → category + status,
-// a bin icon for direct delete (top-right), and per-status actions on the
-// bottom row. Status color: approved green, pending amber, rejected/blocked red.
+// A business-profile card: a photo/status tile beside an identity column
+// (owner + ref-id chip, business name, category, location + submitted date),
+// an optional tone-tinted reason notice, and a full-width action row (a
+// circular delete control at the far left, the primary edit action filling
+// the rest). Status color: approved green, pending amber, rejected red,
+// blocked amber (a deliberately different shade from rejected, since one is
+// fixable and the other is permanent).
 import { Image } from 'expo-image';
-import {
-  BadgeCheck,
-  Ban,
-  Clock,
-  type LucideIcon,
-  Trash2,
-  User,
-  XCircle,
-} from 'lucide-react-native';
+import { Calendar, MapPin, SquarePen, Trash2, User } from 'lucide-react-native';
 import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Button, IconButton } from '@/components/buttons';
 import { Badge, Card, Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
-import type { TranslationKey } from '@/i18n';
 import { useTheme } from '@/providers';
-import type { ColorScheme } from '@/theme';
+import { formatDate } from '@/utils';
 
-import type {
-  BusinessProfile,
-  BusinessProfileStatus,
-  ProfileTypeOption,
-} from '../../types/businessProfile.types';
+import type { BusinessProfile, ProfileTypeOption } from '../../types/businessProfile.types';
 import { firstImageUrl } from '../../utils/profileImage';
-import { getStatusLabelKey, getStatusTone } from '../../utils/profileStatus';
+import { cardLocality } from '../../utils/profileLocality';
+import { getCardTone, getStatusIcon, getStatusLabelKey } from '../../utils/profileStatus';
 import { getProfileTypeLabel } from '../../utils/profileTypeLabels';
 import { resolveProfileStatus } from '../../utils/status';
+import { withAlpha } from '../../utils/withAlpha';
 import { CardToneGradient } from '../CardToneGradient';
 import { createBusinessProfileCardStyles } from './BusinessProfileCard.styles';
-
-// Semantic color keys used for a status accent.
-type StatusColor = Extract<keyof ColorScheme, 'success' | 'warning' | 'danger'>;
-
-// Visual treatment (icon, accent color, label) for each status.
-interface StatusVisual {
-  icon: LucideIcon;
-  color: StatusColor;
-  labelKey: TranslationKey;
-}
-
-// Maps a profile status to its icon and accent color.
-function statusVisual(status: BusinessProfileStatus): StatusVisual {
-  switch (status) {
-    case 'APPROVED':
-      return {
-        icon: BadgeCheck,
-        color: 'success',
-        labelKey: 'businessProfile.status.approved',
-      };
-    case 'PENDING':
-      return {
-        icon: Clock,
-        color: 'warning',
-        labelKey: 'businessProfile.status.pending',
-      };
-    case 'REJECTED':
-      return {
-        icon: XCircle,
-        color: 'danger',
-        labelKey: 'businessProfile.status.rejected',
-      };
-    case 'BLOCKED':
-    default:
-      return {
-        icon: Ban,
-        color: 'danger',
-        labelKey: 'businessProfile.status.blocked',
-      };
-  }
-}
 
 // Props for the BusinessProfileCard component.
 export interface BusinessProfileCardProps {
@@ -96,11 +47,10 @@ function BusinessProfileCardComponent({
   const { t, language } = useTranslation();
 
   const status = resolveProfileStatus(profile);
-  const visual = statusVisual(status);
-  const StatusIcon = visual.icon;
-  const statusColor = theme.colors[visual.color];
-  const statusLabel = t(visual.labelKey);
-  const tone = getStatusTone(profile.status);
+  const tone = getCardTone(status);
+  const StatusIcon = getStatusIcon(status);
+  const statusColor = theme.colors[tone];
+  const statusLabel = t(getStatusLabelKey(status));
   const category = getProfileTypeLabel(
     profile.profileType,
     profileTypes,
@@ -112,6 +62,8 @@ function BusinessProfileCardComponent({
     profile.attributes.ownerName.trim() !== ''
       ? profile.attributes.ownerName
       : null;
+  const locality = cardLocality(profile.address);
+  const submittedOn = profile.createdAt ? formatDate(profile.createdAt) : null;
 
   const reason =
     status === 'REJECTED'
@@ -133,6 +85,9 @@ function BusinessProfileCardComponent({
       <View style={styles.gradientLayer} pointerEvents="none">
         <CardToneGradient color={statusColor} />
       </View>
+      <View style={styles.cornerBadge} pointerEvents="none">
+        <Badge label={statusLabel} tone={tone} />
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
@@ -140,54 +95,55 @@ function BusinessProfileCardComponent({
       >
         {({ pressed }) => (
           <View style={[styles.content, pressed ? styles.contentPressed : null]}>
-            <View style={styles.cornerBadge} pointerEvents="none">
-              <Badge label={t(getStatusLabelKey(profile.status))} tone={tone} />
-            </View>
-            <View style={styles.iconWrap}>
-              <CardToneGradient color={statusColor} intensity={theme.opacity.subtle} />
-              {imageUri ? (
-                <Image
-                  source={{ uri: imageUri }}
-                  style={styles.iconImage}
-                  contentFit="cover"
-                  transition={theme.animation.normal}
-                  accessibilityLabel={profile.businessName}
-                />
-              ) : (
-                <StatusIcon size={theme.sizing.iconXl} color={statusColor} />
-              )}
-            </View>
+            <View style={styles.topRow}>
+              <View style={styles.iconWrap}>
+                <CardToneGradient color={statusColor} intensity={theme.opacity.subtle} />
+                {imageUri ? (
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={styles.iconImage}
+                    contentFit="cover"
+                    transition={theme.animation.normal}
+                    accessibilityLabel={profile.businessName}
+                  />
+                ) : (
+                  <StatusIcon size={theme.sizing.iconXl} color={statusColor} />
+                )}
+              </View>
 
-            <View style={styles.body}>
               <View style={styles.identity}>
-                {ownerName ? (
-                  <View style={styles.ownerRow}>
-                    <User size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
-                    <Text
-                      variant="label"
-                      color="textSecondary"
-                      numberOfLines={1}
-                      style={styles.ownerName}
-                    >
-                      {ownerName}
+                <View style={styles.ownerRow}>
+                  {ownerName ? (
+                    <>
+                      <User size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
+                      <Text
+                        variant="label"
+                        color="textSecondary"
+                        numberOfLines={1}
+                        style={styles.ownerName}
+                      >
+                        {ownerName}
+                      </Text>
+                    </>
+                  ) : null}
+                  <View
+                    style={[
+                      styles.refIdChip,
+                      {
+                        borderColor: withAlpha(theme.colors.primary, theme.opacity.subtle),
+                        backgroundColor: withAlpha(theme.colors.primary, theme.opacity.faint),
+                      },
+                    ]}
+                  >
+                    <Text variant="overline" color="primary">
+                      {profile.profileId}
                     </Text>
                   </View>
-                ) : null}
-
-                <View style={styles.titleRow}>
-                  <Text variant="h3" numberOfLines={1} style={styles.title}>
-                    {profile.businessName}
-                  </Text>
-                  <View style={styles.headerActionSlot}>
-                    <IconButton
-                      icon={Trash2}
-                      size="sm"
-                      color={theme.colors.danger}
-                      accessibilityLabel={t('businessProfile.delete')}
-                      onPress={onDelete}
-                    />
-                  </View>
                 </View>
+
+                <Text variant="h3" numberOfLines={1} style={styles.title}>
+                  {profile.businessName}
+                </Text>
 
                 {category ? (
                   <Text
@@ -200,42 +156,86 @@ function BusinessProfileCardComponent({
                   </Text>
                 ) : null}
 
-                {reason ? (
-                  <Text
-                    variant="caption"
-                    color="textSecondary"
-                    numberOfLines={2}
-                    style={styles.reason}
-                  >
-                    {reasonLabel}: {reason}
-                  </Text>
+                {locality || submittedOn ? (
+                  <View style={styles.metaRow}>
+                    {locality ? (
+                      <View style={styles.metaItem}>
+                        <MapPin size={theme.sizing.iconXs} color={theme.colors.textTertiary} />
+                        <Text variant="caption" color="textSecondary">
+                          {locality}
+                        </Text>
+                      </View>
+                    ) : null}
+                    {submittedOn ? (
+                      <View style={styles.metaItem}>
+                        <Calendar size={theme.sizing.iconXs} color={theme.colors.textTertiary} />
+                        <Text variant="caption" color="textSecondary">
+                          {t('businessProfile.submittedOn', { value: submittedOn })}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
                 ) : null}
               </View>
+            </View>
 
-              <View style={styles.valueRow}>
-                {status === 'BLOCKED' ? (
+            {reason ? (
+              <View
+                style={[
+                  styles.reasonBox,
+                  { backgroundColor: withAlpha(statusColor, theme.opacity.faint) },
+                ]}
+              >
+                <Text variant="caption" style={[styles.reasonLabel, { color: statusColor }]}>
+                  {reasonLabel}:
+                </Text>
+                <Text variant="body" numberOfLines={3}>
+                  {reason}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.bottomRow}>
+              <View
+                style={[
+                  styles.deleteButton,
+                  { backgroundColor: withAlpha(theme.colors.danger, theme.opacity.faint) },
+                ]}
+              >
+                <IconButton
+                  icon={Trash2}
+                  size="sm"
+                  color={theme.colors.danger}
+                  accessibilityLabel={t('businessProfile.delete')}
+                  onPress={onDelete}
+                />
+              </View>
+
+              {status === 'BLOCKED' ? (
+                <View style={styles.blockedHintRow}>
                   <Text
                     variant="caption"
                     color="textTertiary"
                     numberOfLines={2}
-                    style={styles.blockedHint}
+                    style={styles.blockedHintText}
                   >
                     {t('businessProfile.blockedEditHint')}
                   </Text>
-                ) : (
-                  <Button
-                    label={
-                      status === 'REJECTED'
-                        ? t('businessProfile.editResubmit')
-                        : t('businessProfile.editProfile')
-                    }
-                    variant={status === 'REJECTED' ? 'primary' : 'outline'}
-                    size="sm"
-                    fullWidth={false}
-                    onPress={onEdit}
-                  />
-                )}
-              </View>
+                </View>
+              ) : (
+                <Button
+                  label={
+                    status === 'REJECTED'
+                      ? t('businessProfile.editResubmit')
+                      : t('businessProfile.editProfile')
+                  }
+                  variant="primary"
+                  size="md"
+                  leftIcon={<SquarePen size={theme.sizing.iconSm} color={theme.colors.onPrimary} />}
+                  style={styles.editButton}
+                  onPress={onEdit}
+                />
+              )}
             </View>
           </View>
         )}

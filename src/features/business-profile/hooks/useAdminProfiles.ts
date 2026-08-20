@@ -11,12 +11,14 @@ type Phase = 'loading' | 'loadingMore' | 'refreshing' | 'idle' | 'error';
 
 interface UseAdminProfilesArgs {
   status?: string;
+  profileType?: string;
   sort?: string;
   useHistory?: boolean;
 }
 
 export function useAdminProfiles({
   status,
+  profileType,
   sort,
   useHistory = false,
 }: UseAdminProfilesArgs = {}) {
@@ -45,6 +47,7 @@ export function useAdminProfiles({
             })
           : await businessProfileApi.getAdminList({
               status,
+              profileType,
               sort,
               page: pageToLoad,
               size: appConstants.defaultPageSize,
@@ -59,7 +62,9 @@ export function useAdminProfiles({
         setProfiles((prev) =>
           mode === 'append' ? [...prev, ...content] : content,
         );
-        setPage(!isArrayRes && typeof res.page === 'number' ? res.page : pageToLoad);
+        setPage(
+          !isArrayRes && typeof res.page === 'number' ? res.page : pageToLoad,
+        );
         setLast(
           !isArrayRes && typeof res.last === 'boolean'
             ? res.last
@@ -74,7 +79,7 @@ export function useAdminProfiles({
         setPhase('error');
       }
     },
-    [status, sort, useHistory],
+    [status, profileType, sort, useHistory],
   );
 
   useEffect(() => {
@@ -91,7 +96,8 @@ export function useAdminProfiles({
   useEffect(() => {
     profiles.forEach((p) => {
       const hasOwnerName =
-        typeof p.attributes?.ownerName === 'string' && p.attributes.ownerName.trim() !== '';
+        typeof p.attributes?.ownerName === 'string' &&
+        p.attributes.ownerName.trim() !== '';
       if (hasOwnerName || enrichedRef.current.has(p.profileId)) {
         return;
       }
@@ -102,7 +108,11 @@ export function useAdminProfiles({
           setProfiles((prev) =>
             prev.map((item) =>
               item.profileId === p.profileId
-                ? { ...item, attributes: full.attributes, address: full.address }
+                ? {
+                    ...item,
+                    attributes: full.attributes,
+                    address: full.address,
+                  }
                 : item,
             ),
           );

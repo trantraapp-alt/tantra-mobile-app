@@ -61,6 +61,9 @@ export interface ListingDetailViewProps {
   statusBadge?: ReactNode;
   // Small eyebrow above the price (e.g. "Crop · Sell").
   overline?: string;
+  // Reference id shown opposite the overline (e.g. a listing/profile code),
+  // in the primary theme color.
+  refId?: string;
   // Label above the price (e.g. "Asking price").
   priceLabel?: string;
   // Price + optional struck-through original + discount %.
@@ -95,6 +98,7 @@ export function ListingDetailView({
   images,
   statusBadge,
   overline,
+  refId,
   priceLabel,
   price,
   compareAtPrice,
@@ -166,10 +170,19 @@ export function ListingDetailView({
         </View>
 
         <View style={styles.card}>
-          {overline ? (
-            <Text variant="overline" color="textTertiary">
-              {overline}
-            </Text>
+          {overline || refId ? (
+            <View style={styles.overlineRow}>
+              {overline ? (
+                <Text variant="overline" color="textTertiary">
+                  {overline}
+                </Text>
+              ) : null}
+              {refId ? (
+                <Text variant="overline" color="primary">
+                  {refId}
+                </Text>
+              ) : null}
+            </View>
           ) : null}
           {priceLabel ? (
             <Text variant="overline" color="textTertiary">

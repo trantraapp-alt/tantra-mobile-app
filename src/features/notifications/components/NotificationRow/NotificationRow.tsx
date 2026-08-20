@@ -1,15 +1,22 @@
-// A single notification row: an unread dot, bilingual title + body, and a
-// relative timestamp. Unread rows are tinted.
+// A single notification row: a type icon, an unread dot, bilingual title
+// (with its refId appended) + body, and a relative timestamp. Unread rows are
+// tinted.
 import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/ui';
 import { useThemedStyles } from '@/hooks';
+import { useTheme } from '@/providers';
 import type { PreferredLanguage } from '@/types';
 import { formatRelativeTime } from '@/utils';
 
 import type { AppNotification } from '../../types';
-import { localizedText } from '../../utils/notificationDisplay';
+import {
+  getNotificationVisual,
+  localizedText,
+  notificationDisplayTitle,
+  withAlpha,
+} from '../../utils/notificationDisplay';
 import { createNotificationRowStyles } from './NotificationRow.styles';
 
 // Props for the NotificationRow component.
@@ -34,10 +41,14 @@ function NotificationRowComponent({
   profileName,
   onPress,
 }: NotificationRowProps) {
+  const theme = useTheme();
   const styles = useThemedStyles(createNotificationRowStyles);
-  const title = localizedText(notification.title, language);
+  const rawTitle = localizedText(notification.title, language);
+  const title = notificationDisplayTitle(rawTitle, notification.refId);
   const body = localizedText(notification.body, language);
   const unread = !notification.isRead;
+  const { icon: Icon, tone } = getNotificationVisual(notification.type);
+  const toneColor = theme.colors[tone];
 
   return (
     <Pressable
@@ -46,8 +57,11 @@ function NotificationRowComponent({
       onPress={() => onPress(notification)}
       style={[styles.row, unread ? styles.unread : null]}
     >
-      <View style={styles.dotColumn}>
+      {/* <View style={styles.dotColumn}>
         {unread ? <View style={styles.dot} /> : null}
+      </View> */}
+      <View style={[styles.iconWrap, { backgroundColor: withAlpha(toneColor, 0.16) }]}>
+        <Icon size={theme.sizing.iconSm} color={toneColor} />
       </View>
       <View style={styles.body}>
         {profileName ? (

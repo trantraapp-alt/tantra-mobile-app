@@ -69,10 +69,20 @@ const SUBTITLE: LocalizedText = {
 export interface HomeHeaderProps {
   // Opens the search screen.
   onSearchPress: () => void;
+  // Shows the tap-through search field row. Off for the admin dashboard
+  // embedding this header, which has no marketplace search of its own.
+  showSearch?: boolean;
+  // Shows the location/radius/weather bar. Off for the admin dashboard —
+  // none of that is relevant outside the buyer/seller feed.
+  showLocationBar?: boolean;
 }
 
 // Renders the home header.
-function HomeHeaderComponent({ onSearchPress }: HomeHeaderProps) {
+function HomeHeaderComponent({
+  onSearchPress,
+  showSearch = true,
+  showLocationBar = true,
+}: HomeHeaderProps) {
   const theme = useTheme();
   const styles = useThemedStyles(createHomeHeaderStyles);
   const insets = useSafeAreaInsets();
@@ -83,7 +93,11 @@ function HomeHeaderComponent({ onSearchPress }: HomeHeaderProps) {
   const radiusKm = useAppSelector(selectSearchRadius);
   const user = useAppSelector(selectCurrentUser);
   const dispatch = useAppDispatch();
-  const weather = useWeather(selected?.latitude, selected?.longitude);
+  // Skip the weather fetch entirely when the bar showing it is hidden.
+  const weather = useWeather(
+    showLocationBar ? selected?.latitude : undefined,
+    showLocationBar ? selected?.longitude : undefined,
+  );
   const sheetRef = useRef<BottomSheetRef>(null);
 
   const place = selected?.district?.trim() || selected?.city?.trim() || '';
@@ -171,91 +185,97 @@ function HomeHeaderComponent({ onSearchPress }: HomeHeaderProps) {
         </Text>
       </View>
 
-      <View style={styles.searchRow}>
-        <View style={styles.searchField}>
-          <Pressable
-            style={styles.searchTap}
-            onPress={onSearchPress}
-            accessibilityRole="search"
-            accessibilityLabel={t('home.searchPlaceholder')}
-          >
-            <Search size={theme.sizing.iconSm} color={INK_SOFT} />
-            <Text
-              variant="body"
-              numberOfLines={1}
-              style={[styles.searchText, { color: INK_SOFT }]}
-            >
-              {t('home.searchPlaceholder')}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={onSearchPress}
-            accessibilityRole="button"
-            accessibilityLabel={t('home.searchPlaceholder')}
-          >
-            {({ pressed }) => (
-              <View style={[styles.mic, pressed ? styles.pressed : null]}>
-                <Mic size={theme.sizing.iconSm} color={theme.colors.onPrimary} />
-              </View>
-            )}
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.locBar}>
-        <Pressable
-          style={styles.locSeg}
-          onPress={openLocation}
-          accessibilityRole="button"
-          accessibilityLabel={t('location.change')}
-        >
-          <MapPin size={theme.sizing.iconXs} color={theme.colors.primary} />
-          <Text
-            variant="label"
-            numberOfLines={1}
-            style={[styles.locValue, { color: INK }]}
-          >
-            {locationLabel}
-          </Text>
-          <ChevronDown size={theme.sizing.iconXs} color={INK_SOFT} />
-        </Pressable>
-
-        <View style={styles.divider} />
-
-        <Pressable
-          style={styles.seg}
-          onPress={cycleRadius}
-          accessibilityRole="button"
-          accessibilityLabel={t('market.filters.radius')}
-        >
-          <Navigation
-            size={theme.sizing.iconXs}
-            color={theme.colors.secondary}
-          />
-          <Text variant="label" style={{ color: INK }}>
-            {`${radiusKm} km`}
-          </Text>
-          <ChevronDown size={theme.sizing.iconXxs} color={INK_SOFT} />
-        </Pressable>
-
-        {weather ? (
-          <>
-            <View style={styles.divider} />
+      {showSearch ? (
+        <View style={styles.searchRow}>
+          <View style={styles.searchField}>
             <Pressable
-              style={styles.seg}
-              onPress={() => router.push(routes.weather)}
-              accessibilityRole="button"
-              accessibilityLabel={language === 'HI' ? 'मौसम' : 'Weather'}
+              style={styles.searchTap}
+              onPress={onSearchPress}
+              accessibilityRole="search"
+              accessibilityLabel={t('home.searchPlaceholder')}
             >
-              <Text variant="label" style={{ color: INK }}>
-                {`${weatherEmoji(weather.code)} ${weather.tempC}°C`}
+              <Search size={theme.sizing.iconSm} color={INK_SOFT} />
+              <Text
+                variant="body"
+                numberOfLines={1}
+                style={[styles.searchText, { color: INK_SOFT }]}
+              >
+                {t('home.searchPlaceholder')}
               </Text>
             </Pressable>
-          </>
-        ) : null}
-      </View>
+            <Pressable
+              onPress={onSearchPress}
+              accessibilityRole="button"
+              accessibilityLabel={t('home.searchPlaceholder')}
+            >
+              {({ pressed }) => (
+                <View style={[styles.mic, pressed ? styles.pressed : null]}>
+                  <Mic size={theme.sizing.iconSm} color={theme.colors.onPrimary} />
+                </View>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
 
-      <LocationPickerSheet ref={sheetRef} />
+      {showLocationBar ? (
+        <>
+          <View style={styles.locBar}>
+            <Pressable
+              style={styles.locSeg}
+              onPress={openLocation}
+              accessibilityRole="button"
+              accessibilityLabel={t('location.change')}
+            >
+              <MapPin size={theme.sizing.iconXs} color={theme.colors.primary} />
+              <Text
+                variant="label"
+                numberOfLines={1}
+                style={[styles.locValue, { color: INK }]}
+              >
+                {locationLabel}
+              </Text>
+              <ChevronDown size={theme.sizing.iconXs} color={INK_SOFT} />
+            </Pressable>
+
+            <View style={styles.divider} />
+
+            <Pressable
+              style={styles.seg}
+              onPress={cycleRadius}
+              accessibilityRole="button"
+              accessibilityLabel={t('market.filters.radius')}
+            >
+              <Navigation
+                size={theme.sizing.iconXs}
+                color={theme.colors.secondary}
+              />
+              <Text variant="label" style={{ color: INK }}>
+                {`${radiusKm} km`}
+              </Text>
+              <ChevronDown size={theme.sizing.iconXxs} color={INK_SOFT} />
+            </Pressable>
+
+            {weather ? (
+              <>
+                <View style={styles.divider} />
+                <Pressable
+                  style={styles.seg}
+                  onPress={() => router.push(routes.weather)}
+                  accessibilityRole="button"
+                  accessibilityLabel={language === 'HI' ? 'मौसम' : 'Weather'}
+                >
+                  <Text variant="label" style={{ color: INK }}>
+                    {`${weatherEmoji(weather.code)} ${weather.tempC}°C`}
+                  </Text>
+                </Pressable>
+              </>
+            ) : null}
+          </View>
+
+          <LocationPickerSheet ref={sheetRef} />
+        </>
+      ) : null}
     </ImageBackground>
   );
 }

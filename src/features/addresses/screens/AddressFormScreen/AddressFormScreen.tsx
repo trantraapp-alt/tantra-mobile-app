@@ -109,7 +109,6 @@ export function AddressFormScreen({
     },
     [],
   );
-
   // Looks up a PIN code once six digits are entered and fills district/state.
   const handlePinChange = useCallback(
     (text: string) => {

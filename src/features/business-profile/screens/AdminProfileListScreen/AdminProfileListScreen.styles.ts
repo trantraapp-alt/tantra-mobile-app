@@ -1,7 +1,9 @@
 // Style factory for AdminProfileListScreen. Deliberately mirrors
-// BusinessProfileCard's identity block (photo/status tile, owner name →
-// business name → category + status) so the admin list and the owner's My
-// Profiles list read as the same design system.
+// BusinessProfileCard's layout (photo tile + identity column, ref-id chip,
+// location/submitted-date meta row, a tinted reason notice) so the admin list
+// and the owner's My Profiles list read as the same design system — just
+// without the owner's action row, since a tap here always goes to the full
+// review screen instead.
 import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
@@ -29,7 +31,8 @@ export function createAdminProfileListStyles(theme: AppTheme) {
       borderRadius: theme.cardRadius.lg,
       overflow: 'hidden',
     },
-    // Relative so the status badge can pin to the card's top-right corner.
+    // Photo + identity row, plus the trailing chevron. Relative so the status
+    // badge can pin to the card's top-right corner.
     cardRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
@@ -66,12 +69,27 @@ export function createAdminProfileListStyles(theme: AppTheme) {
       minWidth: 0,
       gap: theme.spacing.xxs,
     },
-    // Owner-name line — the first thing the card says, matching the owner's
-    // own card.
+    // Owner-name line — the first thing the card says — plus the profile's
+    // reference-id chip trailing it, matching the owner's own card.
     ownerRow: {
+      flex:1,
+      width:'100%',
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.xxs,
+      justifyContent: 'space-between',
+      gap: theme.spacing.xs,
+    },
+    ownerName: {
+      flexShrink: 1,
+    },
+    // Outlined, primary-tinted pill showing the profile's reference id (e.g.
+    // "BP82920X") — the same code a related notification refers to.
+    refIdChip: {
+      flexShrink: 0,
+      borderWidth: 1,
+      borderRadius: theme.radius.pill,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 1,
     },
     cardTitle: {
       marginTop: theme.spacing.xxs,
@@ -80,15 +98,41 @@ export function createAdminProfileListStyles(theme: AppTheme) {
       flexShrink: 1,
       marginTop: theme.spacing.xxs,
     },
-    reasonPreview: {
-      fontStyle: 'italic',
+    // Location + submitted-date row.
+    metaRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
       marginTop: theme.spacing.xs,
     },
+    metaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+    },
+    // Rejection / block reason notice — a tone-tinted card so it reads as a
+    // flagged notice rather than another plain text line.
+    reasonBox: {
+      borderRadius: theme.radius.sm,
+      padding: theme.spacing.sm,
+      gap: theme.spacing.xxs,
+      marginTop: theme.spacing.sm,
+      marginHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    reasonLabel: {
+      fontWeight: theme.fontWeight.semibold,
+    },
+    // Reviewer name + review date — admin-only context the owner's own card
+    // has no need for.
     verifiedRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
       marginTop: theme.spacing.xxs,
+    },
+    chevron: {
+      alignSelf: 'center',
     },
     footerLoader: {
       paddingVertical: theme.spacing.lg,

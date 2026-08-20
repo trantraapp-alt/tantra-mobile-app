@@ -210,6 +210,7 @@ export function BusinessProfileView({
         />
       }
       overline={profileTypeLabel}
+      refId={profile.profileId}
       title={profile.businessName}
       verified={profile.status === 'APPROVED'}
       stats={stats}

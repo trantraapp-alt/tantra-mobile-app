@@ -2,7 +2,8 @@
 import type { LocalizedText } from '@/features/sell/forms/listingForm.types';
 
 // Verification status of a business profile.
-export type BusinessProfileStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'BLOCKED';
+export type BusinessProfileStatus =
+  'PENDING' | 'APPROVED' | 'REJECTED' | 'BLOCKED';
 
 // A user's business profile record returned from the API.
 export interface BusinessProfile {
@@ -15,6 +16,9 @@ export interface BusinessProfile {
   blockReason: string | null;
   address: Record<string, unknown>;
   attributes: Record<string, unknown>;
+  // Submission timestamp — used for the queue's "X days ago" and the
+  // dashboard's oldest-first sort. Not always present on leaner projections.
+  createdAt?: string;
   // Admin-set fields (present in admin list / history responses).
   verifiedBy?: string | null;
   verifiedAt?: string | null;
@@ -39,6 +43,13 @@ export interface BusinessProfileWriteResult {
   message: LocalizedText;
 }
 
+// A single row of the stats dashboard's category breakdown (Section D).
+export interface CategoryBreakdownItem {
+  profileType: string;
+  count: number;
+  percentage: number;
+}
+
 // Stats returned by /admin/business-profiles/stats.
 export interface AdminBusinessProfileStats {
   total: number;
@@ -46,7 +57,17 @@ export interface AdminBusinessProfileStats {
   approved: number;
   rejected: number;
   blocked: number;
-  reviewedByMe: {
+  // Time-to-approval (Section B). avgApprovalDays is null when nothing has
+  // been approved yet.
+  avgApprovalDays: number | null;
+  maxPendingDays: number | null;
+  overdueCount: number;
+  // Success rate (Section C) — percentage of approved+rejected+blocked that
+  // were approved. pending is deliberately excluded from the denominator.
+  successRate: number;
+  // Category breakdown (Section D). Empty array renders as "No data yet".
+  categoryBreakdown: CategoryBreakdownItem[];
+  reviewedByMe?: {
     approved: number;
     rejected: number;
     blocked: number;

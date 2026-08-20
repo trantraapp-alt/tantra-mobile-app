@@ -35,6 +35,13 @@ export function createListingDetailViewStyles(theme: AppTheme) {
       padding: theme.spacing.lg,
       gap: theme.spacing.sm,
     },
+    // Overline + reference-id row: eyebrow label left, ref id right.
+    overlineRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
+    },
     // Section heading row: an optional icon beside the uppercase title.
     sectionHead: {
       flexDirection: 'row',

@@ -11,7 +11,10 @@ import type {
   BusinessProfileWriteResult,
   ProfileTypeOption,
 } from '../types/businessProfile.types';
-import { normalizeBusinessProfile, normalizeProfileStatus } from '../utils/profileStatus';
+import {
+  normalizeBusinessProfile,
+  normalizeProfileStatus,
+} from '../utils/profileStatus';
 
 // Normalizes every profile's status in a list response so callers never see
 // an inconsistent-casing or admin-only `verificationStatus` field diverge from
@@ -19,9 +22,9 @@ import { normalizeBusinessProfile, normalizeProfileStatus } from '../utils/profi
 // array instead of the documented `{ content, page, last }` envelope —
 // preserve whichever shape actually comes back rather than assume `.content`
 // exists, since the calling hooks each do their own shape-adaptive parsing.
-function normalizeProfilesResponse<T extends BusinessProfilesPage | BusinessProfile[]>(
-  res: T,
-): T {
+function normalizeProfilesResponse<
+  T extends BusinessProfilesPage | BusinessProfile[],
+>(res: T): T {
   if (Array.isArray(res)) {
     return res.map(normalizeBusinessProfile) as T;
   }
@@ -108,9 +111,11 @@ export const businessProfileApi = {
 
   // --- Admin ---
 
-  // Paginated list filtered by status (omit for all).
+  // Paginated list filtered by status (omit for all), optionally narrowed to
+  // a single category via `profileType` (the dashboard's category rows).
   getAdminList: async (params: {
     status?: string;
+    profileType?: string;
     sort?: string;
     page?: number;
     size?: number;

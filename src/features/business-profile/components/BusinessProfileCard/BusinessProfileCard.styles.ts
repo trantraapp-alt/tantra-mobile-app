@@ -1,6 +1,6 @@
-// Style factory for the BusinessProfileCard component: a bordered photo/status
-// tile on the left, a details column on the right reading owner name →
-// business name → category + status, with per-status actions on the bottom row.
+// Style factory for the BusinessProfileCard component: a photo tile + identity
+// column up top, an optional tinted reason notice, and a full-width action row
+// (delete + edit) along the bottom.
 import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
@@ -21,11 +21,11 @@ export function createBusinessProfileCardStyles(theme: AppTheme) {
       borderRadius: theme.cardRadius.lg,
       overflow: 'hidden',
     },
-    // Tappable content row: status tile + details column. Relative so the
-    // status badge can pin to the card's top-right corner.
+    // Outer vertical stack: photo+identity row, then an optional reason
+    // notice, then the full-width action row. Relative so the status badge
+    // can pin to the card's top-right corner.
     content: {
-      flexDirection: 'row',
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
       padding: theme.spacing.md,
       position: 'relative',
     },
@@ -41,6 +41,11 @@ export function createBusinessProfileCardStyles(theme: AppTheme) {
     contentPressed: {
       backgroundColor: theme.colors.surfaceVariant,
       borderRadius: theme.cardRadius.lg,
+    },
+    // Photo + identity row.
+    topRow: {
+      flexDirection: 'row',
+      gap: theme.spacing.md,
     },
     // Bordered, rounded tile holding the profile photo (or a status icon when
     // there is no photo) — the identity slot, like the listing thumbnail.
@@ -60,64 +65,87 @@ export function createBusinessProfileCardStyles(theme: AppTheme) {
       width: '100%',
       height: '100%',
     },
-    // Details column; minWidth 0 stops a long name from shoving the action rail.
-    body: {
+    // Details column; minWidth 0 stops a long name from shoving past the card.
+    identity: {
       flex: 1,
       minWidth: 0,
-      justifyContent: 'space-between',
-      gap: theme.spacing.sm,
-    },
-    // Owner name → business name → category/status, bound by the tightest
-    // gap so they read as one identity block.
-    identity: {
       gap: theme.spacing.xxs,
     },
-    // Owner-name line — the first thing the card says (who runs this).
+    // Owner-name line — the first thing the card says (who runs this) — plus
+    // the profile's reference-id chip trailing it.
     ownerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.xxs,
+      gap: theme.spacing.xs,
     },
     ownerName: {
-      flex: 1,
+      flexShrink: 1,
     },
-    // Business-name row, with the delete action trailing it.
-    titleRow: {
+    // Outlined, primary-tinted pill showing the profile's reference id (e.g.
+    // "BP82920X") — the same code a related notification refers to.
+    refIdChip: {
+      flexShrink: 0,
+      borderWidth: 1,
+      borderRadius: theme.radius.pill,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 1,
+    },
+    title: {
+      marginTop: theme.spacing.xxs,
+    },
+    category: {
+      marginTop: theme.spacing.xxs,
+    },
+    // Location + submitted-date row.
+    metaRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
+    },
+    metaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+    },
+    // Rejection / block reason notice — a tone-tinted card so it reads as a
+    // flagged notice rather than another plain text line.
+    reasonBox: {
+      borderRadius: theme.radius.sm,
+      padding: theme.spacing.sm,
+      gap: theme.spacing.xxs,
+    },
+    reasonLabel: {
+      fontWeight: theme.fontWeight.semibold,
+    },
+    // Permanently-blocked hint, with a lock icon — replaces the edit button
+    // for a BLOCKED profile since none is available.
+    blockedHintRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: theme.spacing.xs,
-      marginTop: theme.spacing.xxs,
+      maxWidth: '85%',
     },
-    // Name takes every pixel the delete icon does not.
-    title: {
+    blockedHintText: {
       flex: 1,
-      minWidth: 0,
     },
-    // Inset so the 32dp delete control keeps the tight name -> meta bond.
-    headerActionSlot: {
-      marginTop: -theme.spacing.xs,
-      marginBottom: -theme.spacing.xs,
-      marginRight: -theme.spacing.sm,
-    },
-    // Category label gives way under width pressure before the status does.
-    category: {
-      flexShrink: 1,
-      marginTop: theme.spacing.xxs,
-    },
-    // Rejection / block reason line.
-    reason: {
-      marginTop: theme.spacing.xs,
-    },
-    blockedHint: {
-      marginTop: theme.spacing.xs,
-    },
-    // Action row: actions aligned to the right (edit sits rightmost).
-    valueRow: {
+    // Full-width action row: delete sits at the far left, the primary action
+    // fills the rest.
+    bottomRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'flex-end',
       gap: theme.spacing.sm,
-      minHeight: theme.sizing.buttonHeightSm,
+    },
+    // Light danger-tinted circular surface behind the delete icon.
+    deleteButton: {
+      width: theme.sizing.minTouchTarget,
+      height: theme.sizing.minTouchTarget,
+      borderRadius: theme.radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    editButton: {
+      flex: 1,
     },
   });
 }

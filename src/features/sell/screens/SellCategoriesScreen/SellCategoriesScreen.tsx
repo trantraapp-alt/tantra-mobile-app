@@ -1,40 +1,83 @@
 // Categories screen for a marketplace module (opened from the Sell sheet).
-// Split layout: a 30% vertical category rail on the left drives a 70% listing
-// form on the right.
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+//
+// One scrolling page: a header naming the module and what it is for, the
+// module's top-level categories as selectable tab cards, and the grid of
+// categories to list in. Picking a category that has no children swaps the
+// whole page for that category's listing form.
+//
+// The screen takes its accent from the module's own visual (agriculture is
+// green, livestock blue, services orange), so the tabs, section heading and
+// support card all sit in the same family as the module they belong to.
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { PackageX } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BackHandler, Platform, View } from 'react-native';
+import {
+  BackHandler,
+  Platform,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { Spinner } from '@/components/loaders';
-import { Header } from '@/components/shared';
 import { Screen } from '@/components/ui';
-import { useGoBack, useThemedStyles } from '@/hooks';
+import { routes } from '@/constants';
+import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import type { ModuleCategory } from '@/types';
 
-import { SellCategoryForm, SellCategoryRail } from '../../components';
-import { useModuleCategories } from '../../hooks';
-import { expectsSubcategories, getCategoryName } from '../../utils';
+import {
+  SellCategoryForm,
+  SellModuleGlow,
+  SellModuleHeader,
+  SellModuleTabs,
+} from '../../components';
+import { useModuleCategories, useModules } from '../../hooks';
+import {
+  expectsSubcategories,
+  getCategoryName,
+  getModuleBlurbKey,
+  getModuleName,
+  getModuleVisual,
+} from '../../utils';
 import { createSellCategoriesStyles } from './SellCategoriesScreen.styles';
 
-// Renders the split category rail + listing form for a module.
+// How far down the page the header's accent bloom reaches, and how much of the
+// width it spans — enough to sit behind the header, the tabs and the top of the
+// first card row.
+const GLOW_HEIGHT = 340;
+const GLOW_WIDTH_RATIO = 0.6;
+
+// Renders the module's category browse page and the listing form it opens.
 export function SellCategoriesScreen() {
   const styles = useThemedStyles(createSellCategoriesStyles);
   const goBack = useGoBack();
+  const { width } = useWindowDimensions();
+  const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ moduleId: string; title?: string }>();
   const moduleId = Number(params.moduleId);
   const { categories, language, isLoading, isError, refetch } =
     useModuleCategories(moduleId);
+  // The module itself, for its name, description and accent. Already in the
+  // store by the time the sell sheet has opened this screen; the hook refetches
+  // it when the screen is reached some other way (a deep link, say).
+  const { modules } = useModules();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // The subcategory the user has drilled into (owned here so the single header
   // drives back navigation), and whether the selected top category is itself a
-  // leaf. Either makes us "drilled": the rail hides and the form goes full-screen.
+  // leaf. Either makes us "drilled": the tabs hide and the form goes full-screen.
   const [activeSub, setActiveSub] = useState<ModuleCategory | null>(null);
   const [isLeafTop, setIsLeafTop] = useState(false);
 
+  const module = useMemo(
+    () => modules.find((entry) => entry.id === moduleId) ?? null,
+    [modules, moduleId],
+  );
+  const moduleVisual = module ? getModuleVisual(module.moduleKey) : null;
+  const accent = moduleVisual?.accent ?? 'primary';
+
   // Whether selecting a category opens a full-screen form (a listing leaf or a
-  // business profile like Veterinary) versus showing the rail with a grid (a
+  // business profile like Veterinary) versus showing the tabs with a grid (a
   // marketplace grouping). Guessed from the category so the layout — and its
   // skeleton — is right the instant it's selected, before children load.
   const opensFullScreen = useCallback(
@@ -42,8 +85,8 @@ export function SellCategoriesScreen() {
     [],
   );
 
-  // Default to the first browse (grid) category so we land on a rail view rather
-  // than straight into a full-screen form; fall back to the first category.
+  // Default to the first browse (grid) category so we land on the category page
+  // rather than straight into a full-screen form; fall back to the first one.
   useEffect(() => {
     if (selectedId !== null) {
       return;
@@ -63,11 +106,11 @@ export function SellCategoriesScreen() {
   );
 
   // "Drilled" = a subcategory chosen, or the top category is itself a leaf. The
-  // rail hides and the form is full-screen; the header names the open category.
+  // tabs hide and the form is full-screen; the header names the open category.
   const drilled = activeSub !== null || isLeafTop;
   const openLeaf = drilled ? (activeSub ?? selectedCategory) : null;
 
-  // Selecting a top category from the rail resets any drilled subcategory and
+  // Selecting a top category from the tabs resets any drilled subcategory and
   // guesses the layout up-front so the correct skeleton shows immediately, with
   // no flash of the wrong layout while children load.
   const selectTop = useCallback(
@@ -80,7 +123,7 @@ export function SellCategoriesScreen() {
   );
 
   // Backing out of a full-screen top category (leaf or business profile) has no
-  // grid to return to, so switch to a browse (grid) category — bringing the rail
+  // grid to return to, so switch to a browse (grid) category — bringing the tabs
   // back — preferring one that isn't the current category.
   const exitToBrowse = useCallback(() => {
     const target =
@@ -132,7 +175,7 @@ export function SellCategoriesScreen() {
   );
 
   // After a listing is posted, reset back to the module's category browse (the
-  // module screen) — a subcategory returns to its grid, a leaf top to the rail.
+  // module screen) — a subcategory returns to its grid, a leaf top to the tabs.
   const handleListingCreated = useCallback(() => {
     if (activeSub) {
       setActiveSub(null);
@@ -141,14 +184,56 @@ export function SellCategoriesScreen() {
     }
   }, [activeSub, exitToBrowse]);
 
-  // Header title: the open category when drilled, else the module name.
+  // The support card's action opens the app's messaging surface.
+  const handleSupport = useCallback(() => {
+    router.push(routes.tabs.chat);
+  }, [router]);
+
+  // Header title: the open category when drilled, else the module name (from
+  // the store, falling back to the name the sell sheet passed through).
+  const moduleName = module
+    ? getModuleName(module, language)
+    : (params.title ?? t('sell.categoriesTitle'));
   const headerTitle = openLeaf
     ? getCategoryName(openLeaf, language)
-    : (params.title ?? 'Categories');
+    : moduleName;
+
+  // The top-category tabs ride at the top of the browse page's scroll, so they
+  // are handed to the form as its header rather than pinned above it. A
+  // full-screen form covers the page, so it gets none.
+  const tabs = drilled ? undefined : (
+    <SellModuleTabs
+      categories={categories}
+      selectedId={selectedId}
+      language={language}
+      accent={accent}
+      onSelect={selectTop}
+    />
+  );
 
   return (
-    <Screen padded={false}>
-      <Header showBack onBack={handleBack} title={headerTitle} />
+    // The header carries the brand gradient up through the status bar, so it
+    // owns the top inset and the screen only insets the bottom.
+    <Screen padded={false} edges={['bottom']}>
+      <View
+        style={[styles.glow, { width: width * GLOW_WIDTH_RATIO }]}
+        pointerEvents="none"
+      >
+        <SellModuleGlow
+          width={width * GLOW_WIDTH_RATIO}
+          height={GLOW_HEIGHT}
+          accent={accent}
+        />
+      </View>
+
+      <SellModuleHeader
+        title={headerTitle}
+        subtitle={
+          drilled || !module ? undefined : t(getModuleBlurbKey(module.moduleKey))
+        }
+        emoji={drilled ? undefined : moduleVisual?.emoji}
+        onBack={handleBack}
+      />
 
       {isLoading ? (
         <Spinner />
@@ -161,31 +246,21 @@ export function SellCategoriesScreen() {
           description="Categories for this module will appear here."
         />
       ) : (
-        <View style={styles.split}>
-          {!drilled ? (
-            <View style={styles.rail}>
-              <SellCategoryRail
-                categories={categories}
-                selectedId={selectedId}
-                language={language}
-                onSelect={selectTop}
-              />
-            </View>
+        <View style={styles.body}>
+          {selectedCategory ? (
+            <SellCategoryForm
+              key={selectedCategory.id}
+              category={selectedCategory}
+              language={language}
+              accent={accent}
+              header={tabs}
+              activeSub={activeSub}
+              onActiveSubChange={setActiveSub}
+              onLeafTopChange={setIsLeafTop}
+              onListingCreated={handleListingCreated}
+              onSupportPress={handleSupport}
+            />
           ) : null}
-
-          <View style={styles.form}>
-            {selectedCategory ? (
-              <SellCategoryForm
-                key={selectedCategory.id}
-                category={selectedCategory}
-                language={language}
-                activeSub={activeSub}
-                onActiveSubChange={setActiveSub}
-                onLeafTopChange={setIsLeafTop}
-                onListingCreated={handleListingCreated}
-              />
-            ) : null}
-          </View>
         </View>
       )}
     </Screen>

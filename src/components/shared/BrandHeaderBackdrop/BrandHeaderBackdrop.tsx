@@ -1,5 +1,6 @@
-// Decorative backdrop for the listing-detail header: the Tantra logo's two
-// brand colours swept into one gradient, with faint agricultural motifs.
+// Decorative backdrop shared by the app's branded headers (listing detail and
+// the listing-results header): the Tantra logo's two brand colours swept into
+// one gradient, with faint agricultural motifs.
 //
 // Colour path. The palette is documented as being lifted off the logo — violet
 // for the cart "T", warm orange for the cart wing. Interpolating violet
@@ -51,16 +52,16 @@ const LEAF_PATH =
 const WHEAT_PATH =
   'M10 28 L10 12 M10 12 C4 10 3 4 10 2 C17 4 16 10 10 12 Z M10 18 C5 16 4 11 10 9 M10 18 C15 16 16 11 10 9';
 
-// Props for the ListingHeaderBackdrop component.
-export interface ListingHeaderBackdropProps {
+// Props for the BrandHeaderBackdrop component.
+export interface BrandHeaderBackdropProps {
   // Width to draw, normally the window width.
   width: number;
 }
 
 // Renders the gradient + motif backdrop behind the listing-detail header.
-function ListingHeaderBackdropComponent({
+function BrandHeaderBackdropComponent({
   width,
-}: ListingHeaderBackdropProps) {
+}: BrandHeaderBackdropProps) {
   const theme = useTheme();
   const ink = theme.colors.onPrimary;
 
@@ -75,7 +76,7 @@ function ListingHeaderBackdropComponent({
         {/* Brand orange → plum → brand violet → deep violet, corner to corner.
             The plum at 0.34 is the orange/violet blend held explicitly so the
             transition stays a sunset instead of graduating through grey. */}
-        <LinearGradient id="listingHeaderFill" x1="0" y1="0" x2="1" y2="0.75">
+        <LinearGradient id="brandHeaderFill" x1="0" y1="0" x2="1" y2="0.75">
           <Stop offset="0" stopColor={theme.colors.secondary} />
           <Stop offset="0.34" stopColor={theme.colors.plum} />
           <Stop offset="0.7" stopColor={theme.colors.primary} />
@@ -84,7 +85,7 @@ function ListingHeaderBackdropComponent({
 
         {/* A touch of light on the warm end. Kept low — orange washes out to a
             pale peach long before violet would. */}
-        <LinearGradient id="listingHeaderLift" x1="0" y1="0" x2="1" y2="0.75">
+        <LinearGradient id="brandHeaderLift" x1="0" y1="0" x2="1" y2="0.75">
           <Stop offset="0" stopColor={ink} stopOpacity={0.12} />
           <Stop offset="0.45" stopColor={ink} stopOpacity={0.04} />
           <Stop offset="1" stopColor={ink} stopOpacity={0} />
@@ -93,7 +94,7 @@ function ListingHeaderBackdropComponent({
         {/* Ink deepens the violet end so the sweep lands on a rich base rather
             than a flat one. The themed violet-tinted charcoal keeps the dark
             end in the brand hue instead of greying it out. */}
-        <LinearGradient id="listingHeaderShade" x1="0" y1="0" x2="1" y2="0.75">
+        <LinearGradient id="brandHeaderShade" x1="0" y1="0" x2="1" y2="0.75">
           <Stop
             offset="0"
             stopColor={theme.colors.textPrimary}
@@ -118,21 +119,21 @@ function ListingHeaderBackdropComponent({
         y="0"
         width={width}
         height={BACKDROP_HEIGHT}
-        fill="url(#listingHeaderFill)"
+        fill="url(#brandHeaderFill)"
       />
       <Rect
         x="0"
         y="0"
         width={width}
         height={BACKDROP_HEIGHT}
-        fill="url(#listingHeaderLift)"
+        fill="url(#brandHeaderLift)"
       />
       <Rect
         x="0"
         y="0"
         width={width}
         height={BACKDROP_HEIGHT}
-        fill="url(#listingHeaderShade)"
+        fill="url(#brandHeaderShade)"
       />
 
       {/* Two motifs only — enough to say "agriculture", few enough to stay
@@ -169,4 +170,4 @@ function ListingHeaderBackdropComponent({
 }
 
 // Memoized decorative header backdrop.
-export const ListingHeaderBackdrop = memo(ListingHeaderBackdropComponent);
+export const BrandHeaderBackdrop = memo(BrandHeaderBackdropComponent);

@@ -2,9 +2,7 @@
 // resolve their stored attribute values into readable, localized names.
 import { useEffect, useMemo, useState } from 'react';
 
-import type { ListingForm } from '@/features/sell';
-
-import { fetchCategoryForm } from '../api';
+import { fetchCategoryForm, type ListingForm } from '@/features/sell';
 
 // Returns form schemas keyed by category id for the given categories.
 export function useCategoryForms(categoryIds: number[], listingType: string) {

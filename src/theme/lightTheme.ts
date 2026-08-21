@@ -1,4 +1,5 @@
 // Fully assembled light theme object consumed through the theme provider.
+import { type AccentName, type AccentPalette, lightAccents } from './accents';
 import { animation, easing, opacity } from './animation';
 import { type ColorScheme, lightColors } from './colors';
 import { elevation } from './elevation';
@@ -16,6 +17,8 @@ export interface AppTheme {
   isDark: boolean;
   // Semantic colors for the active scheme.
   colors: ColorScheme;
+  // Accent colour families for tinted, colour-coded surfaces.
+  accents: Record<AccentName, AccentPalette>;
   // Spacing scale.
   spacing: typeof spacing;
   // Border radius scale.
@@ -51,6 +54,7 @@ export const lightTheme: AppTheme = {
   scheme: 'light',
   isDark: false,
   colors: lightColors,
+  accents: lightAccents,
   spacing,
   radius,
   cardRadius,

@@ -1,4 +1,10 @@
 // Barrel export for the design system theme layer.
+export {
+  type AccentName,
+  type AccentPalette,
+  darkAccents,
+  lightAccents,
+} from './accents';
 export { animation, easing, opacity } from './animation';
 export { type ColorScheme, darkColors, lightColors } from './colors';
 export { darkTheme } from './darkTheme';

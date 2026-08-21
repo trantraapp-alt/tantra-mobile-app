@@ -1,6 +1,10 @@
 // Barrel export for shared composite components.
 export { BrandGradient, type BrandGradientProps } from './BrandGradient';
 export {
+  BrandHeaderBackdrop,
+  type BrandHeaderBackdropProps,
+} from './BrandHeaderBackdrop';
+export {
   ComingSoonScreen,
   type ComingSoonScreenProps,
 } from './ComingSoonScreen';

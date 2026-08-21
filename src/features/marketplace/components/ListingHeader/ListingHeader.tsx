@@ -1,16 +1,20 @@
-// Shared listing-screen header: a light-violet bar that fills the status bar,
-// carrying a round back button, a title + result-count block, and round search /
-// filter actions. The search icon opens an in-place search field (no navigation)
-// bound to the caller's controlled query; the back button closes it first. Set
+// Shared listing-screen header: the brand gradient bar (same design as the
+// listing-detail header) filling the status bar, carrying a round back button,
+// a title + result-count block, and search / filter actions. Only the chrome is
+// shared — each screen supplies its own title, count and handlers.
+//
+// The search icon opens an in-place search field (no navigation) bound to the
+// caller's controlled query; the back button closes it first. Set
 // `searchAlwaysOpen` on the search screen, where the field replaces the title.
 // A fixed content height keeps the bar from jumping when search toggles.
 import { ArrowLeft, Search, SlidersHorizontal } from 'lucide-react-native';
 import { memo, useState } from 'react';
-import { View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/buttons';
 import { SearchBar } from '@/components/inputs';
+import { BrandHeaderBackdrop } from '@/components/shared';
 import { Text } from '@/components/ui';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { useTheme } from '@/providers';
@@ -57,6 +61,7 @@ function ListingHeaderComponent({
   const theme = useTheme();
   const styles = useThemedStyles(createListingHeaderStyles);
   const { t } = useTranslation();
+  const { width: windowWidth } = useWindowDimensions();
   const [searchOpen, setSearchOpen] = useState(false);
 
   const showSearch = searchAlwaysOpen || searchOpen;
@@ -74,6 +79,7 @@ function ListingHeaderComponent({
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeWrap}>
+      <BrandHeaderBackdrop width={windowWidth} />
     <View style={styles.header}>
       {showLeading ? (
         <IconButton
@@ -99,13 +105,14 @@ function ListingHeaderComponent({
       ) : (
         <>
           <View style={styles.titleBlock}>
-            <Text variant="h4" numberOfLines={1}>
+            <Text variant="h4" color="onPrimary" numberOfLines={1}>
               {title}
             </Text>
             {resultLabel ? (
               <Text
                 variant="caption"
-                color="textSecondary"
+                color="onPrimary"
+                style={styles.resultLabel}
                 numberOfLines={1}
               >
                 {resultLabel}
@@ -116,8 +123,7 @@ function ListingHeaderComponent({
             icon={Search}
             accessibilityLabel={t('market.searchPlaceholder')}
             onPress={() => setSearchOpen(true)}
-            style={styles.iconBtn}
-            color={theme.colors.primary}
+            color={theme.colors.onPrimary}
           />
         </>
       )}
@@ -126,8 +132,7 @@ function ListingHeaderComponent({
         icon={SlidersHorizontal}
         accessibilityLabel={t('market.filtersButton')}
         onPress={onOpenFilters}
-        style={styles.iconBtn}
-        color={theme.colors.primary}
+        color={theme.colors.onPrimary}
       />
     </View>
     </SafeAreaView>

@@ -27,6 +27,8 @@ const en = {
   'common.back': 'Back',
   'common.remove': 'Remove',
   'common.close': 'Close',
+  // Placeholder for a listing field the seller left blank.
+  'common.na': 'NA',
 
   // Home screen.
   'home.greeting': 'Hello, {name}',
@@ -143,7 +145,15 @@ const en = {
   'detail.enquired': 'Enquired',
   'detail.quintal': 'Quintal',
   'detail.qualityAssured': 'Quality Assured',
-  'detail.qualityAssuredDesc': '100% natural & carefully selected',
+  // Quality-assured blurb, picked by category — the produce wording reads as
+  // nonsense on a tractor or a vet visit.
+  'detail.qualityDesc.produce': '100% natural & carefully selected',
+  'detail.qualityDesc.seed': 'Certified stock, tested for germination',
+  'detail.qualityDesc.equipment': 'Inspected and in good working condition',
+  'detail.qualityDesc.livestock': 'Healthy, well cared for and documented',
+  'detail.qualityDesc.input': 'Genuine product, correctly stored and sealed',
+  'detail.qualityDesc.service': 'Verified provider with a reliable track record',
+  'detail.qualityDesc.default': 'Checked and listed by a verified seller',
   'detail.listingDetails': 'Listing Details',
   'detail.viewOnMap': 'View on Map',
   'detail.quality': 'Quality',
@@ -159,6 +169,7 @@ const en = {
   'detail.readLess': 'Read less',
   'detail.share': 'Share',
   'detail.shareVia': 'Shared via Tantra',
+  'detail.otherDetails': 'Other details',
   'contact.viewHint': 'Get seller contact details',
   'contact.title': 'Seller contact',
   'contact.call': 'Call',
@@ -187,6 +198,14 @@ const en = {
   'sell.emptyDesc':
     "Selling options aren't available right now. Please check back soon.",
 
+  // Reassurance strip and help card carried by the sell sheet.
+  'sell.trustTitle': 'Safe. Simple. Trusted.',
+  'sell.trustDesc':
+    'Reach verified buyers and get the best value for your products.',
+  'sell.helpTitle': 'Not sure what to sell?',
+  'sell.helpDesc': "We'll help you choose the right category.",
+  'sell.helpAction': 'Get Help',
+
   // Sell categories / listing form.
   'sell.categoriesTitle': 'Categories',
   'sell.chooseCategory': 'Choose a category',
@@ -197,6 +216,40 @@ const en = {
   'sell.formErrorRetry': 'Try again',
   'sell.formInfo':
     'Add clear photos and accurate details to get more buyer responses.',
+  'sell.chooseCategorySub': 'Select a category to explore products',
+  'sell.supportTitle': 'Need help choosing?',
+  'sell.supportDesc': "We're here to help you find the right products.",
+  'sell.supportAction': 'Contact Support',
+
+  // What each module covers, shown under the module name on its sell screen.
+  'sell.moduleBlurb.agri':
+    'Buy, sell & find everything for your farming needs',
+  'sell.moduleBlurb.livestock':
+    'Buy, sell & care for your animals and livestock',
+  'sell.moduleBlurb.service': 'Find trusted people for the work you need done',
+  'sell.moduleBlurb.fallback': 'Buy, sell & find everything you need',
+
+  // What each module holds, shown as a pill on its sell-sheet card.
+  'sell.moduleTags.agri': 'Crops • Seeds • Vegetables • More',
+  'sell.moduleTags.livestock': 'Cattle • Dairy • Poultry • More',
+  'sell.moduleTags.service': 'Repairs • Labour • Vets • More',
+  'sell.moduleTags.fallback': 'Products • Services • More',
+
+  // One-line descriptions for the category cards on a module's sell screen.
+  'sell.categoryBlurb.crop': 'Find a wide variety\nof crops',
+  'sell.categoryBlurb.seed': 'Quality seeds for\nbetter yield',
+  'sell.categoryBlurb.fertilizer': 'Nutrients for healthy\nplant growth',
+  'sell.categoryBlurb.pesticide': 'Protect your crops\nfrom pests',
+  'sell.categoryBlurb.equipment': 'Modern tools and\nequipment for smart farming',
+  'sell.categoryBlurb.poultry': 'Birds, eggs and\neverything for your flock',
+  'sell.categoryBlurb.fishery': 'Fish, feed and\nfishery supplies',
+  'sell.categoryBlurb.animal': 'Cattle, goats and\nother livestock',
+  'sell.categoryBlurb.vegetable': 'Fresh vegetables\nstraight from the farm',
+  'sell.categoryBlurb.service': 'Hire trusted help\nfor your farm work',
+  'sell.categoryBlurb.repair': 'Repairs and maintenance\nyou can rely on',
+  'sell.categoryBlurb.vet': 'Care and treatment\nfor your animals',
+  'sell.categoryBlurb.market': 'Browse everything\nlisted in the marketplace',
+  'sell.categoryBlurb.fallback': 'Explore listings\nin this category',
   'form.subtitle': 'Fill in the details to post your listing.',
   'form.showContactHelp': 'Off keeps your contact hidden until you approve a request.',
   'form.submit': 'Post listing',
@@ -516,6 +569,7 @@ const hi: Record<TranslationKey, string> = {
   'common.back': 'वापस',
   'common.remove': 'हटाएँ',
   'common.close': 'बंद करें',
+  'common.na': 'NA',
 
   'home.greeting': 'नमस्ते, {name}',
   'home.prompt': 'आप क्या खोज रहे हैं?',
@@ -631,7 +685,13 @@ const hi: Record<TranslationKey, string> = {
   'detail.enquired': 'पूछताछ',
   'detail.quintal': 'क्विंटल',
   'detail.qualityAssured': 'गुणवत्ता सुनिश्चित',
-  'detail.qualityAssuredDesc': '100% प्राकृतिक एवं सावधानी से चुना गया',
+  'detail.qualityDesc.produce': '100% प्राकृतिक एवं सावधानी से चुना गया',
+  'detail.qualityDesc.seed': 'प्रमाणित बीज, अंकुरण के लिए परखा गया',
+  'detail.qualityDesc.equipment': 'जाँचा गया और चालू हालत में',
+  'detail.qualityDesc.livestock': 'स्वस्थ, अच्छी देखभाल और दस्तावेज़ सहित',
+  'detail.qualityDesc.input': 'असली उत्पाद, सही तरीके से रखा और सीलबंद',
+  'detail.qualityDesc.service': 'सत्यापित सेवा प्रदाता, भरोसेमंद रिकॉर्ड',
+  'detail.qualityDesc.default': 'सत्यापित विक्रेता द्वारा जाँचा और सूचीबद्ध',
   'detail.listingDetails': 'लिस्टिंग विवरण',
   'detail.viewOnMap': 'मानचित्र पर देखें',
   'detail.quality': 'गुणवत्ता',
@@ -647,6 +707,7 @@ const hi: Record<TranslationKey, string> = {
   'detail.readLess': 'कम पढ़ें',
   'detail.share': 'साझा करें',
   'detail.shareVia': 'तंत्र के माध्यम से साझा किया गया',
+  'detail.otherDetails': 'अन्य विवरण',
   'contact.viewHint': 'विक्रेता संपर्क विवरण देखें',
   'contact.title': 'विक्रेता संपर्क',
   'contact.call': 'कॉल',
@@ -673,6 +734,13 @@ const hi: Record<TranslationKey, string> = {
   'sell.emptyDesc':
     'बेचने के विकल्प अभी उपलब्ध नहीं हैं। कृपया कुछ देर बाद देखें।',
 
+  'sell.trustTitle': 'सुरक्षित। आसान। भरोसेमंद।',
+  'sell.trustDesc':
+    'सत्यापित खरीदारों तक पहुंचें और अपने उत्पादों का सही दाम पाएं।',
+  'sell.helpTitle': 'तय नहीं कर पा रहे कि क्या बेचें?',
+  'sell.helpDesc': 'सही श्रेणी चुनने में हम आपकी मदद करेंगे।',
+  'sell.helpAction': 'मदद लें',
+
   'sell.categoriesTitle': 'श्रेणियां',
   'sell.chooseCategory': 'श्रेणी चुनें',
   'sell.back': 'वापस',
@@ -681,6 +749,35 @@ const hi: Record<TranslationKey, string> = {
   'sell.formErrorRetry': 'फिर से प्रयास करें',
   'sell.formInfo':
     'ज़्यादा जवाब पाने के लिए साफ़ फ़ोटो और सही जानकारी डालें।',
+  'sell.chooseCategorySub': 'उत्पाद देखने के लिए श्रेणी चुनें',
+  'sell.supportTitle': 'चुनने में मदद चाहिए?',
+  'sell.supportDesc': 'सही उत्पाद ढूंढने में हम आपकी मदद करेंगे।',
+  'sell.supportAction': 'सहायता से संपर्क करें',
+
+  'sell.moduleBlurb.agri': 'खेती की हर ज़रूरत खरीदें, बेचें और खोजें',
+  'sell.moduleBlurb.livestock': 'अपने पशुओं की खरीद, बिक्री और देखभाल',
+  'sell.moduleBlurb.service': 'अपने काम के लिए भरोसेमंद लोग खोजें',
+  'sell.moduleBlurb.fallback': 'अपनी हर ज़रूरत खरीदें, बेचें और खोजें',
+
+  'sell.moduleTags.agri': 'फसल • बीज • सब्ज़ी • और भी',
+  'sell.moduleTags.livestock': 'पशु • डेयरी • पोल्ट्री • और भी',
+  'sell.moduleTags.service': 'मरम्मत • मज़दूरी • पशु-चिकित्सा • और भी',
+  'sell.moduleTags.fallback': 'उत्पाद • सेवाएं • और भी',
+
+  'sell.categoryBlurb.crop': 'फसलों की विस्तृत\nविविधता देखें',
+  'sell.categoryBlurb.seed': 'बेहतर पैदावार के लिए\nअच्छे बीज',
+  'sell.categoryBlurb.fertilizer': 'स्वस्थ पौधों के लिए\nपोषक तत्व',
+  'sell.categoryBlurb.pesticide': 'फसल को कीटों\nसे बचाएं',
+  'sell.categoryBlurb.equipment': 'स्मार्ट खेती के लिए\nआधुनिक उपकरण',
+  'sell.categoryBlurb.poultry': 'मुर्गी, अंडे और\nपोल्ट्री का सामान',
+  'sell.categoryBlurb.fishery': 'मछली, चारा और\nमत्स्य पालन का सामान',
+  'sell.categoryBlurb.animal': 'गाय, बकरी और\nअन्य पशुधन',
+  'sell.categoryBlurb.vegetable': 'खेत से सीधी\nताज़ा सब्ज़ियां',
+  'sell.categoryBlurb.service': 'खेती के काम के लिए\nभरोसेमंद मदद लें',
+  'sell.categoryBlurb.repair': 'भरोसेमंद मरम्मत\nऔर रखरखाव',
+  'sell.categoryBlurb.vet': 'अपने पशुओं की\nदेखभाल और इलाज',
+  'sell.categoryBlurb.market': 'मार्केटप्लेस की सभी\nलिस्टिंग देखें',
+  'sell.categoryBlurb.fallback': 'इस श्रेणी की\nलिस्टिंग देखें',
   'form.subtitle': 'अपनी लिस्टिंग पोस्ट करने के लिए विवरण भरें।',
   'form.showContactHelp': 'बंद रखने पर अनुरोध स्वीकार करने तक आपका संपर्क छिपा रहेगा।',
   'form.submit': 'लिस्टिंग पोस्ट करें',

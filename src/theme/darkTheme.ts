@@ -1,4 +1,5 @@
 // Fully assembled dark theme object consumed through the theme provider.
+import { darkAccents } from './accents';
 import { animation, easing, opacity } from './animation';
 import { darkColors } from './colors';
 import { elevation } from './elevation';
@@ -14,6 +15,7 @@ export const darkTheme: AppTheme = {
   scheme: 'dark',
   isDark: true,
   colors: darkColors,
+  accents: darkAccents,
   spacing,
   radius,
   cardRadius,

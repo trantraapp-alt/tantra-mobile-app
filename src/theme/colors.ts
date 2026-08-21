@@ -19,6 +19,8 @@ const palette = {
   orange400: '#FB923C',
   orange500: '#F97316',
   orange600: '#EA580C',
+  // Translucent orange for a subtle accent tint.
+  orangeTint: '#F973161F',
   ember500: '#F4432C',
   // Violet↔orange midpoint of the logo sweep, used to keep brand gradients
   // on a sunset path instead of graduating through grey.
@@ -43,11 +45,15 @@ const palette = {
   // Translucent green for a subtle success tint that works on light and dark.
   greenTint: '#22C55E1F',
   amber500: '#F59E0B',
+  // Translucent amber for a subtle warning tint (e.g. a seed category card).
+  amberTint: '#F59E0B1F',
   red500: '#EF4444',
   red600: '#DC2626',
   // Translucent red for a subtle danger tint (e.g. a delete dialog's icon).
   redTint: '#EF44441F',
   blue500: '#3B82F6',
+  // Translucent blue for a subtle informational tint.
+  blueTint: '#3B82F61F',
   yellow400: '#FACC15',
 } as const;
 
@@ -63,6 +69,8 @@ export interface ColorScheme {
   onPrimary: string;
   // Secondary accent color.
   secondary: string;
+  // Subtle secondary-tinted surface (e.g. an accent-coloured category card).
+  secondaryLight: string;
   // Foreground color rendered on top of the secondary color.
   // Midpoint between primary and secondary, for brand gradients that span
   // both logo colours. Decorative only — never a text or surface colour.
@@ -97,12 +105,16 @@ export interface ColorScheme {
   successLight: string;
   // Cautionary / warning state color.
   warning: string;
+  // Subtle warning-tinted surface (e.g. an amber category card).
+  warningLight: string;
   // Negative / error state color.
   danger: string;
   // Subtle danger-tinted surface (e.g. a delete dialog's icon circle).
   dangerLight: string;
   // Informational state color.
   info: string;
+  // Subtle info-tinted surface (e.g. a blue category card).
+  infoLight: string;
   // Modal / backdrop overlay color.
   overlay: string;
   // Base color for skeleton shimmer.
@@ -122,6 +134,7 @@ export const lightColors: ColorScheme = {
   primaryLight: palette.violet100,
   onPrimary: palette.white,
   secondary: palette.orange500,
+  secondaryLight: palette.orangeTint,
   onSecondary: palette.white,
   plum: palette.plum600,
   background: palette.white,
@@ -138,9 +151,11 @@ export const lightColors: ColorScheme = {
   success: palette.green600,
   successLight: palette.greenTint,
   warning: palette.amber500,
+  warningLight: palette.amberTint,
   danger: palette.red600,
   dangerLight: palette.redTint,
   info: palette.blue500,
+  infoLight: palette.blueTint,
   overlay: 'rgba(20, 16, 38, 0.55)',
   skeletonBase: palette.neutral200,
   skeletonHighlight: palette.neutral100,
@@ -155,6 +170,7 @@ export const darkColors: ColorScheme = {
   primaryLight: palette.violet800,
   onPrimary: palette.white,
   secondary: palette.orange400,
+  secondaryLight: palette.orangeTint,
   onSecondary: palette.ink900,
   plum: palette.plum600,
   background: palette.ink950,
@@ -171,9 +187,11 @@ export const darkColors: ColorScheme = {
   success: palette.green500,
   successLight: palette.greenTint,
   warning: palette.amber500,
+  warningLight: palette.amberTint,
   danger: palette.red500,
   dangerLight: palette.redTint,
   info: palette.blue500,
+  infoLight: palette.blueTint,
   overlay: 'rgba(0, 0, 0, 0.65)',
   skeletonBase: palette.ink800,
   skeletonHighlight: palette.ink700,

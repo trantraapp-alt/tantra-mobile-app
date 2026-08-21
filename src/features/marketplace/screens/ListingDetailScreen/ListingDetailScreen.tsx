@@ -7,8 +7,9 @@
 //   │  [🌿 Fresh Stock — solid green badge]        │
 //   │            HERO IMAGE                        │
 //   ├──────────────────────────────────────────────┤
-//   │  ₹5,500  ~~₹6,000~~  8% OFF                 │  ← price card
-//   │  Title · JG-315  ✓                           │
+//   │  Wheat (the crop, not the category)          │  ← price card
+//   │  📦 50 Quintal                               │
+//   │  ₹5,500  ~~₹6,000~~  8% OFF                  │
 //   │  [Sell]  [Negotiable◯]                       │
 //   │  📍 Location  ●  ⏰ time ago                 │
 //   ├──────────────────────────────────────────────┤
@@ -17,7 +18,8 @@
 //   │  🛡  Quality Assured  (green-tint card) ›    │
 //   ├──────────────────────────────────────────────┤
 //   │  ℹ️  About this product             ∨  ▸    │  ← accordion cards
-//   │  📦  Product Details (2-col grid)   ▸        │
+//   │  📦  Product Details — every form field,     │
+//   │      "NA" where the seller left a blank  ▸   │
 //   │  🏠  Seller Information             ▸        │
 //   │  📍  Location                       ▸        │
 //   ├──────────────────────────────────────────────┤
@@ -28,7 +30,6 @@ import {
   Activity,
   ArrowLeft,
   Calendar,
-  Check,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -38,12 +39,10 @@ import {
   Home,
   type LucideIcon,
   MapPin,
-  Monitor,
   Navigation,
   Package,
   Phone,
   Share2,
-  Shield,
   ShieldCheck,
   Truck,
   Users,
@@ -81,18 +80,19 @@ import {
 import { IconButton } from '@/components/buttons';
 import { ErrorState } from '@/components/empty-state';
 import { Spinner } from '@/components/loaders';
+import { BrandHeaderBackdrop } from '@/components/shared';
 import { ImageCarousel, Text } from '@/components/ui';
 import { fileUrl } from '@/config';
 import { appConstants, routes } from '@/constants';
-import type { FeedListing } from '@/features/home';
 import {
-  feedDescription,
+  type FeedListing,
   feedLocationLabel,
-  listingAttributeEntries,
   resolveFeedTitle,
-} from '@/features/home/utils/feedListing';
+} from '@/features/home';
+import { localize } from '@/features/sell';
 import { useSavedListing } from '@/features/wishlist/hooks/useSavedListing';
 import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
+import type { TranslationKey } from '@/i18n';
 import { logger, toApiError } from '@/lib';
 import { useTheme, useToast } from '@/providers';
 import { formatCurrency } from '@/utils';
@@ -101,8 +101,59 @@ import { marketplaceApi } from '../../api';
 import { ContactModal, SimilarListings } from '../../components';
 import { useListingDetail } from '../../hooks';
 import type { ContactRevealResult } from '../../types';
+import {
+  buildListingSpecs,
+  deriveListingName,
+  listingDescription,
+  listingQuantityLabel,
+  type ListingSpecRow,
+} from '../../utils/listingSpecs';
 import { createListingDetailStyles } from './ListingDetailScreen.styles';
-import { ListingHeaderBackdrop } from './ListingHeaderBackdrop';
+
+// Picks the "Quality Assured" blurb that fits the listing's category. The stock
+// produce wording ("100% natural") reads as nonsense on a tractor or a vet
+// visit, so the category name is keyword-matched the same way categoryVisuals
+// resolves icons. Order matters: services are checked before the nouns they
+// mention, so "tractor repair service" lands on service, not equipment.
+const QUALITY_DESC_RULES: { match: RegExp; key: TranslationKey }[] = [
+  {
+    match: /service|labour|labor|seva|repair|mainten|maramat|vet|veterin|clinic|rental|hire/,
+    key: 'detail.qualityDesc.service',
+  },
+  {
+    match: /equip|tractor|machine|tool|implement|pump|harvest|thresh/,
+    key: 'detail.qualityDesc.equipment',
+  },
+  {
+    match: /cattle|livestock|animal|cow|buffalo|goat|sheep|poultry|hen|chicken|fish|pashu|dairy/,
+    key: 'detail.qualityDesc.livestock',
+  },
+  { match: /seed|beej|nursery|sapling/, key: 'detail.qualityDesc.seed' },
+  {
+    match: /fertil|pestic|spray|chemical|manure|khad|nutrient/,
+    key: 'detail.qualityDesc.input',
+  },
+  {
+    match: /crop|grain|cereal|wheat|rice|veget|sabzi|sabji|fruit|dal|pulse|spice|produce/,
+    key: 'detail.qualityDesc.produce',
+  },
+];
+
+// Resolves the blurb key for a category label, falling back to wording that is
+// true of every listing when the category is unknown or missing.
+function qualityDescKey(category: string): TranslationKey {
+  const key = category.trim().toLowerCase();
+  if (!key) {
+    return 'detail.qualityDesc.default';
+  }
+  return (
+    QUALITY_DESC_RULES.find((rule) => rule.match.test(key))?.key ??
+    'detail.qualityDesc.default'
+  );
+}
+
+// A description longer than this is clipped to three lines behind "Read more".
+const DESC_CLAMP_LENGTH = 140;
 
 // Short relative-time label from an ISO timestamp.
 function relativeTime(iso: string | undefined): string {
@@ -113,6 +164,31 @@ function relativeTime(iso: string | undefined): string {
   if (hours < 1) return 'now';
   if (hours < 24) return `${hours}h`;
   return `${Math.floor(hours / 24)}d`;
+}
+
+// One spec row placed into the two-column grid.
+interface SpecCell {
+  row: ListingSpecRow;
+  // Long / free-text answers take the whole line — half a row is unreadable.
+  full: boolean;
+  // Whether this cell gets the alternate (tinted) background.
+  alt: boolean;
+}
+
+// Lays a section's rows out as grid cells. Only half-width cells advance the
+// zebra counter, and a full-width row resets it, so the tint keeps tracking the
+// right-hand column instead of drifting after every long answer.
+function toSpecCells(rows: ListingSpecRow[]): SpecCell[] {
+  let column = 0;
+  return rows.map((row) => {
+    if (row.stacked) {
+      column = 0;
+      return { row, full: true, alt: false };
+    }
+    const alt = column % 2 === 1;
+    column += 1;
+    return { row, full: false, alt };
+  });
 }
 
 // ── Accordion section ─────────────────────────────────────────────────────────
@@ -256,7 +332,7 @@ export function MarketplaceListingDetailScreen() {
   // the floor keeps Android (inset 0) off the screen edge.
   const footerPadBottom = Math.max(insets.bottom - theme.spacing.sm, theme.spacing.sm);
 
-  const { listing, similar, isLoading, isError, reload } =
+  const { listing, form, similar, isLoading, isError, reload } =
     useListingDetail(listingId);
 
   // Wishlist state for the header heart. Backed by the shared `saved` slice, so
@@ -269,9 +345,11 @@ export function MarketplaceListingDetailScreen() {
   const [contact, setContact] = useState<ContactRevealResult | null>(null);
   const [revealing, setRevealing] = useState(false);
 
-  // "About this product" starts open; all others start collapsed.
+  // Every section starts open — the detail page is a reference the buyer reads
+  // top to bottom, so hiding it behind four taps costs more than the scroll.
+  // Collapsing still works; the accordion just no longer starts closed.
   const [expanded, setExpanded] = useState<Set<string>>(
-    () => new Set(['description']),
+    () => new Set(['description', 'details', 'seller', 'location']),
   );
 
   // Description text is truncated at 3 lines until the user taps "Read more".
@@ -356,7 +434,7 @@ export function MarketplaceListingDetailScreen() {
   // Violet gradient header — shared between all states (loading, error, content).
   const headerBar = (
     <SafeAreaView edges={['top']} style={styles.headerSafe}>
-      <ListingHeaderBackdrop width={windowWidth} />
+      <BrandHeaderBackdrop width={windowWidth} />
       <View style={styles.header}>
         {/* Back: white pill so it reads clearly on the violet bar */}
         <IconButton
@@ -414,7 +492,16 @@ export function MarketplaceListingDetailScreen() {
   }
 
   // ── Derive display values ────────────────────────────────────────────
+  // Everything below reads the listing THROUGH its category's form schema, so a
+  // stored value ("wheat") reads as the label the seller picked ("Wheat") and
+  // every question the form asked can be listed back, answered or not.
+  const specSource = { listing, form, language };
+
+  // The heading is the thing being sold — the crop / breed / model the seller
+  // named on the form. The API's listingTitle is only the category ("Crop")
+  // for most listings, so the schema-derived name wins whenever there is one.
   const title =
+    deriveListingName(specSource) ||
     listing.listingTitle?.trim() ||
     resolveFeedTitle(listing, language, t('home.listingFallback'));
 
@@ -456,10 +543,33 @@ export function MarketplaceListingDetailScreen() {
         ? t('market.type.sell')
         : type;
 
-  const description = feedDescription(listing);
-  const attrs = listingAttributeEntries(listing).slice(0, 12);
+  // The About card's paragraph, and the field key it came from so the same text
+  // is not repeated as a cramped row inside the spec grid below it.
+  const description = listingDescription(specSource);
+  // Every field on the listing form, in the form's own order, with "NA" standing
+  // in for each one the seller left blank.
+  const specs = buildListingSpecs({
+    ...specSource,
+    labels: {
+      na: t('common.na'),
+      yes: t('common.yes'),
+      no: t('common.no'),
+      other: t('detail.otherDetails'),
+    },
+    skipKeys: description ? new Set([description.key]) : undefined,
+  });
   const isVerified = listing.sellerVerified === true;
   const isNegotiable = listing.isNegotiable === true;
+  // "50 Quintal" — read under the name. The unit is resolved through the form's
+  // option labels, so a stored "QUINTAL" reads the way the seller chose it.
+  const quantityLabel = listingQuantityLabel(specSource);
+  // Category label drives the Quality Assured wording. `categoryName` may be a
+  // plain string or a bilingual pair depending on the endpoint, so normalise
+  // both shapes before keyword-matching.
+  const categoryLabel =
+    typeof listing.categoryName === "string"
+      ? listing.categoryName
+      : localize(listing.categoryName, language);
   const discount =
     listing.discountPct != null && listing.discountPct > 0
       ? Math.round(listing.discountPct)
@@ -543,33 +653,53 @@ export function MarketplaceListingDetailScreen() {
             aspectRatio={4 / 3}
             contentFit="cover"
           />
-          {/* Solid-green "Fresh Stock" badge (filled, white text) */}
-          <View style={styles.freshBadge}>
-            <Shield size={theme.sizing.iconXs} color={theme.colors.onPrimary} />
-            <Text variant="label" color="onPrimary">
-              {t('detail.freshStock')}
-            </Text>
-          </View>
         </View>
 
         {/* ── Price card (matches HTML reference design) ───── */}
         <View style={styles.priceCard}>
 
-          {/* ① Price row — large bold price · strikethrough · amber pill */}
+          {/* ① Name of the thing being sold */}
+          <View style={styles.titleRow}>
+            <Text variant="h2" numberOfLines={2} style={styles.titleText}>
+              {title}
+            </Text>
+          </View>
+
+          {/* ② Quantity + unit, directly under the name. Always shown: "how much
+              is on offer" is the buyer's next question, and an unanswered one is
+              itself worth knowing. */}
+          <View style={styles.quantityRow}>
+            <Package
+              size={theme.sizing.iconXs}
+              color={theme.colors.textSecondary}
+            />
+            <Text
+              variant="bodyMedium"
+              color={quantityLabel ? 'textSecondary' : 'textTertiary'}
+            >
+              {quantityLabel ?? `${t('listing.quantity')}: ${t('common.na')}`}
+            </Text>
+          </View>
+
+          {/* ③ Price row — large bold price · strikethrough · amber pill */}
           <View style={styles.priceRow}>
             {listing.offeredPrice != null ? (
-              <Text variant="h2" style={styles.priceMain}>
+              <Text variant="h3" style={styles.priceMain}>
                 {formatCurrency(listing.offeredPrice, appConstants.currencyCode)}
               </Text>
             ) : (
-              <Text variant="h2" color="textTertiary">
+              <Text variant="h3" color="textTertiary" style={styles.priceMain}>
                 {t('home.askPrice')}
               </Text>
             )}
             {listing.actualPrice != null &&
-              listing.offeredPrice != null &&
-              listing.actualPrice > listing.offeredPrice ? (
-              <Text variant="body" color="textTertiary" style={styles.priceStrike}>
+            listing.offeredPrice != null &&
+            listing.actualPrice > listing.offeredPrice ? (
+              <Text
+                variant="body"
+                color="textTertiary"
+                style={styles.priceStrike}
+              >
                 {formatCurrency(listing.actualPrice, appConstants.currencyCode)}
               </Text>
             ) : null}
@@ -582,23 +712,7 @@ export function MarketplaceListingDetailScreen() {
             ) : null}
           </View>
 
-          {/* ② Title + filled-circle verified badge */}
-          <View style={styles.titleRow}>
-            <Text variant="h3" numberOfLines={2} style={styles.titleText}>
-              {title}
-            </Text>
-            {isVerified ? (
-              <View style={styles.verifiedCircle}>
-                <Check
-                  size={10}
-                  color={theme.colors.onPrimary}
-                  strokeWidth={3.5}
-                />
-              </View>
-            ) : null}
-          </View>
-
-          {/* ③ Tags — same pill treatment as the listing cards */}
+          {/* ④ Tags — same pill treatment as the listing cards */}
           <View style={styles.tagsRow}>
             {/* Listing type — SELL = filled green, RENT = violet tint */}
             {type ? (
@@ -632,7 +746,7 @@ export function MarketplaceListingDetailScreen() {
             )}
           </View>
 
-          {/* ④ Meta — one row: 📍 City, State   ⏰ time ago */}
+          {/* ⑤ Meta — one row: 📍 City, State   ⏰ time ago */}
           {shortLocality || ago ? (
             <View style={styles.metaRow}>
               {shortLocality ? (
@@ -652,8 +766,7 @@ export function MarketplaceListingDetailScreen() {
             </View>
           ) : null}
         </View>
-
-        {/* ── Stats card: 4 columns — 20px muted icons, 15px bold values ─── */}
+        {/* ── Stats card: 3 columns — 20px muted icons, 15px bold values ─── */}
         <View style={styles.statsCard}>
 
           {/* Col 1: Views */}
@@ -677,19 +790,7 @@ export function MarketplaceListingDetailScreen() {
               {t('detail.contacts')}
             </Text>
           </View>
-
-          {/* Col 3: Quintal / unit */}
-          <View style={[styles.statItem, styles.statItemBorder]}>
-            <Monitor size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
-            <Text variant="h4" color="textPrimary" style={styles.statValue}>
-              {listing.quantity ?? 0}
-            </Text>
-            <Text variant="label" color="textSecondary" align="center">
-              {listing.unit?.trim() || t('detail.quintal')}
-            </Text>
-          </View>
-
-          {/* Col 4: Quality Assured — word value, green when verified */}
+          {/* Col 3: Quality Assured — word value, green when verified */}
           <View style={[styles.statItem, styles.statItemBorder]}>
             <ShieldCheck
               size={theme.sizing.iconXs}
@@ -731,7 +832,7 @@ export function MarketplaceListingDetailScreen() {
                 {t('detail.qualityAssured')}
               </Text>
               <Text variant="body" color="textSecondary">
-                {t('detail.qualityAssuredDesc')}
+                {t(qualityDescKey(categoryLabel ?? ''))}
               </Text>
             </View>
             <ChevronRight
@@ -742,23 +843,24 @@ export function MarketplaceListingDetailScreen() {
         ) : null}
 
         {/* ── About this product (accordion card) ─────── */}
-        {description ? (
-          <AccordionSection
-            icon={FileText}
-            iconColor={theme.colors.info}
-            title={t('detail.description')}
-            expanded={expanded.has('description')}
-            sectionKey="description"
-            onToggle={toggleSection}
-            style={styles.card}
+        <AccordionSection
+          icon={FileText}
+          iconColor={theme.colors.info}
+          title={t('detail.description')}
+          expanded={expanded.has('description')}
+          sectionKey="description"
+          onToggle={toggleSection}
+          style={styles.card}
+        >
+          <Text
+            variant="body"
+            color={description ? 'textSecondary' : 'textTertiary'}
+            numberOfLines={descExpanded ? undefined : 3}
           >
-            <Text
-              variant="body"
-              color="textSecondary"
-              numberOfLines={descExpanded ? undefined : 3}
-            >
-              {description}
-            </Text>
+            {description?.text ?? t('common.na')}
+          </Text>
+          {/* Only a paragraph long enough to be clipped needs the toggle. */}
+          {description && description.text.length > DESC_CLAMP_LENGTH ? (
             <TouchableOpacity
               style={styles.readMore}
               onPress={() => setDescExpanded((v) => !v)}
@@ -768,44 +870,70 @@ export function MarketplaceListingDetailScreen() {
                 {descExpanded ? t('detail.readLess') : t('detail.readMore')}
               </Text>
             </TouchableOpacity>
-          </AccordionSection>
-        ) : null}
+          ) : null}
+        </AccordionSection>
 
-        {/* ── Product Details — 2-column grid (accordion card) ─── */}
-        {attrs.length > 0 ? (
-          <AccordionSection
-            icon={Package}
-            iconColor={theme.colors.secondary}
-            title={t('detail.details')}
-            expanded={expanded.has('details')}
-            sectionKey="details"
-            onToggle={toggleSection}
-            style={styles.card}
-          >
-            <View style={styles.detailsGrid}>
-              {attrs.map((attr, i) => (
-                <View
-                  key={attr.key}
-                  style={[
-                    styles.detailCell,
-                    i % 2 === 1 && styles.detailCellAlt,
-                  ]}
-                >
-                  <Text
-                    variant="caption"
-                    color="textTertiary"
-                    style={{ textTransform: 'uppercase', letterSpacing: 0.4 }}
-                  >
-                    {attr.label}
-                  </Text>
-                  <Text variant="bodyMedium" color="textPrimary">
-                    {attr.value}
-                  </Text>
+        {/* ── Product Details — every field the listing form asked for,
+              grouped by the form's own sections. A field the seller left blank
+              still gets a row, showing "NA", so the buyer can tell "not given"
+              from "not asked". ─────────────────────────────────────────────── */}
+        <AccordionSection
+          icon={Package}
+          iconColor={theme.colors.secondary}
+          title={t('detail.details')}
+          expanded={expanded.has('details')}
+          sectionKey="details"
+          onToggle={toggleSection}
+          style={styles.card}
+        >
+          {specs.length > 0 ? (
+            <View style={styles.specStack}>
+              {specs.map((section) => (
+                <View key={section.key} style={styles.specSection}>
+                  {section.title ? (
+                    <Text
+                      variant="overline"
+                      color="textTertiary"
+                      style={styles.specSectionTitle}
+                    >
+                      {section.title}
+                    </Text>
+                  ) : null}
+                  <View style={styles.detailsGrid}>
+                    {toSpecCells(section.rows).map((cell) => (
+                      <View
+                        key={cell.row.key}
+                        style={[
+                          styles.detailCell,
+                          cell.full && styles.detailCellFull,
+                          cell.alt && styles.detailCellAlt,
+                        ]}
+                      >
+                        <Text
+                          variant="caption"
+                          color="textTertiary"
+                          style={styles.detailLabel}
+                        >
+                          {cell.row.label}
+                        </Text>
+                        <Text
+                          variant="bodyMedium"
+                          color={cell.row.empty ? 'textTertiary' : 'textPrimary'}
+                        >
+                          {cell.row.value}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
               ))}
             </View>
-          </AccordionSection>
-        ) : null}
+          ) : (
+            <Text variant="body" color="textTertiary">
+              {t('listing.noDetails')}
+            </Text>
+          )}
+        </AccordionSection>
 
         {/* ── Seller Information (accordion card) ─────── */}
         <AccordionSection
@@ -830,19 +958,12 @@ export function MarketplaceListingDetailScreen() {
                 <Home size={26} color={theme.colors.primary} />
               </View>
               <View style={styles.sellerInfo}>
+                {/* No tick beside the name — the badge grid below states the
+                    seller's verification status in words. */}
                 <View style={styles.sellerNameRow}>
                   <Text variant="bodyMedium" numberOfLines={1}>
                     {sellerName}
                   </Text>
-                  {isVerified ? (
-                    <View style={styles.verifiedCircle}>
-                      <Check
-                        size={10}
-                        color={theme.colors.onPrimary}
-                        strokeWidth={3.5}
-                      />
-                    </View>
-                  ) : null}
                 </View>
                 <Text variant="caption" color="textSecondary" numberOfLines={1}>
                   {planLabel
@@ -893,24 +1014,26 @@ export function MarketplaceListingDetailScreen() {
         </AccordionSection>
 
         {/* ── Location (accordion card) ────────────────── */}
-        {addressParts.length > 0 ? (
-          <AccordionSection
-            icon={MapPin}
-            iconColor={theme.colors.danger}
-            title={t('listing.location')}
-            expanded={expanded.has('location')}
-            sectionKey="location"
-            onToggle={toggleSection}
-            style={styles.card}
-          >
-            <View style={styles.locationContent}>
-              <Text
-                variant="body"
-                color="textSecondary"
-                style={styles.locationText}
-              >
-                {addressParts.join(', ')}
-              </Text>
+        <AccordionSection
+          icon={MapPin}
+          iconColor={theme.colors.danger}
+          title={t('listing.location')}
+          expanded={expanded.has('location')}
+          sectionKey="location"
+          onToggle={toggleSection}
+          style={styles.card}
+        >
+          <View style={styles.locationContent}>
+            <Text
+              variant="body"
+              color={addressParts.length > 0 ? 'textSecondary' : 'textTertiary'}
+              style={styles.locationText}
+            >
+              {addressParts.length > 0 ? addressParts.join(', ') : t('common.na')}
+            </Text>
+            {/* Nothing to search for without an address — the button would open
+                an empty map. */}
+            {addressParts.length > 0 ? (
               <TouchableOpacity
                 style={styles.mapBtn}
                 onPress={onViewOnMap}
@@ -921,9 +1044,9 @@ export function MarketplaceListingDetailScreen() {
                   {t('detail.viewOnMap')}
                 </Text>
               </TouchableOpacity>
-            </View>
-          </AccordionSection>
-        ) : null}
+            ) : null}
+          </View>
+        </AccordionSection>
 
         {/* Gap below the last card before Similar listings */}
         <View style={styles.sectionGap} />

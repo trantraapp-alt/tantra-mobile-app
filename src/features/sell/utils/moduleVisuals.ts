@@ -26,8 +26,8 @@ export interface ModuleVisual {
 
 // Exact module-key visuals (fast path).
 const MODULE_VISUALS: Record<string, ModuleVisual> = {
-  MOD_AGRI: { icon: Sprout, emoji: '🌾', accent: 'success' },
-  MOD_ANIMAL_LIVESTOCK: { icon: PawPrint, emoji: '🐄', accent: 'warning' },
+  MOD_AGRI: { icon: Sprout, emoji: '🌱', accent: 'success' },
+  MOD_ANIMAL_LIVESTOCK: { icon: PawPrint, emoji: '🐄', accent: 'info' },
   MOD_SERVICE_PROVIDER: { icon: Briefcase, emoji: '💼', accent: 'secondary' },
 };
 
@@ -36,7 +36,7 @@ const MODULE_VISUALS: Record<string, ModuleVisual> = {
 const MODULE_RULES: { match: RegExp; visual: ModuleVisual }[] = [
   {
     match: /animal|livestock|poultry|fish|dairy|cattle|pashu/,
-    visual: { icon: PawPrint, emoji: '🐄', accent: 'warning' },
+    visual: { icon: PawPrint, emoji: '🐄', accent: 'info' },
   },
   {
     match: /agri|crop|farm|krishi|kheti/,

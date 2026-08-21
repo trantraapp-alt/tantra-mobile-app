@@ -1,15 +1,15 @@
 // Right-pane content for a selected top-level category. Resolves the category
 // tree: a BUSINESS_PROFILE category hands off to the Business Profile create
-// flow; a category with subcategories shows a picker; a leaf category renders
-// its server-driven listing form via DynamicListingForm.
-import { Image } from 'expo-image';
+// flow; a category with subcategories shows the category browse page; a leaf
+// category renders its server-driven listing form via DynamicListingForm.
 import { useRouter } from 'expo-router';
+import type { ReactNode } from 'react';
 import { memo, useEffect } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { ErrorState } from '@/components/empty-state';
 import { Skeleton } from '@/components/loaders';
-import { Card, InfoBanner, Text } from '@/components/ui';
+import { InfoBanner } from '@/components/ui';
 import { routes } from '@/constants';
 import { useThemedStyles, useTranslation } from '@/hooks';
 import { logger } from '@/lib';
@@ -17,12 +17,9 @@ import { useTheme } from '@/providers';
 import type { ModuleCategory, PreferredLanguage } from '@/types';
 
 import { useListingForm, useSubcategories } from '../../hooks';
-import {
-  expectsSubcategories,
-  getCategoryImageSource,
-  getCategoryVisual,
-} from '../../utils';
+import { type AccentKey, expectsSubcategories } from '../../utils';
 import { DynamicListingForm } from '../DynamicListingForm';
+import { SellCategoryPicker } from '../SellCategoryPicker';
 import { createSellCategoryFormStyles } from './SellCategoryForm.styles';
 
 // Props for the SellCategoryForm component.
@@ -31,27 +28,24 @@ export interface SellCategoryFormProps {
   category: ModuleCategory;
   // Active app language controlling labels.
   language: PreferredLanguage;
+  // Accent for the browse page's heading and support card (the module's).
+  accent?: AccentKey;
+  // Content rendered above the browse page's heading — the module tabs. Only
+  // the grid shows them; a full-screen form covers the whole pane.
+  header?: ReactNode;
   // The subcategory the user has drilled into (screen-owned), or null on the
   // grid. Lifting it up lets the single screen header drive the back navigation.
   activeSub?: ModuleCategory | null;
   // Called when a subcategory is chosen (or cleared) from the grid.
   onActiveSubChange?: (sub: ModuleCategory | null) => void;
   // Reports whether the selected category is itself a leaf (no subcategories),
-  // so the screen can hide the rail and show the form full-screen.
+  // so the screen can hide the tabs and show the form full-screen.
   onLeafTopChange?: (isLeafTop: boolean) => void;
   // Called after a listing is created, so the screen can reset back to the
   // module's category browse.
   onListingCreated?: () => void;
-}
-
-// Resolves a category's display name for the active language.
-function categoryName(
-  category: ModuleCategory,
-  language: PreferredLanguage,
-): string {
-  return language === 'HI'
-    ? category.categoryNameHi
-    : category.categoryNameEn;
+  // Called when the browse page's support action is pressed.
+  onSupportPress?: () => void;
 }
 
 // A form-shaped loading placeholder (a title + a few labeled input rows), shown
@@ -79,36 +73,6 @@ function FormSkeleton() {
           />
         </View>
       ))}
-    </ScrollView>
-  );
-}
-
-// A box-grid loading placeholder (title + six icon-box placeholders), shown
-// while a parent category's subcategories load.
-function BoxSkeleton() {
-  const theme = useTheme();
-  const styles = useThemedStyles(createSellCategoryFormStyles);
-  const { t } = useTranslation();
-  return (
-    <ScrollView
-      contentContainerStyle={styles.pickerContent}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text variant="h4">{t('sell.chooseCategory')}</Text>
-      <View style={styles.pickerGrid}>
-        {[0, 1, 2, 3, 4, 5].map((placeholder) => (
-          <View key={placeholder} style={styles.pickerBox}>
-            <View style={styles.pickerBoxInner}>
-              <Skeleton
-                width={theme.sizing.avatarXl}
-                height={theme.sizing.avatarXl}
-                radius={theme.radius.lg}
-              />
-              <Skeleton width="70%" height={theme.spacing.lg} />
-            </View>
-          </View>
-        ))}
-      </View>
     </ScrollView>
   );
 }
@@ -160,71 +124,17 @@ function LeafForm({
   );
 }
 
-// Lets the user pick a leaf subcategory before the form opens.
-function SubcategoryPicker({
-  subcategories,
-  language,
-  onSelect,
-}: {
-  subcategories: ModuleCategory[];
-  language: PreferredLanguage;
-  onSelect: (category: ModuleCategory) => void;
-}) {
-  const theme = useTheme();
-  const styles = useThemedStyles(createSellCategoryFormStyles);
-  const { t } = useTranslation();
-  return (
-    <ScrollView
-      contentContainerStyle={styles.pickerContent}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text variant="h4">{t('sell.chooseCategory')}</Text>
-      <View style={styles.pickerGrid}>
-        {subcategories.map((sub) => {
-          const name = categoryName(sub, language);
-          const imageSource = getCategoryImageSource(sub.categoryKey);
-          const visual = getCategoryVisual(sub.categoryKey);
-          return (
-            <Card
-              key={sub.id}
-              radius="lg"
-              onPress={() => onSelect(sub)}
-              style={styles.pickerBox}
-            >
-              <View style={styles.pickerBoxInner}>
-                <View style={styles.pickerTile}>
-                  {imageSource ? (
-                    <Image
-                      source={imageSource}
-                      style={styles.pickerTileImage}
-                      contentFit="contain"
-                      transition={theme.animation.normal}
-                      accessibilityLabel={name}
-                    />
-                  ) : (
-                    <Text style={styles.pickerEmoji}>{visual.emoji}</Text>
-                  )}
-                </View>
-                <Text variant="bodyMedium" align="center" numberOfLines={2}>
-                  {name}
-                </Text>
-              </View>
-            </Card>
-          );
-        })}
-      </View>
-    </ScrollView>
-  );
-}
-
-// Resolves a top-level category into a subcategory picker or a leaf form.
+// Resolves a top-level category into the category browse page or a leaf form.
 function CategoryResolver({
   category,
   language,
+  accent,
+  header,
   activeSub,
   onActiveSubChange,
   onLeafTopChange,
   onListingCreated,
+  onSupportPress,
 }: SellCategoryFormProps) {
   const styles = useThemedStyles(createSellCategoryFormStyles);
   const router = useRouter();
@@ -234,7 +144,7 @@ function CategoryResolver({
 
   // A leaf top category (no children, e.g. Services / Repair) opens its form
   // full-screen just like a chosen subcategory. Report it so the screen hides
-  // the rail and drives the back navigation from its single header. During load
+  // the tabs and drives the back navigation from its single header. During load
   // we don't yet know if there are children, so guess from the category (a
   // "marketplace" groups; everything else is a leaf) — this keeps the layout,
   // and its skeleton, correct instead of flashing the browse layout then jumping.
@@ -263,15 +173,32 @@ function CategoryResolver({
   }, [leaf, router, onActiveSubChange]);
 
   // The children aren't loaded yet, so pick the skeleton from the category type:
-  // a grouping category (marketplace) shows box placeholders; a leaf category
-  // (services, repair) shows a form placeholder.
+  // a grouping category (marketplace) shows the browse page with placeholder
+  // cards; a leaf category (services, repair) shows a form placeholder.
   if (isLoading) {
-    return expectsSubcategories(category) ? <BoxSkeleton /> : <FormSkeleton />;
+    return expectsSubcategories(category) ? (
+      <SellCategoryPicker
+        loading
+        subcategories={[]}
+        language={language}
+        accent={accent}
+        header={header}
+        onSelect={() => undefined}
+      />
+    ) : (
+      <FormSkeleton />
+    );
   }
+  // Keep the tabs above a failed load: the categories that failed are one
+  // branch of the module, and the user should still be able to switch to
+  // another rather than backing out of the screen entirely.
   if (isError) {
     return (
-      <View style={styles.center}>
-        <ErrorState onRetry={refetch} />
+      <View style={styles.errorWrap}>
+        {header}
+        <View style={styles.center}>
+          <ErrorState onRetry={refetch} />
+        </View>
       </View>
     );
   }
@@ -287,10 +214,13 @@ function CategoryResolver({
     );
   }
   return (
-    <SubcategoryPicker
+    <SellCategoryPicker
       subcategories={subcategories}
       language={language}
+      accent={accent}
+      header={header}
       onSelect={(sub) => onActiveSubChange?.(sub)}
+      onSupportPress={onSupportPress}
     />
   );
 }
@@ -314,14 +244,17 @@ function BusinessProfileNavigator({
   return null;
 }
 
-// Renders the selected category's content (picker / form / business-profile handoff).
+// Renders the selected category's content (browse / form / business-profile handoff).
 function SellCategoryFormComponent({
   category,
   language,
+  accent,
+  header,
   activeSub,
   onActiveSubChange,
   onLeafTopChange,
   onListingCreated,
+  onSupportPress,
 }: SellCategoryFormProps) {
   if (category.actionType === 'BUSINESS_PROFILE') {
     return <BusinessProfileNavigator category={category} />;
@@ -330,10 +263,13 @@ function SellCategoryFormComponent({
     <CategoryResolver
       category={category}
       language={language}
+      accent={accent}
+      header={header}
       activeSub={activeSub}
       onActiveSubChange={onActiveSubChange}
       onLeafTopChange={onLeafTopChange}
       onListingCreated={onListingCreated}
+      onSupportPress={onSupportPress}
     />
   );
 }

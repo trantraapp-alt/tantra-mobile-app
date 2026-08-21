@@ -24,13 +24,10 @@ import {
   Wrench,
 } from 'lucide-react-native';
 
-import type { ColorScheme } from '@/theme';
+import type { AccentKey } from './accentColors';
 
-// Semantic color keys usable to tint a category icon.
-type CategoryAccent = Extract<
-  keyof ColorScheme,
-  'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'
->;
+// Semantic color key used to tint a category icon and its card.
+type CategoryAccent = AccentKey;
 
 // Visual descriptor for a category entry.
 export interface CategoryVisual {
@@ -47,8 +44,8 @@ export interface CategoryVisual {
 // the same grid have distinct icons AND accents.
 const CATEGORY_VISUALS: Record<string, CategoryVisual> = {
   CAT_CROP: { icon: Wheat, emoji: '🌾', accent: 'success' },
-  CAT_SEED: { icon: Sprout, emoji: '🌱', accent: 'info' },
-  CAT_FERTILIZER: { icon: Leaf, emoji: '🧪', accent: 'warning' },
+  CAT_SEED: { icon: Sprout, emoji: '🌱', accent: 'warning' },
+  CAT_FERTILIZER: { icon: Leaf, emoji: '🧪', accent: 'info' },
   CAT_EQUIPMENT: { icon: Tractor, emoji: '🚜', accent: 'primary' },
   CAT_PESTICIDE: { icon: SprayCan, emoji: '🧴', accent: 'danger' },
   CAT_POULTRY: { icon: Bird, emoji: '🐔', accent: 'warning' },
@@ -65,7 +62,7 @@ const CATEGORY_RULES: { match: RegExp; visual: CategoryVisual }[] = [
   },
   {
     match: /repair|mainten|maramat/,
-    visual: { icon: Wrench, emoji: '🔧', accent: 'info' },
+    visual: { icon: Wrench, emoji: '🛠️', accent: 'info' },
   },
   {
     match: /service|labour|labor|seva|sevah/,
@@ -83,8 +80,8 @@ const CATEGORY_RULES: { match: RegExp; visual: CategoryVisual }[] = [
     match: /crop|wheat|grain|cereal/,
     visual: { icon: Wheat, emoji: '🌾', accent: 'success' },
   },
-  { match: /seed/, visual: { icon: Sprout, emoji: '🌱', accent: 'info' } },
-  { match: /fertil/, visual: { icon: Leaf, emoji: '🧪', accent: 'warning' } },
+  { match: /seed/, visual: { icon: Sprout, emoji: '🌱', accent: 'warning' } },
+  { match: /fertil/, visual: { icon: Leaf, emoji: '🧪', accent: 'info' } },
   {
     match: /equip|tractor|machine/,
     visual: { icon: Tractor, emoji: '🚜', accent: 'primary' },

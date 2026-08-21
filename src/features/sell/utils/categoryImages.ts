@@ -8,6 +8,9 @@
 // each asset must be registered here explicitly rather than resolved by name.
 import type { ImageSourcePropType } from 'react-native';
 
+import { fileUrl } from '@/config';
+import type { ModuleCategory } from '@/types';
+
 // Registered category images keyed by the backend `categoryKey`.
 export const CATEGORY_IMAGE_SOURCES: Partial<
   Record<string, ImageSourcePropType>
@@ -27,4 +30,19 @@ export function getCategoryImageSource(
   categoryKey: string,
 ): ImageSourcePropType | undefined {
   return CATEGORY_IMAGE_SOURCES[categoryKey];
+}
+
+// Resolves the picture to show for a category: its registered local asset
+// first, then the icon the masters API sends (relative `/files/..` paths are
+// resolved to an absolute URL). Undefined when the category has neither, and
+// the caller falls back to the emoji glyph from `categoryVisuals`.
+export function resolveCategoryImage(
+  category: ModuleCategory,
+): ImageSourcePropType | undefined {
+  const local = getCategoryImageSource(category.categoryKey);
+  if (local) {
+    return local;
+  }
+  const remote = category.iconUrl?.trim();
+  return remote ? { uri: fileUrl(remote) } : undefined;
 }

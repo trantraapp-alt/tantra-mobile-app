@@ -1,7 +1,13 @@
 // In-memory cache of category form schemas keyed by categoryId + listingType.
-// The same schema drives create, inline-edit and full-edit, so listings that
-// share a category fetch it only once.
-import { type ListingForm, modulesApi } from '@/features/sell';
+// The same schema drives create, inline-edit, full-edit and the buyer-facing
+// detail screen, so listings that share a category fetch it only once.
+//
+// It lives in `sell` (next to `modulesApi`, which owns the endpoint) rather than
+// in a consumer feature: both `listings` and `marketplace` read it, and homing
+// it in either of those would make the other import across a feature that
+// already imports it back.
+import type { ListingForm } from '../forms/listingForm.types';
+import { modulesApi } from './modulesApi';
 
 const cache = new Map<string, ListingForm>();
 

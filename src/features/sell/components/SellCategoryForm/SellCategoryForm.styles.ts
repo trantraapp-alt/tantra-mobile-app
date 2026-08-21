@@ -6,17 +6,17 @@ import type { AppTheme } from '@/theme';
 // Builds sell category form wrapper styles from the active theme.
 export function createSellCategoryFormStyles(theme: AppTheme) {
   return StyleSheet.create({
+    // Failed-load wrapper: the module tabs above a centered error state.
+    errorWrap: {
+      flex: 1,
+      paddingTop: theme.spacing.sm,
+    },
     // Centered wrapper for the loading and error states.
     center: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       padding: theme.spacing.lg,
-    },
-    // Subcategory picker scroll content.
-    pickerContent: {
-      padding: theme.spacing.lg,
-      gap: theme.spacing.md,
     },
     // Form-shaped loading skeleton content.
     formSkeleton: {
@@ -26,41 +26,6 @@ export function createSellCategoryFormStyles(theme: AppTheme) {
     // One labeled input placeholder inside the form skeleton.
     fieldSkeleton: {
       gap: theme.spacing.xs,
-    },
-    // Two-column grid of subcategory boxes.
-    pickerGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: theme.spacing.md,
-    },
-    // One subcategory box (two per row).
-    pickerBox: {
-      width: '48%',
-    },
-    // Box contents: icon tile above the name.
-    pickerBoxInner: {
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    // Square icon tile inside a subcategory box.
-    pickerTile: {
-      width: theme.sizing.avatarXl,
-      height: theme.sizing.avatarXl,
-      borderRadius: theme.radius.lg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.surfaceVariant,
-    },
-    // Category image filling the icon tile.
-    pickerTileImage: {
-      width: '64%',
-      height: '64%',
-    },
-    // Emoji glyph shown when there is no image (matches the Home "Browse
-    // Categories" tiles).
-    pickerEmoji: {
-      fontSize: 40,
-      lineHeight: 46,
     },
     // Wraps the info banner + the leaf listing form.
     leafFormWrap: {

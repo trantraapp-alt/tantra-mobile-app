@@ -2,10 +2,8 @@
 // inline quick-edit sheet. Skips fetching until a categoryId is provided.
 import { useCallback, useEffect, useState } from 'react';
 
-import type { ListingForm } from '@/features/sell';
+import { fetchCategoryForm, type ListingForm } from '@/features/sell';
 import { logger } from '@/lib';
-
-import { fetchCategoryForm } from '../api';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 

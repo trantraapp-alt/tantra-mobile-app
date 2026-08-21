@@ -4,21 +4,18 @@ import { StyleSheet } from 'react-native';
 import type { AppTheme } from '@/theme';
 
 // Builds sell categories screen styles from the active theme.
-export function createSellCategoriesStyles(theme: AppTheme) {
+export function createSellCategoriesStyles(_theme: AppTheme) {
   return StyleSheet.create({
-    // Vertical stack filling the space below the header: a horizontal category
-    // strip on top, the listing form below.
-    split: {
-      flex: 1,
+    // The header's accent bloom, pinned to the top-right corner behind
+    // everything else. Its width is set at render from the window.
+    glow: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
     },
-    // Top category strip (sizes to its content).
-    rail: {
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.divider,
-      backgroundColor: theme.colors.surface,
-    },
-    // Listing form filling the remaining height.
-    form: {
+    // Everything under the header: the module's category browse page, or the
+    // full-screen listing form once a category is open.
+    body: {
       flex: 1,
     },
   });

@@ -1,5 +1,5 @@
 // Public API barrel for the sell feature.
-export { modulesApi } from './api';
+export { fetchCategoryForm, modulesApi } from './api';
 export { SellSheet, type SellSheetRef } from './components';
 export {
   DynamicListingForm,

@@ -3,7 +3,7 @@
 // Structure (top → bottom):
 //   white header bar (back · title · heart · share)
 //   → full-bleed hero image with solid-green "Fresh Stock" badge
-//   → price card (price + title + tags + meta)
+//   → price card (name + quantity + price + tags + meta)
 //   → stats card  (views · contacts · quintal · quality — gray icons, dark text)
 //   → quality-assured card (green tint, clickable)
 //   → accordion cards: About · Product Details · Seller · Location
@@ -61,19 +61,6 @@ export function createListingDetailStyles(theme: AppTheme) {
 
     // ── Hero image area ───────────────────────────────────────────────
     heroWrap: {},
-    // "Fresh Stock" — solid filled green pill (not outlined), white text.
-    freshBadge: {
-      position: 'absolute',
-      top: theme.spacing.md,
-      left: theme.spacing.md,
-      backgroundColor: theme.colors.success,
-      borderRadius: theme.radius.pill,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xxs,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xxs,
-    },
 
     // ── Shared section card ───────────────────────────────────────────
     // Every content block (price, stats, quality, accordions) lives in one of
@@ -97,17 +84,20 @@ export function createListingDetailStyles(theme: AppTheme) {
       marginTop: theme.spacing.lg,
       ...theme.shadows.low,
     },
-    // Row 1: price + strike + discount badge — center-aligned so the badge
+    // Row 2: price + strike + discount badge — center-aligned so the badge
     // (a View) lines up with the text correctly.
     priceRow: {
       flexDirection: 'row',
       alignItems: 'center',
       flexWrap: 'wrap',
       gap: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
     },
-    // Hero price — large, bold, tight letter-spacing.
+    // Price — bold and tabular so digits align. At 20px the -1 tracking used
+    // when this was 24px reads cramped, so it eases to -0.4.
     priceMain: {
-      letterSpacing: -1,
+      letterSpacing: -0.4,
+      fontWeight: '700',
       fontVariant: ['tabular-nums'],
     },
     // Compare-at price — body size, muted, struck through.
@@ -125,26 +115,22 @@ export function createListingDetailStyles(theme: AppTheme) {
       color: theme.colors.warning,
       fontWeight: '700',
     },
-    // Row 2: title text + filled green verified circle sitting right beside it.
+    // Row 1: title text + filled green verified circle sitting right beside it.
     titleRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,         // 8px — breathing room between title and tick
-      marginTop: theme.spacing.xs,
+      gap: theme.spacing.xs,
     },
-    // `flexShrink` (not `flex: 1`) so the tick sits next to the text rather
-    // than being pushed to the far right of the card.
+    // `flexShrink` (not `flex: 1`) so a long name wraps inside the card
+    // instead of stretching the row.
     titleText: { flexShrink: 1 },
-    // Filled success-green circle with white checkmark inside — small, so it
-    // reads as a marker beside the title rather than competing with it.
-    verifiedCircle: {
-      width: 15,
-      height: 15,
-      borderRadius: theme.radius.pill,
-      backgroundColor: theme.colors.success,
+    // Quantity + unit, read directly under the name ("50 Quintal"). Muted, so it
+    // supports the name rather than competing with the price below it.
+    quantityRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
+      gap: theme.spacing.xxs,
+      marginTop: theme.spacing.xxs,
     },
     // Row 3: type pill + negotiable pill.
     tagsRow: {
@@ -176,6 +162,16 @@ export function createListingDetailStyles(theme: AppTheme) {
     },
     tagNotNegotiable: {
       backgroundColor: theme.colors.danger,
+    },
+    // Quantity — neutral chip so it reads as information rather than a state.
+    // Carries an icon, so it needs row layout and a little more side padding
+    // than the plain text pills.
+    tagQuantity: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+      backgroundColor: theme.colors.surfaceVariant,
+      paddingHorizontal: theme.spacing.sm,
     },
     // Row 4: 📍 City, State  and  ⏰ time ago — single row, wraps if tight.
     metaRow: {
@@ -307,6 +303,26 @@ export function createListingDetailStyles(theme: AppTheme) {
     },
     detailCellAlt: {
       backgroundColor: theme.colors.surfaceVariant,
+    },
+    // A free-text or long answer takes the whole line — half a row is unreadable.
+    detailCellFull: {
+      width: '100%',
+    },
+    // Muted caption above each value. Left in the schema's own casing —
+    // 'Crop Type' reads as a field name; 'CROP TYPE' reads as shouting.
+    detailLabel: {
+      letterSpacing: 0.2,
+    },
+    // The form's own sections, stacked inside the Product Details card.
+    specStack: {
+      gap: theme.spacing.md,
+    },
+    specSection: {
+      gap: theme.spacing.xs,
+    },
+    // Section sub-heading above its grid, in the form's own casing.
+    specSectionTitle: {
+      letterSpacing: 0.4,
     },
 
     // ── Seller Information ─────────────────────────────────────────────

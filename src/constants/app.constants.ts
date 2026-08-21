@@ -32,6 +32,7 @@ export const routes = {
   },
   tabs: {
     home: '/(tabs)/home',
+    chat: '/(tabs)/chat',
     wishlist: '/(tabs)/wishlist',
     profile: '/(tabs)/profile',
   },

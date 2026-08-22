@@ -1,5 +1,5 @@
 // Custom bottom tab bar rendering Home / Wishlist / Profile with a raised
-// central Sell action button.
+// central Sell action button. An admin account gets Users in place of Nearby.
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import {
   Heart,
@@ -7,6 +7,7 @@ import {
   type LucideIcon,
   MapPin,
   User,
+  Users,
 } from 'lucide-react-native';
 import { Platform, View } from 'react-native';
 
@@ -20,18 +21,27 @@ import { TabBarButton } from './TabBarButton';
 export interface AppTabBarProps extends BottomTabBarProps {
   // Called when the central Sell button is pressed.
   onSellPress: () => void;
+  // Swaps the Nearby tab for Users — an admin moderates the app rather than
+  // browsing the marketplace.
+  isAdmin?: boolean;
 }
 
 // Maps a tab route name to its icon.
 const ROUTE_ICONS: Record<string, LucideIcon> = {
   home: Home,
   nearby: MapPin,
+  users: Users,
   wishlist: Heart,
   profile: User,
 };
 
 // Renders the custom bottom tab bar.
-export function AppTabBar({ state, navigation, onSellPress }: AppTabBarProps) {
+export function AppTabBar({
+  state,
+  navigation,
+  onSellPress,
+  isAdmin = false,
+}: AppTabBarProps) {
   const styles = useThemedStyles(createAppTabBarStyles);
   const bottomInset = useBottomInset();
 
@@ -61,7 +71,7 @@ export function AppTabBar({ state, navigation, onSellPress }: AppTabBarProps) {
     <View style={[styles.container, { paddingBottom: Platform.OS === 'ios' ? 10 : bottomInset }]}>
       <View style={styles.group}>
         {renderTab('home')}
-        {renderTab('nearby')}
+        {isAdmin ? renderTab('users') : renderTab('nearby')}
       </View>
 
       <SellFab onPress={onSellPress} />

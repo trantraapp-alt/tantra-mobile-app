@@ -38,8 +38,15 @@ export function BusinessProfileDetailScreen() {
 
   const model = useMemo(
     () =>
-      profile ? buildBusinessProfileDetailModel(form, profile, language) : null,
-    [form, profile, language],
+      profile
+        ? buildBusinessProfileDetailModel(
+            form,
+            profile,
+            language,
+            t('businessProfile.additionalDetails'),
+          )
+        : null,
+    [form, profile, language, t],
   );
 
   const goToEdit = () => {

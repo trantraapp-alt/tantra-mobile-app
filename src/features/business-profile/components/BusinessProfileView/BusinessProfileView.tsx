@@ -7,7 +7,9 @@
 // (Edit vs Approve/Reject/Block).
 import {
   AlertTriangle,
+  Award,
   Ban,
+  Calendar,
   FileText,
   Info,
   MapPin,
@@ -78,6 +80,19 @@ export function BusinessProfileView({
     profile.attributes.ownerName.trim() !== ''
       ? profile.attributes.ownerName
       : null;
+  // Spotlighted attributes — given a stat chip of their own (rather than a
+  // buried generic row) since a business's specialization and founding year
+  // are headline facts, not fine print.
+  const specialization =
+    typeof profile.attributes?.specialization === 'string' &&
+    profile.attributes.specialization.trim() !== ''
+      ? profile.attributes.specialization
+      : null;
+  const established =
+    typeof profile.attributes?.established === 'string' &&
+    profile.attributes.established.trim() !== ''
+      ? profile.attributes.established
+      : null;
   const reason =
     profile.status === 'REJECTED'
       ? profile.rejectReason
@@ -85,9 +100,19 @@ export function BusinessProfileView({
         ? profile.blockReason
         : null;
 
-  const stats: DetailStat[] = ownerName
-    ? [{ key: 'owner', icon: User, text: ownerName }]
-    : [];
+  const stats: DetailStat[] = [
+    ownerName ? { key: 'owner', icon: User, text: ownerName } : null,
+    specialization
+      ? { key: 'specialization', icon: Award, text: specialization }
+      : null,
+    established
+      ? {
+          key: 'established',
+          icon: Calendar,
+          text: t('businessProfile.establishedSince', { value: established }),
+        }
+      : null,
+  ].filter((stat): stat is DetailStat => stat !== null);
 
   const sections: DetailSection[] = [];
 

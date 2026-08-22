@@ -10,6 +10,10 @@ import type { BusinessProfile } from '../types/businessProfile.types';
 // Common fields already shown in the identity block / visibility toggle —
 // never repeated as a generic row.
 const HOISTED_KEYS = new Set(['profileType', 'businessName', 'isVisible', 'photos']);
+// Attribute keys given their own spotlighted presentation elsewhere (the
+// hero stats row) rather than a generic section row — excluded here so they
+// never show up twice.
+const SPOTLIGHT_KEYS = new Set(['ownerName', 'specialization', 'established']);
 // Values longer than this stop being tokens and get a full-width stacked row.
 const BLOCK_TEXT_LENGTH = 42;
 
@@ -152,6 +156,43 @@ function formatFieldValue(
   }
 }
 
+// "establishedYear" / "established_year" -> "Established Year" — a readable
+// fallback label for an attribute the form schema doesn't itself describe.
+function humanizeKey(key: string): string {
+  const spaced = key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .trim();
+  return spaced
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// Best-effort formatting of a raw attribute value the form schema has no
+// field for (so its real type — dropdown option, number, boolean — is
+// unknown) — used only for the "Additional Details" catch-all below.
+function formatRawValue(raw: unknown): BPDetailValue | null {
+  if (!isFilled(raw)) {
+    return null;
+  }
+  if (typeof raw === 'boolean') {
+    return { kind: 'boolean', value: raw };
+  }
+  if (Array.isArray(raw)) {
+    const items = raw.map((entry) => String(entry).trim()).filter(Boolean);
+    return items.length > 0 ? { kind: 'tags', items } : null;
+  }
+  if (typeof raw === 'object') {
+    // Unknown nested shape (not the address block, that's handled
+    // separately) — nothing sensible to render.
+    return null;
+  }
+  const text = String(raw).trim();
+  return text === '' ? null : { kind: 'text', text };
+}
+
 // Turns the stored address object into readable stacked lines.
 function readAddressBlock(raw: unknown): BPAddressBlock | null {
   if (!raw || typeof raw !== 'object') {
@@ -183,11 +224,16 @@ function readAddressBlock(raw: unknown): BPAddressBlock | null {
 
 // Reduces a profile plus its form schema to everything the detail screen
 // renders: sections/rows in schema order, prose paragraphs hoisted out,
-// photos and address given their own presentation.
+// photos and address given their own presentation. Any stored attribute the
+// form schema has no field for (a schema gap, or the form still loading)
+// lands in a trailing catch-all section instead of being silently dropped —
+// `additionalDetailsLabel` names that section (pass a translated string;
+// falls back to plain English if the caller doesn't have one handy).
 export function buildBusinessProfileDetailModel(
   form: ListingForm | null,
   profile: BusinessProfile,
   language: PreferredLanguage,
+  additionalDetailsLabel = 'Additional Details',
 ): BusinessProfileDetailModel {
   const photosRaw = profile.attributes?.photos;
   const photos = Array.isArray(photosRaw)
@@ -195,45 +241,71 @@ export function buildBusinessProfileDetailModel(
     : [];
   const address = readAddressBlock(profile.address);
 
-  if (!form) {
-    return { sections: [], descriptions: [], photos, address };
-  }
-
   const sections: BPDetailSection[] = [];
   const descriptions: BPDetailProse[] = [];
+  // Attribute keys already rendered by a form-defined field — whatever's
+  // left once the schema's own sections are built is data the schema doesn't
+  // describe, and gets the catch-all section below.
+  const consumedKeys = new Set<string>(['photos']);
 
-  for (const section of form.sections) {
-    const rows: BPDetailRow[] = [];
-    const ordered = [...section.fields].sort(
-      (a, b) => a.displayOrder - b.displayOrder,
-    );
+  if (form) {
+    for (const section of form.sections) {
+      const rows: BPDetailRow[] = [];
+      const ordered = [...section.fields].sort(
+        (a, b) => a.displayOrder - b.displayOrder,
+      );
 
-    for (const field of ordered) {
-      if (field.type === 'IMAGE' || field.type === 'ADDRESS') {
-        continue;
+      for (const field of ordered) {
+        if (!field.common) {
+          consumedKeys.add(field.fieldKey);
+        }
+        if (field.type === 'IMAGE' || field.type === 'ADDRESS') {
+          continue;
+        }
+        if (HOISTED_KEYS.has(field.fieldKey)) {
+          continue;
+        }
+        const value = formatFieldValue(field, profile, language);
+        if (!value) {
+          continue;
+        }
+        const label = localize(field.label, language);
+        if (value.kind === 'prose') {
+          descriptions.push({ key: field.fieldKey, label, text: value.text });
+          continue;
+        }
+        rows.push({ key: field.fieldKey, label, value, stacked: isStacked(value) });
       }
-      if (HOISTED_KEYS.has(field.fieldKey)) {
-        continue;
+
+      if (rows.length > 0) {
+        sections.push({
+          key: section.key,
+          title: localize(section.title, language).toUpperCase(),
+          rows,
+        });
       }
-      const value = formatFieldValue(field, profile, language);
-      if (!value) {
-        continue;
-      }
-      const label = localize(field.label, language);
-      if (value.kind === 'prose') {
-        descriptions.push({ key: field.fieldKey, label, text: value.text });
-        continue;
-      }
-      rows.push({ key: field.fieldKey, label, value, stacked: isStacked(value) });
     }
+  }
 
-    if (rows.length > 0) {
-      sections.push({
-        key: section.key,
-        title: localize(section.title, language).toUpperCase(),
-        rows,
-      });
+  // Catch-all for attributes no form field describes (e.g. a store's
+  // "specialization" the schema forgot to declare) — never silently dropped.
+  const leftoverRows: BPDetailRow[] = [];
+  for (const [key, raw] of Object.entries(profile.attributes ?? {})) {
+    if (consumedKeys.has(key) || SPOTLIGHT_KEYS.has(key)) {
+      continue;
     }
+    const value = formatRawValue(raw);
+    if (!value) {
+      continue;
+    }
+    leftoverRows.push({ key, label: humanizeKey(key), value, stacked: isStacked(value) });
+  }
+  if (leftoverRows.length > 0) {
+    sections.push({
+      key: 'additional-details',
+      title: additionalDetailsLabel.toUpperCase(),
+      rows: leftoverRows,
+    });
   }
 
   return { sections, descriptions, photos, address };

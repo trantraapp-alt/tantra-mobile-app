@@ -113,5 +113,8 @@ export const routes = {
     businessProfile: '/admin/business-profile',
     businessProfileList: '/admin/business-profile/list',
     businessProfileReview: (id: string) => `/admin/business-profile/${id}`,
+    // A single app user's full detail (activity, subscription, business
+    // profile, addresses).
+    userDetail: (userId: string) => `/admin/users/${userId}`,
   },
 } as const;

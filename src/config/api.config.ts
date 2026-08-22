@@ -179,6 +179,14 @@ export const endpoints = {
     adminReject: (id: string) => `/admin/business-profiles/${id}/reject`,
     adminBlock: (id: string) => `/admin/business-profiles/${id}/block`,
   },
+  adminUsers: {
+    // Paginated, filterable list of app users (search, isBlocked, hasSub,
+    // fromDate/toDate, page/size/sort — all optional query params).
+    list: '/admin/users',
+    // A single user's full detail: activity, subscription, business profile
+    // and saved addresses.
+    detail: (userId: string) => `/admin/users/${userId}`,
+  },
 } as const;
 
 // Resolves a relative server path (e.g. an uploaded `/files/..` URL) to an

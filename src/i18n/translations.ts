@@ -478,6 +478,12 @@ const en = {
   'businessProfile.description': 'About the Business',
   'businessProfile.businessAddress': 'Business Address',
   'businessProfile.editHint': 'Editing any detail sends this profile back for admin review.',
+  // Catch-all section for stored attributes the form schema has no field
+  // for (e.g. a profile type's schema forgetting to declare one).
+  'businessProfile.additionalDetails': 'Additional Details',
+  'businessProfile.specialization': 'Specialization',
+  'businessProfile.established': 'Established',
+  'businessProfile.establishedSince': 'Since {value}',
 
   // Business Profile — admin screens.
   'businessProfile.admin.title': 'Business Profile Admin',
@@ -492,6 +498,11 @@ const en = {
   'businessProfile.admin.blockedTileDesc': 'Permanently taken down',
   'businessProfile.admin.reviewedByMe': 'Reviewed by me',
   'businessProfile.admin.queue': 'Review Queue',
+  // Header fallback for the review screen before the profile has loaded (no
+  // cached row to read a name from yet) — must never reuse another screen's
+  // title (e.g. the dashboard's "Approval Tracker"), or a fresh navigation
+  // with nothing cached reads as having landed on the wrong page.
+  'businessProfile.admin.reviewLoadingTitle': 'Business Profile',
   'businessProfile.admin.history': 'Approval History',
   'businessProfile.admin.approve': 'Approve',
   'businessProfile.admin.reject': 'Reject',
@@ -993,6 +1004,10 @@ const hi: Record<TranslationKey, string> = {
   'businessProfile.description': 'व्यवसाय के बारे में',
   'businessProfile.businessAddress': 'व्यवसाय का पता',
   'businessProfile.editHint': 'कोई भी विवरण संपादित करने पर यह प्रोफ़ाइल फिर से एडमिन समीक्षा के लिए भेज दी जाएगी।',
+  'businessProfile.additionalDetails': 'अतिरिक्त विवरण',
+  'businessProfile.specialization': 'विशेषज्ञता',
+  'businessProfile.established': 'स्थापित',
+  'businessProfile.establishedSince': '{value} से',
 
   'businessProfile.admin.title': 'बिज़नेस प्रोफ़ाइल एडमिन',
   'businessProfile.admin.tracker': 'अनुमोदन ट्रैकर',
@@ -1006,6 +1021,7 @@ const hi: Record<TranslationKey, string> = {
   'businessProfile.admin.blockedTileDesc': 'स्थायी रूप से हटाया गया',
   'businessProfile.admin.reviewedByMe': 'मेरे द्वारा समीक्षित',
   'businessProfile.admin.queue': 'समीक्षा कतार',
+  'businessProfile.admin.reviewLoadingTitle': 'बिज़नेस प्रोफ़ाइल',
   'businessProfile.admin.history': 'अनुमोदन इतिहास',
   'businessProfile.admin.approve': 'अनुमोदित करें',
   'businessProfile.admin.reject': 'अस्वीकार करें',

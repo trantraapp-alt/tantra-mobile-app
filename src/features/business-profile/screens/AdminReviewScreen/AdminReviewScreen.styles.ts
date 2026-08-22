@@ -12,6 +12,14 @@ export function createAdminReviewStyles(theme: AppTheme) {
       alignItems: 'center',
       padding: theme.spacing.xl,
     },
+    skeletonBlock: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.lg,
+      gap: theme.spacing.md,
+    },
+    skeletonSection: {
+      marginTop: theme.spacing.sm,
+    },
     // Sticky action shelf — only the actions valid for the profile's current
     // status (PENDING: Approve + a Reject/Block row; APPROVED: Reject/Block
     // row only; REJECTED/BLOCKED: no actions, just a hint).

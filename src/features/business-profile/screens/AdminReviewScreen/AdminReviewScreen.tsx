@@ -9,7 +9,7 @@ import { View } from 'react-native';
 import { Button } from '@/components/buttons';
 import { ErrorState } from '@/components/empty-state';
 import { TextField } from '@/components/inputs';
-import { Spinner } from '@/components/loaders';
+import { Skeleton } from '@/components/loaders';
 import { Header } from '@/components/shared';
 import { BottomSheet, type BottomSheetRef, Screen, Text } from '@/components/ui';
 import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
@@ -25,6 +25,27 @@ import { getProfileTypeLabel } from '../../utils/profileTypeLabels';
 import { createAdminReviewStyles } from './AdminReviewScreen.styles';
 
 type ReasonAction = 'reject' | 'block';
+
+// Shimmer placeholder mimicking BusinessProfileView's shape (hero photo,
+// identity block, a couple of field sections) — shown while a profile opened
+// with nothing cached (e.g. from the user-detail screen) is still fetching,
+// so it reads as "still loading" rather than a blank, wrong-looking screen.
+function ReviewSkeleton() {
+  const theme = useTheme();
+  const styles = useThemedStyles(createAdminReviewStyles);
+  return (
+    <View>
+      <Skeleton width="100%" height={280} radius={0} />
+      <View style={styles.skeletonBlock}>
+        <Skeleton width="35%" height={theme.spacing.md} />
+        <Skeleton width="70%" height={theme.spacing.xl} />
+        <Skeleton width="30%" height={theme.spacing.lg} radius={theme.radius.pill} />
+        <Skeleton width="100%" height={80} style={styles.skeletonSection} />
+        <Skeleton width="100%" height={120} />
+      </View>
+    </View>
+  );
+}
 
 export function AdminReviewScreen() {
   const styles = useThemedStyles(createAdminReviewStyles);
@@ -87,8 +108,15 @@ export function AdminReviewScreen() {
 
   const model = useMemo(
     () =>
-      profile ? buildBusinessProfileDetailModel(form, profile, language) : null,
-    [form, profile, language],
+      profile
+        ? buildBusinessProfileDetailModel(
+            form,
+            profile,
+            language,
+            t('businessProfile.additionalDetails'),
+          )
+        : null,
+    [form, profile, language, t],
   );
 
   const [submitting, setSubmitting] = useState(false);
@@ -148,11 +176,7 @@ export function AdminReviewScreen() {
 
   const renderBody = () => {
     if (isLoading) {
-      return (
-        <View style={styles.center}>
-          <Spinner />
-        </View>
-      );
+      return <ReviewSkeleton />;
     }
 
     if (isError || !profile || !model) {
@@ -227,7 +251,7 @@ export function AdminReviewScreen() {
   return (
     <Screen padded={false}>
       <Header
-        title={profile?.businessName ?? t('businessProfile.admin.tracker')}
+        title={profile?.businessName ?? t('businessProfile.admin.reviewLoadingTitle')}
         showBack
         onBack={goBack}
       />

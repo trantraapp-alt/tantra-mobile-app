@@ -154,6 +154,12 @@ export const endpoints = {
     // Uploads image files; returns relative `/files/...` URLs.
     uploads: '/uploads',
   },
+  users: {
+    // Public seller card for a listing's owner: display name, locality,
+    // verification, member-since, last login and active-listing count. No auth —
+    // it is what a buyer sees before revealing any contact.
+    sellerInfo: (userId: string) => `/users/${userId}/seller-info`,
+  },
   contacts: {
     // Reveals the seller's contact for a listing (auth required; deduped per
     // buyer per listing per 24h). Returns either the full number or a

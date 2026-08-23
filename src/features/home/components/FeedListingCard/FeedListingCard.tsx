@@ -4,7 +4,7 @@
 // Negotiable tags. Two per row in a grid (omit `width`) or fixed-width in a
 // horizontal rail (pass `width`). Presentational — every value comes from data.
 import { Image } from 'expo-image';
-import { ImageOff, MapPin, Star } from 'lucide-react-native';
+import { ImageOff, MapPin, Star, Truck } from 'lucide-react-native';
 import { memo, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -19,6 +19,7 @@ import {
   feedLocationLabel,
   firstFeedImage,
   formatDistanceKm,
+  hasDelivery,
   highlightColorOf,
   isSold,
   resolveFeedTitle,
@@ -242,6 +243,22 @@ function FeedListingCardComponent({
                     </Text>
                   </View>
                 )}
+                {/* Only shown when the seller delivers — the absence of the
+                    badge is what "no delivery" looks like. */}
+                {hasDelivery(listing) ? (
+                  <View style={[styles.tag, styles.tagDelivery]}>
+                    <Truck
+                      size={theme.sizing.iconXs}
+                      color={theme.colors.success}
+                    />
+                    <Text
+                      variant="overline"
+                      style={{ color: theme.colors.success }}
+                    >
+                      {t('home.tagDelivery')}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             </View>
           </View>

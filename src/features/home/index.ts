@@ -29,6 +29,7 @@ export {
   feedLocationLabel,
   firstFeedImage,
   formatDistanceKm,
+  hasDelivery,
   humanizeAttributeKey,
   isSold,
   resolveFeedTitle,

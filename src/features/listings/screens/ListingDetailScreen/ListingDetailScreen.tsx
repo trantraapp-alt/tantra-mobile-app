@@ -1,30 +1,31 @@
-// Listing detail / preview: what a buyer would see, so the seller can check it.
-// It maps the listing + its resolved form model onto the shared ListingDetailView
-// (same UI as the buyer detail) — every value the seller filled in, grouped by
-// the form's own sections in the form's own order, with dropdown/radio values
-// resolved to localized labels, the address rendered as a block, empty values
-// omitted and required blanks flagged. All of those rules live in the pure
-// `listingDetailFields` module; this file only maps them onto the shared view.
+// Listing detail / preview: literally what a buyer sees, so the seller can check
+// it. The card stack is the SHARED ListingDetailBody the buyer page renders —
+// same schema-driven fields, same "NA" for the blanks, same order — so the two
+// pages cannot drift apart. This file owns only what belongs to the owner: the
+// status badge over the hero, the listing-record card, the edit footer, and the
+// manage actions (quick edit, mark sold/active/inactive, delete).
+//
+// The seller card is deliberately off: a card describing the reader to
+// themselves says nothing.
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
-  Check,
   CheckCircle2,
   Eye,
   EyeOff,
-  FileText,
   Hash,
-  Info,
-  MapPin,
   MoreVertical,
-  Package,
   Pencil,
-  Phone,
   SquarePen,
   Trash2,
-  X,
 } from 'lucide-react-native';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import {
+  type ReactNode,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { ScrollView, View } from 'react-native';
 
 import { Button, IconButton } from '@/components/buttons';
 import { ErrorState } from '@/components/empty-state';
@@ -39,14 +40,8 @@ import {
   Screen,
   Text,
 } from '@/components/ui';
-import { fileUrl } from '@/config';
 import { routes } from '@/constants';
-import {
-  type DetailRow,
-  type DetailSection,
-  type DetailStat,
-  ListingDetailView,
-} from '@/features/marketplace';
+import { ListingDetailBody } from '@/features/marketplace';
 import { localize } from '@/features/sell';
 import { useGoBack, useThemedStyles, useTranslation } from '@/hooks';
 import type { TranslationKey } from '@/i18n';
@@ -60,30 +55,13 @@ import { QuickEditSheet } from '../../components';
 import { useCategoryForm } from '../../hooks';
 import type { ListingStatus, MyListing } from '../../types';
 import {
-  buildListingDetailModel,
-  type ListingDetailModel,
-  type ListingDetailRow,
-} from '../../utils/listingDetailFields';
-import {
   deriveListingTitle,
   getListingId,
-  imageToUrl,
   statusTone,
 } from '../../utils/listingDisplay';
+import { listingToFeed } from '../../utils/listingToFeed';
 import { createListingDetailScreenStyles } from './ListingDetailScreen.styles';
 
-// Lines of a description shown before the "Read more" toggle appears.
-const DESCRIPTION_LINE_CLAMP = 6;
-
-// Model used before the listing has loaded, so the render path never branches
-// on `listing` being null halfway down.
-const EMPTY_MODEL: ListingDetailModel = {
-  sections: [],
-  descriptions: [],
-  address: null,
-  quantityText: null,
-  titleFieldKey: null,
-};
 
 // Maps a listing status to its i18n label key.
 function statusLabelKey(status: string): TranslationKey {
@@ -94,125 +72,6 @@ function statusLabelKey(status: string): TranslationKey {
     return 'listing.status.inactive';
   }
   return 'listing.status.active';
-}
-
-// Props for the resolved value of one spec row.
-interface SpecValueProps {
-  // The formatted row whose value to render.
-  row: ListingDetailRow;
-  // Label shown when a required field was left empty.
-  notProvidedLabel: string;
-  // Label for a true boolean value.
-  yesLabel: string;
-  // Label for a false boolean value.
-  noLabel: string;
-}
-
-// Renders just the value of one spec row (booleans, tags, missing or text). The
-// label + layout are owned by the shared ListingDetailView.
-function SpecValue({ row, notProvidedLabel, yesLabel, noLabel }: SpecValueProps) {
-  const theme = useTheme();
-  const styles = useThemedStyles(createListingDetailScreenStyles);
-  const { value } = row;
-
-  if (value.kind === 'missing') {
-    // The only coloured value on the page: a required blank is itself
-    // information the seller needs to act on.
-    return (
-      <Text variant="bodyMedium" color="warning">
-        {notProvidedLabel}
-      </Text>
-    );
-  }
-  if (value.kind === 'boolean') {
-    return (
-      <View style={styles.booleanValue}>
-        {value.value ? (
-          <Check size={theme.sizing.iconSm} color={theme.colors.success} />
-        ) : (
-          <X size={theme.sizing.iconSm} color={theme.colors.textTertiary} />
-        )}
-        <Text variant="bodyMedium">{value.value ? yesLabel : noLabel}</Text>
-      </View>
-    );
-  }
-  if (value.kind === 'tags') {
-    return (
-      <View style={styles.tagWrap}>
-        {value.items.map((item, position) => (
-          <View key={`${row.key}-${position}-${item}`} style={styles.tag}>
-            <Text variant="caption" color="textSecondary">
-              {item}
-            </Text>
-          </View>
-        ))}
-      </View>
-    );
-  }
-  return <Text variant="bodyMedium">{value.text}</Text>;
-}
-
-// Props for a collapsible description paragraph.
-interface DescriptionProps {
-  // Paragraph text.
-  text: string;
-  // Optional field label shown above the paragraph.
-  label?: string;
-  // "Read more" toggle label.
-  moreLabel: string;
-  // "Show less" toggle label.
-  lessLabel: string;
-}
-
-// Renders a paragraph clamped to a few lines with an expander.
-function Description({ text, label, moreLabel, lessLabel }: DescriptionProps) {
-  const styles = useThemedStyles(createListingDetailScreenStyles);
-  const theme = useTheme();
-  const [expanded, setExpanded] = useState(false);
-  const [overflows, setOverflows] = useState(false);
-
-  // Only offer the toggle when the collapsed paragraph actually overflowed.
-  const handleTextLayout = useCallback(
-    (event: { nativeEvent: { lines: unknown[] } }) => {
-      if (
-        !expanded &&
-        event.nativeEvent.lines.length > DESCRIPTION_LINE_CLAMP
-      ) {
-        setOverflows(true);
-      }
-    },
-    [expanded],
-  );
-
-  return (
-    <View>
-      {label ? (
-        <Text variant="label" color="textSecondary">
-          {label}
-        </Text>
-      ) : null}
-      <Text
-        variant="body"
-        color="textSecondary"
-        numberOfLines={expanded ? undefined : DESCRIPTION_LINE_CLAMP}
-        onTextLayout={handleTextLayout}
-      >
-        {text}
-      </Text>
-      {overflows ? (
-        <Pressable
-          hitSlop={theme.sizing.hitSlop}
-          accessibilityRole="button"
-          onPress={() => setExpanded((prev) => !prev)}
-          style={styles.readMore}
-        >
-          <Text variant="label" color="primary">
-            {expanded ? lessLabel : moreLabel}
-          </Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
 }
 
 // Props for the ListingDetailScreen component.
@@ -289,26 +148,8 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
     refetch: refetchForm,
   } = useCategoryForm(listing?.categoryId, listingType);
 
-  // Absolute URIs in upload order. The filter sits BETWEEN the maps: a malformed
-  // image row would otherwise reach `fileUrl(undefined)` and crash the screen.
-  const imageUris = useMemo(
-    () =>
-      (listing?.images ?? [])
-        .map(imageToUrl)
-        .filter(
-          (uri): uri is string => typeof uri === 'string' && uri.trim() !== '',
-        )
-        .map(fileUrl),
-    [listing?.images],
-  );
-
-  const model = useMemo<ListingDetailModel>(
-    () =>
-      listing
-        ? buildListingDetailModel({ form, listing, language })
-        : EMPTY_MODEL,
-    [form, listing, language],
-  );
+  // Photo count for the record card. The body resolves the images itself.
+  const imageCount = listing?.images?.length ?? 0;
 
   const title = listing
     ? deriveListingTitle(
@@ -441,154 +282,42 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
     [],
   );
 
-  // Card sections in page order, mapped onto the shared view. The rich values
-  // (booleans, tag pills, required blanks) render through `SpecValue`, so nothing
-  // the seller filled in is lost.
-  const sections = useMemo<DetailSection[]>(() => {
+  // The listing as the shared body reads it: the same contract the buyer
+  // page renders, so the preview cannot drift from the real thing.
+  const feedListing = useMemo(
+    () => (listing ? listingToFeed(listing) : null),
+    [listing],
+  );
+
+  // Owner-only facts about the record itself — id, category, type, status,
+  // photo count and timestamps. None of it comes from the form schema.
+  const recordRows = useMemo<
+    { key: string; label: string; value: string | ReactNode }[]
+  >(() => {
     if (!listing) {
       return [];
     }
-    const result: DetailSection[] = [];
-
-    if (isFormError) {
-      result.push({
-        key: 'form-error',
-        content: (
-          <View style={styles.formErrorInline}>
-            <Text variant="body" color="textSecondary">
-              {t('listing.detailsUnavailable')}
-            </Text>
-            <Button
-              label={t('common.retry')}
-              variant="outline"
-              size="sm"
-              fullWidth={false}
-              onPress={refetchForm}
-            />
-          </View>
-        ),
-      });
-    }
-
-    if (model.descriptions.length > 0) {
-      result.push({
-        key: 'description',
-        title: t('listing.description'),
-        icon: FileText,
-        content: (
-          <View style={styles.descriptionGroup}>
-            {model.descriptions.map((entry) => (
-              <Description
-                key={entry.key}
-                text={entry.text}
-                label={model.descriptions.length > 1 ? entry.label : undefined}
-                moreLabel={t('listing.readMore')}
-                lessLabel={t('listing.readLess')}
-              />
-            ))}
-          </View>
-        ),
-      });
-    }
-
-    model.sections.forEach((section) => {
-      result.push({
-        key: `section-${section.key}`,
-        title: section.title,
-        icon: Info,
-        rows: section.rows.map((row) => ({
-          key: row.key,
-          label: row.label,
-          stacked: row.stacked,
-          value: (
-            <SpecValue
-              row={row}
-              notProvidedLabel={t('listing.notProvided')}
-              yesLabel={t('common.yes')}
-              noLabel={t('common.no')}
-            />
-          ),
-        })),
-      });
-    });
-
-    if (model.address) {
-      const address = model.address;
-      result.push({
-        key: 'address',
-        title: t('listing.location'),
-        icon: MapPin,
-        content: (
-          <View style={styles.addressGroup}>
-            <View style={styles.addressLines}>
-              {address.lines.map((line, position) => (
-                <Text key={`address-${position}`} variant="body">
-                  {line}
-                </Text>
-              ))}
-            </View>
-            {address.phones.map((phone) => (
-              <View key={phone} style={styles.contactRow}>
-                <Phone
-                  size={theme.sizing.iconSm}
-                  color={theme.colors.textSecondary}
-                />
-                <Text variant="bodyMedium">{phone}</Text>
-              </View>
-            ))}
-            {address.coordinates ? (
-              <Text
-                variant="caption"
-                color="textTertiary"
-                style={styles.coordinates}
-              >
-                {address.coordinates}
-              </Text>
-            ) : null}
-          </View>
-        ),
-      });
-    }
-
-    // A listing whose schema yielded nothing must not end in dead space above
-    // the sticky bar; the record block below still carries real information.
-    const hasContent =
-      model.descriptions.length > 0 ||
-      model.sections.length > 0 ||
-      model.address !== null;
-    if (!hasContent && !isFormError && !isFormLoading) {
-      result.push({
-        key: 'no-details',
-        content: (
-          <Text variant="body" color="textSecondary">
-            {t('listing.noDetails')}
-          </Text>
-        ),
-      });
-    }
-
-    // The record block needs no schema, so it is also what keeps the page useful
-    // when the form fetch fails on a listing that plainly exists.
-    const recordRows: DetailRow[] = [
-      {
-        key: 'id',
-        label: t('listing.idLabel'),
-        value: `#${getListingId(listing)}`,
-      },
-    ];
+    const rows: { key: string; label: string; value: string | ReactNode }[] =
+      [
+        {
+          key: 'id',
+          label: t('listing.idLabel'),
+          value: `#${getListingId(listing)}`,
+        },
+      ];
     if (categoryLabel) {
-      recordRows.push({
+      rows.push({
         key: 'category',
         label: t('listing.field.category'),
         value: categoryLabel,
       });
     }
-    recordRows.push({
+    rows.push({
       key: 'type',
       label: t('listing.field.type'),
       value: t(isRent ? 'listing.type.rent' : 'listing.type.sell'),
     });
-    recordRows.push({
+    rows.push({
       key: 'status',
       label: t('listing.field.status'),
       value: (
@@ -598,47 +327,27 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
         />
       ),
     });
-    recordRows.push({
+    rows.push({
       key: 'photos',
       label: t('listing.field.photos'),
-      value: formatNumber(imageUris.length),
+      value: formatNumber(imageCount),
     });
     if (listing.createdAt) {
-      recordRows.push({
+      rows.push({
         key: 'created',
         label: t('listing.field.created'),
         value: formatDate(listing.createdAt),
       });
     }
     if (listing.updatedAt) {
-      recordRows.push({
+      rows.push({
         key: 'updated',
         label: t('listing.field.updated'),
         value: formatRelativeTime(listing.updatedAt),
       });
     }
-    result.push({
-      key: 'record',
-      title: t('listing.record'),
-      icon: Hash,
-      rows: recordRows,
-    });
-
-    return result;
-  }, [
-    listing,
-    model,
-    styles,
-    theme,
-    t,
-    refetchForm,
-    categoryLabel,
-    isRent,
-    statusValue,
-    imageUris.length,
-    isFormError,
-    isFormLoading,
-  ]);
+    return rows;
+  }, [listing, t, categoryLabel, isRent, statusValue, imageCount]);
 
   if (status === 'error') {
     return (
@@ -668,9 +377,8 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
     );
   }
 
-  const stats: DetailStat[] = model.quantityText
-    ? [{ key: 'quantity', icon: Package, text: model.quantityText }]
-    : [];
+
+  const feed = feedListing ?? listingToFeed(listing);
 
   return (
     <Screen padded={false}>
@@ -688,41 +396,87 @@ export function ListingDetailScreen({ listingId }: ListingDetailScreenProps) {
         }
       />
 
-      <ListingDetailView
-        images={imageUris}
-        statusBadge={
-          <Badge
-            label={t(statusLabelKey(statusValue))}
-            tone={statusTone(statusValue)}
-          />
-        }
-        overline={
-          categoryLabel
-            ? `${categoryLabel} · ${t(isRent ? 'listing.type.rent' : 'listing.type.sell')}`
-            : undefined
-        }
-        priceLabel={t(isRent ? 'listing.rentPrice' : 'listing.askingPrice')}
-        price={listing.offeredPrice}
-        compareAtPrice={listing.actualPrice}
-        discountPct={listing.discountPct}
-        priceFallback={t('listing.priceNotSet')}
-        title={title}
-        stats={stats}
-        sections={sections}
-        footer={
-          <Button
-            label={t('listing.editListingCta')}
-            size="lg"
-            leftIcon={
-              <SquarePen
-                size={theme.sizing.iconMd}
-                color={theme.colors.onPrimary}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollBody}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* The buyer-facing card stack, verbatim. The seller card is off:
+            this listing belongs to the person reading it. */}
+        <ListingDetailBody
+          listing={feed}
+          form={form}
+          showSeller={false}
+          heroOverlay={
+            <View style={styles.heroBadge}>
+              <Badge
+                label={t(statusLabelKey(statusValue))}
+                tone={statusTone(statusValue)}
               />
-            }
-            onPress={goToEdit}
-          />
-        }
-      />
+            </View>
+          }
+        >
+          {/* Owner-only: the record behind the listing. It needs no schema,
+              so it is also what keeps the page useful when the form fetch
+              fails on a listing that plainly exists. */}
+          <View style={styles.recordCard}>
+            <View style={styles.recordHeader}>
+              <Hash
+                size={theme.sizing.iconSm}
+                color={theme.colors.textSecondary}
+              />
+              <Text variant="h4">{t('listing.record')}</Text>
+            </View>
+            {recordRows.map((row) => (
+              <View key={row.key} style={styles.row}>
+                <Text
+                  variant="caption"
+                  color="textSecondary"
+                  style={styles.rowLabel}
+                >
+                  {row.label}
+                </Text>
+                {typeof row.value === 'string' ? (
+                  <Text variant="bodyMedium" style={styles.rowValue}>
+                    {row.value}
+                  </Text>
+                ) : (
+                  row.value
+                )}
+              </View>
+            ))}
+          </View>
+
+          {isFormError ? (
+            <View style={styles.formErrorCard}>
+              <Text variant="body" color="textSecondary">
+                {t('listing.detailsUnavailable')}
+              </Text>
+              <Button
+                label={t('common.retry')}
+                variant="outline"
+                size="sm"
+                fullWidth={false}
+                onPress={refetchForm}
+              />
+            </View>
+          ) : null}
+        </ListingDetailBody>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <Button
+          label={t('listing.editListingCta')}
+          size="lg"
+          leftIcon={
+            <SquarePen
+              size={theme.sizing.iconMd}
+              color={theme.colors.onPrimary}
+            />
+          }
+          onPress={goToEdit}
+        />
+      </View>
 
       <ActionSheet
         ref={actionSheetRef}

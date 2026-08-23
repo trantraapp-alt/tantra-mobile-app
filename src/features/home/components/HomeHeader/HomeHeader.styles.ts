@@ -5,16 +5,11 @@ import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
 
-// White pills sit on the colored header, so their ink is fixed (theme-independent)
-// to stay legible regardless of the active scheme.
-const FIELD_BG = '#FFFFFF';
-const INK = '#1B1630';
-const INK_SOFT = '#6B6577';
 // Translucent "glass" surfaces layered on the header for the top-row actions.
+// These stay fixed: they sit directly on the hero illustration, which carries its
+// own dark ground in both schemes, so white at low alpha reads either way.
 const GLASS = 'rgba(255,255,255,0.16)';
 const GLASS_BORDER = 'rgba(255,255,255,0.30)';
-// Hairline divider between the segments of the white location bar.
-const DIVIDER = 'rgba(20,10,40,0.08)';
 // Soft shadow lifting the white bars off the colored header.
 const CARD_SHADOW = {
   shadowColor: '#2E1065',
@@ -24,7 +19,7 @@ const CARD_SHADOW = {
   elevation: 4,
 };
 
-export { INK, INK_SOFT };
+
 
 // Builds HomeHeader styles from the active theme.
 export function createHomeHeaderStyles(theme: AppTheme) {
@@ -109,7 +104,7 @@ export function createHomeHeaderStyles(theme: AppTheme) {
       flexDirection: 'row',
       alignItems: 'center',
       height: 42,
-      backgroundColor: FIELD_BG,
+      backgroundColor: theme.colors.surface,
       borderRadius: theme.radius.pill,
       paddingLeft: theme.spacing.lg,
       paddingRight: theme.spacing.xxs,
@@ -142,7 +137,7 @@ export function createHomeHeaderStyles(theme: AppTheme) {
       height: 44,
       marginHorizontal: theme.spacing.lg,
       marginBottom: theme.spacing.md,
-      backgroundColor: FIELD_BG,
+      backgroundColor: theme.colors.surface,
       borderRadius: theme.cardRadius.lg,
       paddingHorizontal: theme.spacing.xs,
       ...CARD_SHADOW,
@@ -172,7 +167,7 @@ export function createHomeHeaderStyles(theme: AppTheme) {
     divider: {
       width: StyleSheet.hairlineWidth,
       height: 26,
-      backgroundColor: DIVIDER,
+      backgroundColor: theme.colors.border,
     },
     pressed: {
       opacity: theme.opacity.pressed,

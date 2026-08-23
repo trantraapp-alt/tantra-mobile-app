@@ -158,6 +158,17 @@ export function listingAttributeEntries(
     }));
 }
 
+// Whether the seller offers delivery for this listing. The flag belongs at the
+// root of the payload; an `attributes` copy is read only as a fallback, so a
+// listing created before the field moved still shows its badge.
+export function hasDelivery(listing: FeedListing): boolean {
+  if (typeof listing.deliveryAvailable === 'boolean') {
+    return listing.deliveryAvailable;
+  }
+  const nested = listing.attributes?.deliveryAvailable;
+  return nested === true || nested === 'true';
+}
+
 // Whether a listing has been sold (grey overlay + stamp on the card).
 export function isSold(listing: FeedListing): boolean {
   return String(listing.status ?? '').toUpperCase() === 'SOLD';

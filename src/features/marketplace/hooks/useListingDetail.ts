@@ -7,6 +7,7 @@ import { fetchCategoryForm, type ListingForm } from '@/features/sell';
 import { logger } from '@/lib';
 
 import { marketplaceApi } from '../api';
+import type { SellerInfo } from '../types';
 
 // Result of the useListingDetail hook.
 export interface UseListingDetailResult {
@@ -18,6 +19,12 @@ export interface UseListingDetailResult {
    * attribute keys rather than showing nothing.
    */
   form: ListingForm | null;
+  /**
+   * The public seller card for the listing's owner. Null when the listing has no
+   * userId or the call failed — the card then renders em dashes instead of
+   * inventing a seller.
+   */
+  sellerInfo: SellerInfo | null;
   similar: FeedListing[];
   isLoading: boolean;
   isError: boolean;
@@ -28,6 +35,7 @@ export interface UseListingDetailResult {
 export function useListingDetail(listingId: string): UseListingDetailResult {
   const [listing, setListing] = useState<FeedListing | null>(null);
   const [form, setForm] = useState<ListingForm | null>(null);
+  const [sellerInfo, setSellerInfo] = useState<SellerInfo | null>(null);
   const [similar, setSimilar] = useState<FeedListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -55,22 +63,38 @@ export function useListingDetail(listingId: string): UseListingDetailResult {
         // the page paints once, with the real field labels already resolved —
         // `fetchCategoryForm` is cached, so repeat visits cost nothing. A schema
         // failure is not a page failure: the screen degrades to raw keys.
-        const schema = detail?.categoryId
-          ? await fetchCategoryForm(
-              detail.categoryId,
-              String(detail.listingType ?? 'SELL').toUpperCase(),
-            ).catch((error) => {
-              logger.warn('[Listing] category form load failed', {
-                categoryId: detail.categoryId,
-                error,
-              });
-              return null;
-            })
-          : null;
+        const [schema, seller] = await Promise.all([
+          detail?.categoryId
+            ? fetchCategoryForm(
+                detail.categoryId,
+                String(detail.listingType ?? 'SELL').toUpperCase(),
+              ).catch((error) => {
+                logger.warn('[Listing] category form load failed', {
+                  categoryId: detail.categoryId,
+                  error,
+                });
+                return null;
+              })
+            : null,
+          // Public endpoint, so it needs no session — but a seller card is never
+          // worth failing the page for.
+          detail?.userId
+            ? marketplaceApi
+                .getSellerInfo(String(detail.userId))
+                .catch((error) => {
+                  logger.warn('[Listing] seller info load failed', {
+                    userId: detail.userId,
+                    error,
+                  });
+                  return null;
+                })
+            : null,
+        ]);
 
         if (active) {
           setListing(detail);
           setForm(schema);
+          setSellerInfo(seller);
           setSimilar(Array.isArray(sim) ? sim : []);
           setIsLoading(false);
         }
@@ -88,5 +112,5 @@ export function useListingDetail(listingId: string): UseListingDetailResult {
     };
   }, [listingId, reloadKey]);
 
-  return { listing, form, similar, isLoading, isError, reload };
+  return { listing, form, sellerInfo, similar, isLoading, isError, reload };
 }

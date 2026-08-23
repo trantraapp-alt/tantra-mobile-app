@@ -11,6 +11,7 @@ import type {
   ListingFilters,
   MarketplacePage,
   SearchResult,
+  SellerInfo,
 } from '../types';
 
 // A query param bag with empties already dropped.
@@ -222,6 +223,12 @@ function revealContact(listingId: string): Promise<ContactRevealResult> {
   );
 }
 
+// The public seller card for a listing's owner. Public on purpose: it is what a
+// buyer weighs BEFORE spending a contact reveal, so it must not need a session.
+function getSellerInfo(userId: string): Promise<SellerInfo> {
+  return apiClient.get<SellerInfo>(endpoints.users.sellerInfo(userId));
+}
+
 // Marketplace repository.
 export const marketplaceApi = {
   search,
@@ -233,4 +240,5 @@ export const marketplaceApi = {
   getListingDetail,
   getSimilar,
   revealContact,
+  getSellerInfo,
 } as const;

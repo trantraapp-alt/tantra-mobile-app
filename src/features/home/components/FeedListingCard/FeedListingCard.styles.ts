@@ -137,6 +137,14 @@ export function createFeedListingCardStyles(theme: AppTheme) {
     tagNotNegotiable: {
       backgroundColor: theme.colors.warning,
     },
+    // Delivery = success tint with an icon, so it reads as a perk rather than
+    // as another status pill.
+    tagDelivery: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+      backgroundColor: theme.colors.successLight,
+    },
     // Optional owner-action row pinned at the bottom (My Listings).
     footer: {
       flexDirection: 'row',

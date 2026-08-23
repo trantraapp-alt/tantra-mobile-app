@@ -10,5 +10,6 @@ export type {
   PostedWithin,
   RadiusKm,
   SearchResult,
+  SellerInfo,
   SellerType,
 } from './marketplace.types';

@@ -11,6 +11,8 @@ export {
   type FilterChipsBarProps,
   type FilterSection,
   FilterSheet,
+  ListingDetailBody,
+  type ListingDetailBodyProps,
   ListingDetailView,
   type ListingDetailViewProps,
   ListingHeader,
@@ -44,6 +46,7 @@ export type {
   MarketplacePage,
   PostedWithin,
   SearchResult,
+  SellerInfo,
   SellerType,
 } from './types';
 export { sortListings } from './utils/sortListings';

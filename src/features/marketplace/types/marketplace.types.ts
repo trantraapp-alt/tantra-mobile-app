@@ -98,6 +98,27 @@ export interface SearchResult {
 export type ContactRevealAction = 'REVEALED_FULL' | 'WHATSAPP_ONLY';
 
 // Result of a contact reveal (POST /contacts/reveal/{listingId}).
+// The public seller card shown under a listing. Every field is optional: the
+// endpoint answers for any user id, including one with no listings yet, and a
+// missing value renders as an em dash rather than a gap.
+export interface SellerInfo {
+  // The seller's user reference.
+  userId?: string;
+  // Display name.
+  name?: string | null;
+  // Locality label ("Rampur, MP"), derived server-side from their listings —
+  // null until they have one.
+  location?: string | null;
+  // Whether the seller has been verified by an admin.
+  verifiedSeller?: boolean;
+  // Account creation timestamp (ISO-8601), shown as "Jan 2024".
+  memberSince?: string | null;
+  // Last sign-in (ISO-8601), shown as a relative label.
+  lastLoginAt?: string | null;
+  // How many listings they currently have active.
+  totalActiveListings?: number | null;
+}
+
 export interface ContactRevealResult {
   // REVEALED_FULL ships the numbers; WHATSAPP_ONLY ships only the chat link.
   action: ContactRevealAction;

@@ -1,0 +1,324 @@
+// Style factory for ListingDetailBody — the listing card stack shared by the
+// buyer detail screen and the seller's own preview.
+//
+// Structure (top → bottom):
+//   full-bleed hero gallery
+//   → price card (name + quantity + price + tags + location)
+//   → quality-assured card (green tint)
+//   → accordion cards: About · Product Details · Seller · Location
+//
+// All dimensions, colours and radii are resolved from the active theme.
+import { StyleSheet } from 'react-native';
+
+import type { AppTheme } from '@/theme';
+
+export function createListingDetailBodyStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    // ── Hero image area ───────────────────────────────────────────────
+    heroWrap: {},
+
+    // ── Shared section card ───────────────────────────────────────────
+    // Every content block (price, stats, quality, accordions) lives in one of
+    // these to give the gray-background gap between sections.
+    card: {
+      backgroundColor: theme.colors.card,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.md,
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.lg,
+      ...theme.shadows.low,
+    },
+
+    // ── Price card ────────────────────────────────────────────────────
+    // Separate padding for the price card (16px vs shared 12px).
+    priceCard: {
+      backgroundColor: theme.colors.card,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.lg,
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.lg,
+      ...theme.shadows.low,
+    },
+    // Row 2: price + strike + discount badge — center-aligned so the badge
+    // (a View) lines up with the text correctly.
+    priceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
+    },
+    // Price — bold and tabular so digits align. At 20px the -1 tracking used
+    // when this was 24px reads cramped, so it eases to -0.4.
+    priceMain: {
+      letterSpacing: -0.4,
+      fontWeight: '700',
+      fontVariant: ['tabular-nums'],
+    },
+    // Compare-at price — body size, muted, struck through.
+    priceStrike: {
+      textDecorationLine: 'line-through',
+    },
+    // Amber tint pill for discount % — light bg, amber text.
+    discountBadge: {
+      backgroundColor: 'rgba(245,158,11,0.15)',
+      borderRadius: theme.radius.xs,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 3,
+    },
+    discountText: {
+      color: theme.colors.warning,
+      fontWeight: '700',
+    },
+    // Row 1: title text + filled green verified circle sitting right beside it.
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+    },
+    // `flexShrink` (not `flex: 1`) so a long name wraps inside the card
+    // instead of stretching the row.
+    titleText: { flexShrink: 1 },
+    // Quantity + unit, read directly under the name ("50 Quintal"). Muted, so it
+    // supports the name rather than competing with the price below it.
+    quantityRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+      marginTop: theme.spacing.xxs,
+    },
+    // Row 3: type pill + negotiable pill.
+    tagsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      marginTop: theme.spacing.sm,
+      flexWrap: 'wrap',
+    },
+    // Shared pill base — identical geometry to FeedListingCard's `tag`, so the
+    // pills here read the same as the ones on the listing cards.
+    tag: {
+      borderRadius: theme.radius.xs,
+      paddingHorizontal: theme.spacing.xs,
+      paddingVertical: theme.spacing.xxs / 2,
+    },
+    // Listing type: SELL — filled success green, white text.
+    tagSell: {
+      backgroundColor: theme.colors.success,
+    },
+    // Listing type: RENT — violet tint with primary text, as on the cards.
+    tagRent: {
+      backgroundColor: theme.colors.primaryLight,
+    },
+    // Negotiable = green (success); Not Negotiable = red (danger), so a firm
+    // price reads as a hard "no" rather than a soft caution.
+    tagNegotiable: {
+      backgroundColor: theme.colors.success,
+    },
+    tagNotNegotiable: {
+      backgroundColor: theme.colors.danger,
+    },
+    // Quantity — neutral chip so it reads as information rather than a state.
+    // Carries an icon, so it needs row layout and a little more side padding
+    // than the plain text pills.
+    tagQuantity: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+      backgroundColor: theme.colors.surfaceVariant,
+      paddingHorizontal: theme.spacing.sm,
+    },
+    // Delivery pill — success-tinted, icon + label, only when the seller
+    // delivers.
+    tagDelivery: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+      backgroundColor: theme.colors.successLight,
+      paddingHorizontal: theme.spacing.sm,
+    },
+
+    // Row 4: 📍 City, State  and  ⏰ time ago — single row, wraps if tight.
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xl,          // 20px between location and time
+      marginTop: theme.spacing.md,
+      flexWrap: 'wrap',
+    },
+    metaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+    },
+    // Small dot separator between location and time-ago in the meta row.
+    metaDot: {
+      width: 4,
+      height: 4,
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.textTertiary,
+    },
+
+    // ── Quality Assured card (green-tint, pressable row) ──────────────
+    qualityCard: {
+      backgroundColor: theme.colors.successLight,
+      borderRadius: theme.radius.md,
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.lg,
+      padding: theme.spacing.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    // White circle containing the ShieldCheck icon.
+    qualityIconCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      ...theme.shadows.soft,
+    },
+    qualityTexts: {
+      flex: 1,
+      gap: theme.spacing.xxs,
+    },
+
+    // ── Accordion section header (shared by all accordion cards) ──────
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    sectionTitleText: { flex: 1 },
+    // Animated clipping window. Its height is driven by Reanimated; `hidden`
+    // keeps the (still-mounted) content from spilling out while collapsed.
+    accordionClip: {
+      overflow: 'hidden',
+    },
+    // Absolutely positioned so the content's natural height is measurable via
+    // onLayout without feeding back into the animated parent's height.
+    accordionMeasure: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      paddingTop: theme.spacing.md,
+    },
+
+    // "Read more / Read less" link below the About description.
+    readMore: {
+      marginTop: theme.spacing.xs,
+    },
+
+    // ── Product Details — 2-column grid ───────────────────────────────
+    detailsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      borderRadius: theme.radius.sm,
+      overflow: 'hidden',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+    },
+    // Each cell is 50% wide. Cells at odd indices get the alt (background) color.
+    detailCell: {
+      width: '50%',
+      padding: theme.spacing.sm,
+      backgroundColor: theme.colors.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+    },
+    detailCellAlt: {
+      backgroundColor: theme.colors.surfaceVariant,
+    },
+    // A free-text or long answer takes the whole line — half a row is unreadable.
+    detailCellFull: {
+      width: '100%',
+    },
+    // Muted caption above each value. Left in the schema's own casing —
+    // 'Crop Type' reads as a field name; 'CROP TYPE' reads as shouting.
+    detailLabel: {
+      letterSpacing: 0.2,
+    },
+    // The form's own sections, stacked inside the Product Details card.
+    specStack: {
+      gap: theme.spacing.md,
+    },
+    specSection: {
+      gap: theme.spacing.xs,
+    },
+    // Section sub-heading above its grid, in the form's own casing.
+    specSectionTitle: {
+      letterSpacing: 0.4,
+    },
+
+    // ── Seller Information (badge grid only) ──────────────────────────
+    // Seller name + locality, above the tile grid.
+    sellerIdentity: {
+      gap: theme.spacing.xxs,
+      marginBottom: theme.spacing.md,
+    },
+    sellerLocationRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+    },
+
+    // HTML .seller-badges — 2-column grid, 8px gutters both axes.
+    // RN has no grid, so: wrap row + 48.5% cells leaves a ~3% gutter.
+    sellerBadgeGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      rowGap: theme.spacing.sm,
+    },
+    // HTML .seller-badge-item — tinted tile, 8px radius, 8×10 padding.
+    sellerBadge: {
+      width: '48.5%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: theme.radius.sm,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
+    },
+    // Text column shrinks so a long value truncates instead of pushing the icon.
+    sellerBadgeTexts: {
+      flex: 1,
+      gap: theme.spacing.xxs,
+    },
+    // HTML .badge-label — uppercase, tracked-out micro label.
+    sellerBadgeLabel: {
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    // HTML .badge-val — bold value line.
+    sellerBadgeValue: {
+      fontWeight: '700',
+    },
+
+    // ── Location card ─────────────────────────────────────────────────
+    locationContent: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
+    },
+    locationText: { flex: 1 },
+    // "View on Map" button — primary-tint bg, primary text + nav icon.
+    mapBtn: {
+      backgroundColor: theme.colors.primaryLight,
+      borderRadius: theme.radius.sm,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+      flexShrink: 0,
+    },
+
+  });
+}

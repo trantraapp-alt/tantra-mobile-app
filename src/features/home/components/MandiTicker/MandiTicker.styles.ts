@@ -3,9 +3,12 @@ import { StyleSheet } from 'react-native';
 
 import type { AppTheme } from '@/theme';
 
-// Fixed decorative whites layered on the dark ticker bar.
+// Fixed decorative whites layered on the violet ticker bar. The bar carries its
+// own brand fill in both schemes, so everything drawn on it is keyed to that
+// fill rather than to the theme's text colors.
 const DOT = '#FFFFFF';
 const LEAD_DIVIDER = 'rgba(255,255,255,0.3)';
+const SEPARATOR = 'rgba(255,255,255,0.45)';
 
 // Builds MandiTicker styles from the active theme.
 export function createMandiTickerStyles(theme: AppTheme) {
@@ -85,9 +88,10 @@ export function createMandiTickerStyles(theme: AppTheme) {
     itemText: {
       fontVariant: ['tabular-nums'],
     },
-    // Muted dot separating consecutive items.
+    // Muted dot separating consecutive items. Keyed to the band, not to the
+    // theme: 'textTertiary' is a mid grey that all but vanishes on violet.
     separator: {
-      color: theme.colors.textTertiary,
+      color: SEPARATOR,
     },
   });
 }

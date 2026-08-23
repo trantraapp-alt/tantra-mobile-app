@@ -15,6 +15,10 @@ export {
 } from './FilterSheet';
 export { ListingCard, type ListingCardProps } from './ListingCard';
 export {
+  ListingDetailBody,
+  type ListingDetailBodyProps,
+} from './ListingDetailBody';
+export {
   type DetailRow,
   type DetailSection,
   type DetailStat,

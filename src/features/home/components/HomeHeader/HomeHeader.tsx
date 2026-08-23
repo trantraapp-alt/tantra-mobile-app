@@ -26,7 +26,7 @@ import { type BottomSheetRef, Text } from '@/components/ui';
 import { routes } from '@/constants';
 import { localize, type LocalizedText } from '@/features/sell';
 import { useLanguage, useThemedStyles, useTranslation } from '@/hooks';
-import { useTheme } from '@/providers';
+import { useColorSchemeName, useTheme } from '@/providers';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   selectCurrentUser,
@@ -34,20 +34,22 @@ import {
   selectSelectedLocation,
 } from '@/store/selectors';
 import { setRadius } from '@/store/slices';
+import type { ColorSchemeName } from '@/theme';
 
 import { useWeather } from '../../hooks';
 import { weatherEmoji } from '../../utils/weather';
 import { LocationPickerSheet } from '../LocationPickerSheet';
-import {
-  createHomeHeaderStyles,
-  INK,
-  INK_SOFT,
-} from './HomeHeader.styles';
+import { createHomeHeaderStyles } from './HomeHeader.styles';
 
-// Full-bleed farmer illustration used as the header background — its own violet
-// gradient and bottom fade are baked into the image, so the header applies no
-// colors of its own.
-const HERO_SOURCE: ImageSourcePropType = require('../../../../assets/images/home-hero.jpg');
+// Full-bleed farmer illustration used as the header background — the gradient
+// and the fade into the screen below are baked into the image, so the header
+// applies no colors of its own. One asset per scheme: the day version fades to
+// white, the night version to the dark background, and swapping the file is what
+// keeps the header legible in both.
+const HERO_SOURCES: Record<ColorSchemeName, ImageSourcePropType> = {
+  light: require('../../../../assets/images/home-hero.jpg'),
+  dark: require('../../../../assets/images/home-hero-dark.jpg'),
+};
 
 // Radius presets (km) the header chip cycles through.
 const RADIUS_PRESETS = [5, 10, 25, 50, 100];
@@ -84,6 +86,7 @@ function HomeHeaderComponent({
   showLocationBar = true,
 }: HomeHeaderProps) {
   const theme = useTheme();
+  const scheme = useColorSchemeName();
   const styles = useThemedStyles(createHomeHeaderStyles);
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
@@ -125,7 +128,7 @@ function HomeHeaderComponent({
 
   return (
     <ImageBackground
-      source={HERO_SOURCE}
+      source={HERO_SOURCES[scheme]}
       style={[styles.container, { paddingTop: insets.top }]}
       resizeMode="cover"
     >
@@ -194,11 +197,11 @@ function HomeHeaderComponent({
               accessibilityRole="search"
               accessibilityLabel={t('home.searchPlaceholder')}
             >
-              <Search size={theme.sizing.iconSm} color={INK_SOFT} />
+              <Search size={theme.sizing.iconSm} color={theme.colors.textSecondary} />
               <Text
                 variant="body"
                 numberOfLines={1}
-                style={[styles.searchText, { color: INK_SOFT }]}
+                style={[styles.searchText, { color: theme.colors.textSecondary }]}
               >
                 {t('home.searchPlaceholder')}
               </Text>
@@ -231,11 +234,11 @@ function HomeHeaderComponent({
               <Text
                 variant="label"
                 numberOfLines={1}
-                style={[styles.locValue, { color: INK }]}
+                style={[styles.locValue, { color: theme.colors.textPrimary }]}
               >
                 {locationLabel}
               </Text>
-              <ChevronDown size={theme.sizing.iconXs} color={INK_SOFT} />
+              <ChevronDown size={theme.sizing.iconXs} color={theme.colors.textSecondary} />
             </Pressable>
 
             <View style={styles.divider} />
@@ -250,10 +253,10 @@ function HomeHeaderComponent({
                 size={theme.sizing.iconXs}
                 color={theme.colors.secondary}
               />
-              <Text variant="label" style={{ color: INK }}>
+              <Text variant="label" style={{ color: theme.colors.textPrimary }}>
                 {`${radiusKm} km`}
               </Text>
-              <ChevronDown size={theme.sizing.iconXxs} color={INK_SOFT} />
+              <ChevronDown size={theme.sizing.iconXxs} color={theme.colors.textSecondary} />
             </Pressable>
 
             {weather ? (
@@ -265,7 +268,7 @@ function HomeHeaderComponent({
                   accessibilityRole="button"
                   accessibilityLabel={language === 'HI' ? 'मौसम' : 'Weather'}
                 >
-                  <Text variant="label" style={{ color: INK }}>
+                  <Text variant="label" style={{ color: theme.colors.textPrimary }}>
                     {`${weatherEmoji(weather.code)} ${weather.tempC}°C`}
                   </Text>
                 </Pressable>

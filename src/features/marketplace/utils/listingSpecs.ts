@@ -15,7 +15,9 @@
 //     form never asked this listing are not resurrected as a wall of "NA" —
 //     unless the listing carries an answer for them anyway, which is never lost;
 //   • attributes with no matching schema field (older listings, schema drift)
-//     are still shown, under their humanized key.
+//     are still shown, under their humanized key;
+//   • seller-contact questions are the one deliberate exception to "every field"
+//     — see CONTACT_KEY.
 //
 // Nothing here renders JSX and nothing here can produce the string "undefined".
 import { type FeedListing, humanizeAttributeKey } from '@/features/home';
@@ -47,6 +49,13 @@ const BLOCK_TEXT_LENGTH = 34;
 const HIDDEN_TYPES = new Set(['IMAGE', 'ADDRESS']);
 // Attribute keys that are plumbing rather than answers.
 const HIDDEN_ATTRIBUTE_KEYS = new Set(['images', 'photos', 'address']);
+// Fields that answer "how do I reach the seller" rather than "what is on offer":
+// the phone/mobile/email fields and the consent toggle that governs them. They
+// are never spec rows — the number is deliberately gated behind the detail
+// screen's contact-reveal (which is recorded against the buyer), so printing it
+// in the grid would both leak it and skip that accounting, and the seller's own
+// consent question is not information a buyer is shopping for.
+const CONTACT_KEY = /contact|phone|mobile|whatsapp|email/i;
 
 // Static labels the builder needs but must not resolve itself (it stays free of
 // the i18n runtime so it can be unit-tested with plain strings).
@@ -133,6 +142,15 @@ export function isAnswered(value: unknown): boolean {
     return Object.keys(value as object).length > 0;
   }
   return true;
+}
+
+// Whether a field asks about reaching the seller rather than about the item.
+// The English label is tested (not the localized one) so the rule holds
+// identically in every language.
+function isContactField(field: ListingField): boolean {
+  return (
+    CONTACT_KEY.test(field.fieldKey) || CONTACT_KEY.test(field.label?.en ?? '')
+  );
 }
 
 // Resolves a stored option value to its localized label, falling back to the raw
@@ -409,6 +427,7 @@ function orphanRows(
       ([key, value]) =>
         !claimed.has(key) &&
         !HIDDEN_ATTRIBUTE_KEYS.has(key) &&
+        !CONTACT_KEY.test(key) &&
         isAnswered(value),
     )
     .map(([key, value]) =>
@@ -456,7 +475,11 @@ export function buildListingSpecs({
     );
 
     for (const field of ordered) {
-      if (HIDDEN_TYPES.has(field.type) || skip.has(field.fieldKey)) {
+      if (
+        HIDDEN_TYPES.has(field.type) ||
+        skip.has(field.fieldKey) ||
+        isContactField(field)
+      ) {
         continue;
       }
       const text = formatListingValue(field, listing, language, labels);

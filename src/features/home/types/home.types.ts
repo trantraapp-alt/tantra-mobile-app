@@ -69,6 +69,10 @@ export interface FeedListing {
   unit?: string | null;
   // Whether the price is negotiable.
   isNegotiable?: boolean;
+  // Whether the seller delivers. Sent at ROOT level by the create/update API —
+  // a copy nested under `attributes` is ignored server-side, so the reader
+  // below still tolerates one rather than trusting it.
+  deliveryAvailable?: boolean | null;
   // Whether a contact button should be shown.
   showContact?: boolean;
   // Image URLs (relative `/files/..` paths or absolute); first = thumbnail.

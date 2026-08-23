@@ -11,6 +11,7 @@ import {
   Package,
   ShieldAlert,
   ShieldCheck,
+  Truck,
   UserRound,
 } from 'lucide-react-native';
 import { memo } from 'react';
@@ -24,6 +25,7 @@ import {
   feedDescription,
   firstFeedImage,
   formatDistanceKm,
+  hasDelivery,
   isSold,
   resolveFeedTitle,
 } from '@/features/home/utils/feedListing';
@@ -335,6 +337,26 @@ function ListingCardComponent({ listing, width, onPress }: ListingCardProps) {
                       : t('home.tagNotNegotiable')}
                   </Text>
                 </View>
+                {/* Only shown when the seller delivers — the absence of the
+                    badge is what "no delivery" looks like. */}
+                {hasDelivery(listing) ? (
+                  <View style={styles.deliveryChip}>
+                    <Truck
+                      size={theme.sizing.iconXs}
+                      color={theme.colors.success}
+                    />
+                    <Text
+                      variant="overline"
+                      numberOfLines={1}
+                      style={[
+                        styles.negotiablePillText,
+                        { color: theme.colors.success },
+                      ]}
+                    >
+                      {t('home.tagDelivery')}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
 
               <View style={styles.divider} />

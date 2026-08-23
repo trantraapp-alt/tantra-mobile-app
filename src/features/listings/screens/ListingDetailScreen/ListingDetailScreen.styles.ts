@@ -15,14 +15,31 @@ export function createListingDetailScreenStyles(theme: AppTheme) {
     },
     // Scroll content: no horizontal padding — every block owns its own gutter
     // so the gallery can run edge to edge.
-    scrollContent: {
+    // The shared body paints its own cards on this muted ground, exactly as
+    // the buyer page does.
+    scroll: {
+      flex: 1,
+      backgroundColor: theme.colors.surfaceVariant,
+    },
+    scrollBody: {
       paddingBottom: theme.spacing.xxl,
     },
-    // Positioning context for the gallery and its status badge overlay. It has
-    // no size of its own: the carousel's `aspectRatio` prop defines the height,
-    // so there is no aspect conflict with a wrapper.
-    hero: {
-      position: 'relative',
+    // Owner-only record card — same geometry as the shared body's cards, so it
+    // reads as one more card in the same stack.
+    recordCard: {
+      backgroundColor: theme.colors.card,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.md,
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.lg,
+      gap: theme.spacing.xs,
+      ...theme.shadows.low,
+    },
+    recordHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
     },
     // Status badge overlay. Bottom-left is the one corner free of carousel
     // chrome (counter top-right, dots bottom-center, arrows center left/right).
@@ -30,58 +47,6 @@ export function createListingDetailScreenStyles(theme: AppTheme) {
       position: 'absolute',
       left: theme.spacing.md,
       bottom: theme.spacing.md,
-    },
-    // A full-bleed content block on the page background.
-    block: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.lg,
-      backgroundColor: theme.colors.background,
-    },
-    // Full-bleed separator band between blocks.
-    band: {
-      height: theme.spacing.sm,
-      backgroundColor: theme.colors.surfaceVariant,
-    },
-    // Identity block: eyebrow, title and listing reference.
-    identity: {
-      gap: theme.spacing.xs,
-    },
-    // Recessed full-bleed strip carrying the price and the quantity — the pivot
-    // between the poster above and the spec sheet below.
-    priceBand: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      justifyContent: 'space-between',
-      gap: theme.spacing.lg,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.lg,
-      backgroundColor: theme.colors.surface,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.divider,
-    },
-    // Left column of the price band (price, or quantity when there is no price).
-    priceColumn: {
-      gap: theme.spacing.xxs,
-      alignItems: 'flex-start',
-    },
-    // Right column of the price band; yields width to the price, never the
-    // other way round.
-    quantityColumn: {
-      gap: theme.spacing.xxs,
-      alignItems: 'flex-end',
-      flexShrink: 1,
-    },
-    // Section / block heading.
-    blockTitle: {
-      marginBottom: theme.spacing.sm,
-    },
-    // Heading with a leading icon (location).
-    titleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.sm,
     },
     // Two-column label/value row. Both columns are left-aligned: Hindi labels
     // wrap to two lines and a right-ragged value beside a left-ragged label
@@ -99,63 +64,6 @@ export function createListingDetailScreenStyles(theme: AppTheme) {
     // Value column.
     rowValue: {
       flex: 58,
-    },
-    // Full-width row for long text, paragraphs and multi-select answers.
-    stackedRow: {
-      paddingVertical: theme.spacing.md,
-      gap: theme.spacing.xs,
-    },
-    // Yes/No value with its leading icon.
-    booleanValue: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-    },
-    // Wrapping container for inert multi-select pills.
-    tagWrap: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: theme.spacing.xs,
-    },
-    // One inert value pill. Deliberately not a Chip: Chip requires `onPress`
-    // and would put a fake tap target on a read-only page.
-    tag: {
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xxs,
-      borderRadius: theme.radius.pill,
-      backgroundColor: theme.colors.surfaceVariant,
-    },
-    // Address section content wrapper.
-    addressGroup: {
-      gap: theme.spacing.sm,
-    },
-    // Inline form-error notice inside a card.
-    formErrorInline: {
-      gap: theme.spacing.md,
-      alignItems: 'flex-start',
-    },
-    // Stacked address lines.
-    addressLines: {
-      gap: theme.spacing.xxs,
-    },
-    // Contact number row (non-interactive: this is the seller's own listing).
-    contactRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-      marginTop: theme.spacing.md,
-    },
-    // Coordinates line under the address.
-    coordinates: {
-      marginTop: theme.spacing.sm,
-    },
-    // "Read more" toggle under a clamped description.
-    readMore: {
-      marginTop: theme.spacing.sm,
-    },
-    // Gap between multiple description paragraphs.
-    descriptionGroup: {
-      gap: theme.spacing.lg,
     },
     // Inline notice replacing the metadata-driven blocks when the schema fails.
     formErrorCard: {

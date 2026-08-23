@@ -149,6 +149,20 @@ export function createListingCardStyles(theme: AppTheme) {
       paddingHorizontal: theme.spacing.xs,
       paddingVertical: theme.spacing.xxs,
     },
+    // Delivery perk — success tint with a truck, same height as the pill beside
+    // it so the row keeps one baseline.
+    deliveryChip: {
+      flexShrink: 1,
+      minWidth: 0,
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xxs,
+      backgroundColor: theme.colors.successLight,
+      borderRadius: theme.radius.sm,
+      paddingHorizontal: theme.spacing.xs,
+      paddingVertical: theme.spacing.xxs,
+    },
     // Extra-small label inside the negotiability pill so "Not Negotiable" fits.
     negotiablePillText: {
       fontSize: 10,

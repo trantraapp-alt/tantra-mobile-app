@@ -128,15 +128,6 @@ export function createListingDetailBodyStyles(theme: AppTheme) {
       backgroundColor: theme.colors.surfaceVariant,
       paddingHorizontal: theme.spacing.sm,
     },
-    // Delivery pill — success-tinted, icon + label, only when the seller
-    // delivers.
-    tagDelivery: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xxs,
-      backgroundColor: theme.colors.successLight,
-      paddingHorizontal: theme.spacing.sm,
-    },
 
     // Row 4: 📍 City, State  and  ⏰ time ago — single row, wraps if tight.
     metaRow: {

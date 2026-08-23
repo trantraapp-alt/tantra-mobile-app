@@ -79,7 +79,7 @@ export const SellSheet = forwardRef<SellSheetRef>(function SellSheet(_, ref) {
     <BottomSheet ref={sheetRef} scrollable>
       <View style={styles.header}>
         <View style={styles.brand}>
-          <Leaf size={theme.sizing.iconMd} color={theme.colors.primary} />
+          <Leaf size={theme.sizing.iconMd} color={theme.accents.primary.strong} />
         </View>
 
         <View style={styles.titles}>

@@ -64,6 +64,20 @@ function BrandHeaderBackdropComponent({
 }: BrandHeaderBackdropProps) {
   const theme = useTheme();
   const ink = theme.colors.onPrimary;
+  // The scrim below has to stay dark in BOTH schemes. The page text colour
+  // flips to a near-white in dark mode, which turned the layer meant to deepen
+  // the sweep into a wash of light — the bar came out brighter in dark mode
+  // than in light. The scheme background is dark in dark mode and the text
+  // colour is dark in light mode, so the scrim takes whichever applies.
+  const scrim = theme.isDark
+    ? theme.colors.background
+    : theme.colors.textPrimary;
+  // Dark mode also starts from a lighter violet (the scheme lifts the primary
+  // so it reads on a dark page), so the scrim carries more of the sweep there
+  // or the header glares against the screen below it. Same reason for halving
+  // the highlight: on a dark page the warm end needs no help to catch the eye.
+  const scrimOpacity = theme.isDark ? [0.18, 0.34, 0.58] : [0, 0.05, 0.3];
+  const liftOpacity = theme.isDark ? [0.06, 0.02] : [0.12, 0.04];
 
   return (
     <Svg
@@ -86,30 +100,19 @@ function BrandHeaderBackdropComponent({
         {/* A touch of light on the warm end. Kept low — orange washes out to a
             pale peach long before violet would. */}
         <LinearGradient id="brandHeaderLift" x1="0" y1="0" x2="1" y2="0.75">
-          <Stop offset="0" stopColor={ink} stopOpacity={0.12} />
-          <Stop offset="0.45" stopColor={ink} stopOpacity={0.04} />
+          <Stop offset="0" stopColor={ink} stopOpacity={liftOpacity[0]} />
+          <Stop offset="0.45" stopColor={ink} stopOpacity={liftOpacity[1]} />
           <Stop offset="1" stopColor={ink} stopOpacity={0} />
         </LinearGradient>
 
         {/* Ink deepens the violet end so the sweep lands on a rich base rather
-            than a flat one. The themed violet-tinted charcoal keeps the dark
-            end in the brand hue instead of greying it out. */}
+            than a flat one, and in dark mode it deepens the whole bar. The
+            violet-tinted charcoal keeps that dark end in the brand hue instead
+            of greying it out. */}
         <LinearGradient id="brandHeaderShade" x1="0" y1="0" x2="1" y2="0.75">
-          <Stop
-            offset="0"
-            stopColor={theme.colors.textPrimary}
-            stopOpacity={0}
-          />
-          <Stop
-            offset="0.6"
-            stopColor={theme.colors.textPrimary}
-            stopOpacity={0.05}
-          />
-          <Stop
-            offset="1"
-            stopColor={theme.colors.textPrimary}
-            stopOpacity={0.3}
-          />
+          <Stop offset="0" stopColor={scrim} stopOpacity={scrimOpacity[0]} />
+          <Stop offset="0.6" stopColor={scrim} stopOpacity={scrimOpacity[1]} />
+          <Stop offset="1" stopColor={scrim} stopOpacity={scrimOpacity[2]} />
         </LinearGradient>
       </Defs>
 

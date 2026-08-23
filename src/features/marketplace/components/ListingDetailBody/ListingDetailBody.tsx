@@ -530,21 +530,22 @@ export function ListingDetailBody({
           </Text>
         </View>
 
-        {/* ② Quantity + unit, directly under the name. Always shown: "how much
-            is on offer" is the reader's next question, and an unanswered one is
-            itself worth knowing. */}
-        <View style={styles.quantityRow}>
-          <Package
-            size={theme.sizing.iconXs}
-            color={theme.colors.textSecondary}
-          />
-          <Text
-            variant="bodyMedium"
-            color={quantityLabel ? 'textSecondary' : 'textTertiary'}
-          >
-            {quantityLabel ?? `${t('listing.quantity')}: ${t('common.na')}`}
-          </Text>
-        </View>
+        {/* ② Quantity + unit, directly under the name — "how much is on
+            offer" is the reader's next question. Only when the listing carries
+            one: the spec grid below already reports every question the seller
+            left unanswered, so a headline "Quantity: NA" added nothing on the
+            listings whose form never asked for a quantity at all. */}
+        {quantityLabel ? (
+          <View style={styles.quantityRow}>
+            <Package
+              size={theme.sizing.iconXs}
+              color={theme.colors.textSecondary}
+            />
+            <Text variant="bodyMedium" color="textSecondary">
+              {quantityLabel}
+            </Text>
+          </View>
+        ) : null}
 
         {/* ③ Price row — large bold price · strikethrough · amber pill */}
         <View style={styles.priceRow}>
@@ -609,16 +610,6 @@ export function ListingDetailBody({
               </Text>
             </View>
           )}
-          {/* Delivery — only when the seller actually offers it. "No delivery"
-            is the norm here, so a pill for it would be noise on every card. */}
-          {delivers ? (
-            <View style={[styles.tag, styles.tagDelivery]}>
-              <Truck size={theme.sizing.iconXs} color={theme.colors.success} />
-              <Text variant="overline" style={{ color: theme.colors.success }}>
-                {t('detail.deliveryAvailable')}
-              </Text>
-            </View>
-          ) : null}
         </View>
 
         {/* ⑤ Meta — one row: 📍 City, State   ⏰ time ago */}

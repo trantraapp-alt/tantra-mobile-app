@@ -126,20 +126,20 @@ function SellSupportCardComponent({
             style={[
               styles.action,
               // The deep shade rather than the saturated fill: this pill
-              // carries white text, and only the deep shade is dark enough
-              // to hold it on every accent.
+              // carries inverse-ink content, which needs the darkest shade of
+              // the accent behind it on every colour scheme.
               { backgroundColor: colors.strong },
               pressed ? styles.pressed : null,
             ]}
           >
             <MessageCircle
               size={theme.sizing.iconSm}
-              color={theme.colors.onPrimary}
+              color={theme.colors.textInverse}
             />
             <Text
               variant="label"
               numberOfLines={1}
-              style={{ color: theme.colors.onPrimary }}
+              style={{ color: theme.colors.textInverse }}
             >
               {label}
             </Text>

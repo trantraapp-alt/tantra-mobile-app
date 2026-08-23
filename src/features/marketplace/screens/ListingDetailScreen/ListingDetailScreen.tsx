@@ -107,6 +107,12 @@ export function MarketplaceListingDetailScreen() {
   // Clearing the contact on dismiss is what lets a second tap re-open the sheet.
   const clearContact = useCallback(() => setContact(null), []);
 
+  // The contact sheet's support hand-off: it dismisses itself first, so this
+  // only has to open the app's messaging surface.
+  const openSupport = useCallback(() => {
+    router.push(routes.tabs.chat);
+  }, [router]);
+
   // Shares the listing. There is no public web URL for a listing yet, so the
   // message carries the app deep link (`tantra://…`), which opens the same
   // screen for anyone who already has the app.
@@ -291,7 +297,13 @@ export function MarketplaceListingDetailScreen() {
         </View>
       </View>
 
-      <ContactModal contact={contact} onClose={clearContact} />
+      <ContactModal
+        contact={contact}
+        sellerName={sellerInfo?.name ?? listing?.sellerName}
+        sellerVerified={sellerInfo?.verifiedSeller ?? listing?.sellerVerified}
+        onClose={clearContact}
+        onSupport={openSupport}
+      />
     </View>
   );
 }

@@ -31,10 +31,11 @@ export function createSellCategoryFormStyles(theme: AppTheme) {
     leafFormWrap: {
       flex: 1,
     },
-    // Padding around the info banner shown above the form (no top gap — it sits
-    // directly under the header).
+    // Padding around the info banner shown above the form. The gap at the top
+    // keeps it off the header bar, which it would otherwise sit flush against.
     leafInfo: {
       paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.lg,
     },
   });
 }

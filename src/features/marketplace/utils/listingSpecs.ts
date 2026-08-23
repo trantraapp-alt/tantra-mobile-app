@@ -38,6 +38,13 @@ const NAME_TYPES: string[] = ['DROPDOWN', 'RADIO', 'TEXT'];
 // own unit is preferred and the looser pattern is only a fallback.
 const QUANTITY_UNIT_KEY =
   /^(unit|uom|measurement|(quantity|qty)(unit|measurement)?)$/i;
+// Field keys that hold how much is on offer, for the listings whose quantity
+// never reaches the DTO's own `quantity` column and lives in the form answers
+// instead. The exact pattern is tried first; the looser one catches a qualified
+// key ("available_quantity", "quantity_in_kg") without matching every number on
+// the form.
+const QUANTITY_KEY = /^(quantity|qty|stock)$/i;
+const QUANTITY_HINT = /(^|[_-])(quantity|qty|stock)([_-]|$)/i;
 const UNIT_KEY = /(unit|uom|measurement)$/i;
 // Field keys whose value is a free-text description of the item.
 const DESCRIPTION_KEY = /description|about|remarks/i;
@@ -56,6 +63,19 @@ const HIDDEN_ATTRIBUTE_KEYS = new Set(['images', 'photos', 'address']);
 // in the grid would both leak it and skip that accounting, and the seller's own
 // consent question is not information a buyer is shopping for.
 const CONTACT_KEY = /contact|phone|mobile|whatsapp|email/i;
+// Fields that answer "does the seller deliver". The Seller Information card
+// states delivery on its own tile, so a spec row for it repeats that on every
+// listing. Deliberately narrow — it matches the availability question and its
+// variants, not a "delivery_charge" or "delivery_time", which are real answers
+// about the item and stay in the grid.
+const DELIVERY_KEY = /^(has)?(home)?deliver(y|s)?(available|option|facility)?$/;
+
+// Whether a key or label names the delivery question. Both are stripped to
+// bare letters first, so "delivery_available", "deliveryAvailable" and
+// "Delivery Available" are one rule rather than three patterns.
+function isDeliveryKey(value: string): boolean {
+  return DELIVERY_KEY.test(value.toLowerCase().replace(/[^a-z]/g, ''));
+}
 
 // Static labels the builder needs but must not resolve itself (it stays free of
 // the i18n runtime so it can be unit-tested with plain strings).
@@ -151,6 +171,13 @@ function isContactField(field: ListingField): boolean {
   return (
     CONTACT_KEY.test(field.fieldKey) || CONTACT_KEY.test(field.label?.en ?? '')
   );
+}
+
+// Whether a field asks whether the seller delivers — answered by the seller
+// card's own tile, so the grid leaves it out. Tested on the English label too,
+// for the schemas that key the question generically.
+function isDeliveryField(field: ListingField): boolean {
+  return isDeliveryKey(field.fieldKey) || isDeliveryKey(field.label?.en ?? '');
 }
 
 // Resolves a stored option value to its localized label, falling back to the raw
@@ -353,11 +380,46 @@ export function resolveUnitLabel({
   return plain === '' ? null : plain;
 }
 
+// The form field holding how much is on offer. Only numeric fields qualify,
+// and never a price or a unit — a form carries several numbers and only one of
+// them answers "how much is being sold".
+function resolveQuantityField(
+  listing: FeedListing,
+  form: ListingForm | null,
+): ListingField | null {
+  const numeric = (form?.sections ?? [])
+    .flatMap((section) => section.fields)
+    .filter(
+      (candidate) =>
+        (candidate.type === 'NUMBER' || candidate.type === 'DECIMAL') &&
+        !MONEY_KEY.test(candidate.fieldKey) &&
+        !PERCENT_KEY.test(candidate.fieldKey) &&
+        !UNIT_KEY.test(candidate.fieldKey) &&
+        isAnswered(readListingValue(listing, candidate)),
+    );
+  return (
+    numeric.find((candidate) => QUANTITY_KEY.test(candidate.fieldKey)) ??
+    numeric.find((candidate) => QUANTITY_HINT.test(candidate.fieldKey)) ??
+    null
+  );
+}
+
 // "50 Quintal" — the quantity with its unit, or null when no quantity is set.
+//
+// The DTO's own `quantity` is the fast path, but it is only populated for the
+// categories that declare quantity as a common column. Everywhere else the
+// seller's answer sits in `attributes` under whatever key the category's form
+// gave it, which is why the schema is searched before giving up — without that
+// step every such listing read "Quantity: NA" while the answer was on screen
+// two cards below, in the spec grid.
 export function listingQuantityLabel(
   options: ListingSpecOptions,
 ): string | null {
-  const raw = options.listing.quantity ?? options.listing.attributes?.quantity;
+  const field = resolveQuantityField(options.listing, options.form);
+  const raw =
+    options.listing.quantity ??
+    options.listing.attributes?.quantity ??
+    (field ? readListingValue(options.listing, field) : undefined);
   if (!isAnswered(raw)) {
     return null;
   }
@@ -428,6 +490,7 @@ function orphanRows(
         !claimed.has(key) &&
         !HIDDEN_ATTRIBUTE_KEYS.has(key) &&
         !CONTACT_KEY.test(key) &&
+        !isDeliveryKey(key) &&
         isAnswered(value),
     )
     .map(([key, value]) =>
@@ -478,7 +541,8 @@ export function buildListingSpecs({
       if (
         HIDDEN_TYPES.has(field.type) ||
         skip.has(field.fieldKey) ||
-        isContactField(field)
+        isContactField(field) ||
+        isDeliveryField(field)
       ) {
         continue;
       }

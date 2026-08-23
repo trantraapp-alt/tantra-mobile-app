@@ -19,7 +19,7 @@ export function createSellSheetStyles(theme: AppTheme) {
       borderRadius: theme.radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.primaryLight,
+      backgroundColor: theme.accents.primary.surface,
     },
     // Title over subtitle, taking the space between mark and close button.
     titles: {

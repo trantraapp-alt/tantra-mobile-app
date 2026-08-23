@@ -122,7 +122,7 @@ function SellCategoryTileComponent({
             <View style={[styles.arrow, { backgroundColor: colors.solid }]}>
               <ArrowRight
                 size={theme.sizing.iconSm}
-                color={theme.colors.onPrimary}
+                color={theme.colors.textInverse}
               />
             </View>
           )}

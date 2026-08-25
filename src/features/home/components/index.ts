@@ -1,4 +1,8 @@
 // Barrel export for home feature components.
+export {
+  AdminDashboardCard,
+  type AdminDashboardCardProps,
+} from './AdminDashboardCard';
 export { CategoryChips, type CategoryChipsProps } from './CategoryChips';
 export { CategoryGrid, type CategoryGridProps } from './CategoryGrid';
 export { DualBanners, type DualBannersProps } from './DualBanners';

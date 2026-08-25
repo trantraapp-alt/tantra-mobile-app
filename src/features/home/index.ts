@@ -9,6 +9,7 @@ export {
   PromoCarousel,
 } from './components';
 export { useHomeFeed, type UseHomeFeedResult } from './hooks';
+export { AdminHomeScreen } from './screens/AdminHomeScreen';
 export { HomeScreen } from './screens/HomeScreen';
 export { WeatherScreen } from './screens/WeatherScreen';
 export type {

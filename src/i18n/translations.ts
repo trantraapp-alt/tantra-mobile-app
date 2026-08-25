@@ -77,6 +77,20 @@ const en = {
   'home.locationPicker.loadError': 'Could not load addresses',
   'home.locationPicker.viewAll': 'View all addresses',
 
+  // Home screen — admin dashboard.
+  'home.admin.sectionTitle': 'Manage',
+  'home.admin.sectionSubtitle': 'Everything you moderate, in one place',
+  'home.admin.businessProfileTitle': 'Business Profile Admin',
+  'home.admin.businessProfileDesc': 'Review and approve business profile submissions',
+  'home.admin.businessProfilePending': '{value} pending',
+  'home.admin.businessProfileAllClear': 'All caught up',
+  'home.admin.usersTitle': 'Users',
+  'home.admin.usersDesc': 'View, block and manage registered users',
+  'home.admin.usersCount': '{value} users',
+  'home.admin.categoriesTitle': 'Categories',
+  'home.admin.categoriesDesc': 'Manage marketplace categories',
+  'home.admin.statsError': "Couldn't load dashboard counts.",
+
   // Marketplace (browse / search / nearby / seller).
   'market.browseTitle': 'Browse',
   'market.nearbyTitle': 'Nearby',
@@ -637,6 +651,20 @@ const hi: Record<TranslationKey, string> = {
   'home.locationPicker.empty': 'अभी कोई सहेजा पता नहीं',
   'home.locationPicker.loadError': 'पते लोड नहीं हो सके',
   'home.locationPicker.viewAll': 'सभी पते देखें',
+
+  // Home screen — admin dashboard.
+  'home.admin.sectionTitle': 'प्रबंधन',
+  'home.admin.sectionSubtitle': 'आपकी निगरानी वाली हर चीज़ एक जगह',
+  'home.admin.businessProfileTitle': 'बिज़नेस प्रोफ़ाइल एडमिन',
+  'home.admin.businessProfileDesc': 'बिज़नेस प्रोफ़ाइल सबमिशन की समीक्षा और स्वीकृति करें',
+  'home.admin.businessProfilePending': '{value} लंबित',
+  'home.admin.businessProfileAllClear': 'सब कुछ पूर्ण',
+  'home.admin.usersTitle': 'उपयोगकर्ता',
+  'home.admin.usersDesc': 'पंजीकृत उपयोगकर्ताओं को देखें, ब्लॉक करें और प्रबंधित करें',
+  'home.admin.usersCount': '{value} उपयोगकर्ता',
+  'home.admin.categoriesTitle': 'श्रेणियाँ',
+  'home.admin.categoriesDesc': 'मार्केटप्लेस श्रेणियों को प्रबंधित करें',
+  'home.admin.statsError': 'डैशबोर्ड आंकड़े लोड नहीं हो सके।',
 
   // Marketplace (browse / search / nearby / seller).
   'market.browseTitle': 'ब्राउज़ करें',

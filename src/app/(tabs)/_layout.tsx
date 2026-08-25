@@ -1,6 +1,7 @@
 // Bottom tab navigator (Home, Wishlist, Profile) with a central Sell button
-// that opens the Sell bottom sheet. An admin account gets a Users tab in
-// place of Nearby — it moderates the app, it doesn't browse the marketplace.
+// that opens the Sell bottom sheet. An admin account gets Users in place of
+// Nearby and Category in place of Saved, and no Sell button — it moderates
+// the app, it doesn't browse or sell on the marketplace.
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Tabs } from 'expo-router';
 import { useRef } from 'react';
@@ -37,11 +38,20 @@ export default function TabsLayout() {
           options={{ title: 'Users', href: isAdmin ? undefined : null }}
         />
         <Tabs.Screen name="chat" options={{ title: 'Chat', href: null }} />
-        <Tabs.Screen name="wishlist" options={{ title: 'Saved' }} />
+        <Tabs.Screen
+          name="wishlist"
+          options={{ title: 'Saved', href: isAdmin ? null : undefined }}
+        />
+        <Tabs.Screen
+          name="categories"
+          options={{ title: 'Categories', href: isAdmin ? undefined : null }}
+        />
         <Tabs.Screen name="profile" options={{ title: 'Me' }} />
       </Tabs>
 
-      <SellSheet ref={sellSheetRef} />
+      {/* Not mounted for admin — its module fetch would run for nothing since
+          the Sell button that opens it is hidden for that role. */}
+      {isAdmin ? null : <SellSheet ref={sellSheetRef} />}
     </>
   );
 }

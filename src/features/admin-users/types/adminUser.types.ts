@@ -1,6 +1,6 @@
 // Types for the admin User Control feature — list/detail/actions on app users.
-// Action payloads (block/unblock, subscription, listings) get added once
-// those screens are built.
+// Per-listing admin actions (view a user's listings, force-delete one) get
+// added once that screen is built.
 
 // Account status.
 export type AdminUserStatus = 'ACTIVE' | 'BLOCKED';
@@ -101,4 +101,31 @@ export interface AdminUserDetail {
   subscription: AdminUserSubscription | null;
   businessProfile: AdminUserBusinessProfileSummary | null;
   addresses: AdminUserAddress[];
+}
+
+// Reason codes accepted by PUT /admin/users/{userId}/block — send exactly one
+// of these strings.
+export type BlockReasonCode =
+  | 'SPAM_LISTINGS'
+  | 'FAKE_PROFILE'
+  | 'ABUSIVE_BEHAVIOR'
+  | 'OTHER';
+
+// A plan from GET /subscriptions/plans, used to populate the grant-
+// subscription picker. The doc only guarantees `id` (sent back on grant) —
+// the display-name field isn't documented, so callers should read `name`
+// with a fallback chain rather than assume it's always present.
+export interface SubscriptionPlan {
+  id: number;
+  name?: string;
+  planKey?: string;
+  price?: number;
+  durationDays?: number;
+  [key: string]: unknown;
+}
+
+// A generic {message} response shared by the block/unblock/subscription
+// write endpoints.
+export interface AdminUserActionResult {
+  message: string;
 }

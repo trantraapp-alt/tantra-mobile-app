@@ -1,9 +1,12 @@
 // Custom bottom tab bar rendering Home / Wishlist / Profile with a raised
-// central Sell action button. An admin account gets Users in place of Nearby.
+// central Sell action button. An admin account gets Users in place of Nearby
+// and Category in place of Saved, and has no Sell button — it moderates the
+// app rather than listing anything on it.
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import {
   Heart,
   Home,
+  LayoutGrid,
   type LucideIcon,
   MapPin,
   User,
@@ -21,8 +24,8 @@ import { TabBarButton } from './TabBarButton';
 export interface AppTabBarProps extends BottomTabBarProps {
   // Called when the central Sell button is pressed.
   onSellPress: () => void;
-  // Swaps the Nearby tab for Users — an admin moderates the app rather than
-  // browsing the marketplace.
+  // Swaps Nearby for Users, Saved for Category, and hides the Sell button —
+  // an admin moderates the app, it doesn't browse or sell on the marketplace.
   isAdmin?: boolean;
 }
 
@@ -32,6 +35,7 @@ const ROUTE_ICONS: Record<string, LucideIcon> = {
   nearby: MapPin,
   users: Users,
   wishlist: Heart,
+  categories: LayoutGrid,
   profile: User,
 };
 
@@ -74,10 +78,10 @@ export function AppTabBar({
         {isAdmin ? renderTab('users') : renderTab('nearby')}
       </View>
 
-      <SellFab onPress={onSellPress} />
+      {isAdmin ? null : <SellFab onPress={onSellPress} />}
 
       <View style={styles.group}>
-        {renderTab('wishlist')}
+        {isAdmin ? renderTab('categories') : renderTab('wishlist')}
         {renderTab('profile')}
       </View>
     </View>

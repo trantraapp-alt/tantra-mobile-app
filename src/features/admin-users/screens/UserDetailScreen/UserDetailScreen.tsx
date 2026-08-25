@@ -14,30 +14,38 @@ import {
   Globe,
   MapPin,
   Package,
+  ShieldCheck,
   ShoppingBag,
   Store,
   User,
 } from 'lucide-react-native';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
+import { Button } from '@/components/buttons';
 import { ErrorState } from '@/components/empty-state';
+import { ConfirmDialog } from '@/components/feedback';
 import { Skeleton } from '@/components/loaders';
 import { Header } from '@/components/shared';
-import { Badge, Card, Screen, Text } from '@/components/ui';
+import { Badge, type BottomSheetRef, Card, Screen, Text } from '@/components/ui';
 import { routes } from '@/constants';
 // Direct submodule imports (not the feature barrel) — pulling in the whole
 // business-profile barrel here would drag its screens/components along too.
 import type { BusinessProfile } from '@/features/business-profile/types/businessProfile.types';
 import { normalizeProfileStatus } from '@/features/business-profile/utils/profileStatus';
 import { useGoBack, useThemedStyles } from '@/hooks';
-import { useTheme } from '@/providers';
+import { logger } from '@/lib';
+import { useTheme, useToast } from '@/providers';
 import { formatDate, formatRelativeTime } from '@/utils';
 
+import { adminUsersApi } from '../../api/adminUsersApi';
+import { BlockUserSheet } from '../../components/BlockUserSheet';
+import { GrantSubscriptionSheet } from '../../components/GrantSubscriptionSheet';
 import { useAdminUserDetail } from '../../hooks/useAdminUserDetail';
 import type {
   AdminUserBusinessProfileSummary,
   AdminUserSummary,
+  BlockReasonCode,
   SubscriptionBadge,
 } from '../../types/adminUser.types';
 import {
@@ -191,6 +199,82 @@ export function UserDetailScreen() {
   }, [userJson]);
 
   const { detail, isLoading, isError, refetch } = useAdminUserDetail(userId);
+  const { showSuccess, showError } = useToast();
+
+  // Block / unblock / grant / revoke share one submitting flag — only one of
+  // these panels is ever open at a time.
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+  const blockSheetRef = useRef<BottomSheetRef>(null);
+  const grantSheetRef = useRef<BottomSheetRef>(null);
+  const [unblockConfirmVisible, setUnblockConfirmVisible] = useState(false);
+  const [revokeConfirmVisible, setRevokeConfirmVisible] = useState(false);
+
+  const handleBlock = useCallback(
+    async (reason: BlockReasonCode, notes: string) => {
+      setActionSubmitting(true);
+      try {
+        await adminUsersApi.block(userId, reason, notes);
+        blockSheetRef.current?.dismiss();
+        showSuccess('User blocked.');
+        void refetch();
+      } catch (error) {
+        logger.warn('[AdminUsers] Block failed', { userId, error });
+        showError("Couldn't block the user. Please try again.");
+      } finally {
+        setActionSubmitting(false);
+      }
+    },
+    [userId, showSuccess, showError, refetch],
+  );
+
+  const handleUnblock = useCallback(async () => {
+    setActionSubmitting(true);
+    try {
+      await adminUsersApi.unblock(userId);
+      setUnblockConfirmVisible(false);
+      showSuccess('User unblocked.');
+      void refetch();
+    } catch (error) {
+      logger.warn('[AdminUsers] Unblock failed', { userId, error });
+      showError("Couldn't unblock the user. Please try again.");
+    } finally {
+      setActionSubmitting(false);
+    }
+  }, [userId, showSuccess, showError, refetch]);
+
+  const handleGrantSubscription = useCallback(
+    async (planId: number, durationDays: number, notes: string) => {
+      setActionSubmitting(true);
+      try {
+        await adminUsersApi.grantSubscription(userId, planId, durationDays, notes);
+        grantSheetRef.current?.dismiss();
+        showSuccess('Subscription granted.');
+        void refetch();
+      } catch (error) {
+        logger.warn('[AdminUsers] Grant subscription failed', { userId, error });
+        showError("Couldn't grant the subscription. Please try again.");
+      } finally {
+        setActionSubmitting(false);
+      }
+    },
+    [userId, showSuccess, showError, refetch],
+  );
+
+  const handleRevokeSubscription = useCallback(async () => {
+    setActionSubmitting(true);
+    try {
+      await adminUsersApi.revokeSubscription(userId);
+      setRevokeConfirmVisible(false);
+      showSuccess('Subscription revoked.');
+      void refetch();
+    } catch (error) {
+      console.error(error);
+      logger.warn('[AdminUsers] Revoke subscription failed', { userId, error });
+      showError("Couldn't revoke the subscription. Please try again.");
+    } finally {
+      setActionSubmitting(false);
+    }
+  }, [userId, showSuccess, showError, refetch]);
 
   // Nothing at all to show yet — no cached row and the detail fetch hasn't
   // landed (or failed).
@@ -378,37 +462,83 @@ export function UserDetailScreen() {
             <InfoCardSkeleton />
           ) : detailFailed ? (
             <ErrorState onRetry={refetch} retryLabel="Retry" />
-          ) : detail?.subscription ? (
-            <Card style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <View style={styles.infoIcon}>
-                  <CreditCard size={theme.sizing.iconMd} color={theme.colors.primary} />
-                </View>
-                <View style={styles.infoHeaderText}>
-                  <Text variant="bodyMedium" numberOfLines={1}>
-                    {detail.subscription.planName}
-                  </Text>
-                  <Text variant="caption" color="textSecondary">
-                    {formatDate(detail.subscription.startedAt)} –{' '}
-                    {formatDate(detail.subscription.expiresAt)}
-                  </Text>
-                </View>
-                <Badge
-                  label={detail.subscription.status}
-                  tone={subscriptionTone(detail.subscription.planKey as SubscriptionBadge)}
-                />
-              </View>
-              {detail.subscription.grantedBy ? (
-                <Text variant="caption" color="textTertiary" style={styles.grantedBy}>
-                  Granted by {detail.subscription.grantedBy}
+          ) : detail ? (
+            <>
+              {detail.subscription ? (
+                <Card style={styles.infoCard}>
+                  <View style={styles.infoHeader}>
+                    <View style={styles.infoIcon}>
+                      <CreditCard size={theme.sizing.iconMd} color={theme.colors.primary} />
+                    </View>
+                    <View style={styles.infoHeaderText}>
+                      <Text variant="bodyMedium" numberOfLines={1}>
+                        {detail.subscription.planName}
+                      </Text>
+                      <Text variant="caption" color="textSecondary">
+                        {formatDate(detail.subscription.startedAt)} –{' '}
+                        {formatDate(detail.subscription.expiresAt)}
+                      </Text>
+                    </View>
+                    <Badge
+                      label={detail.subscription.status}
+                      tone={subscriptionTone(detail.subscription.planKey as SubscriptionBadge)}
+                    />
+                  </View>
+                  {detail.subscription.grantedBy ? (
+                    <Text variant="caption" color="textTertiary" style={styles.grantedBy}>
+                      Granted by {detail.subscription.grantedBy}
+                    </Text>
+                  ) : null}
+                </Card>
+              ) : (
+                <Text variant="body" color="textSecondary">
+                  No active subscription
                 </Text>
-              ) : null}
-            </Card>
-          ) : (
-            <Text variant="body" color="textSecondary">
-              No active subscription
-            </Text>
-          )}
+              )}
+
+              <View style={styles.sectionActions}>
+                {detail.subscription ? (
+                  detail.subscription.status.toUpperCase() === 'CANCELLED' ? (
+                    // Already cancelled — nothing left to revoke, just offer
+                    // a fresh plan.
+                    <Button
+                      label="Change Plan"
+                      variant="outline"
+                      size="sm"
+                      onPress={() => grantSheetRef.current?.present()}
+                    />
+                  ) : (
+                    <>
+                      <Button
+                        label="Change Plan"
+                        variant="outline"
+                        size="sm"
+                        fullWidth={false}
+                        style={styles.sectionActionButton}
+                        onPress={() => grantSheetRef.current?.present()}
+                      />
+                      <Button
+                        label="Revoke"
+                        variant="danger"
+                        size="sm"
+                        fullWidth={false}
+                        style={styles.sectionActionButton}
+                        onPress={() => setRevokeConfirmVisible(true)}
+                      />
+                    </>
+                  )
+                ) : (
+                  <Button
+                    label="Grant Subscription"
+                    size="sm"
+                    fullWidth={false}
+                    leftIcon={<CreditCard size={theme.sizing.iconSm} color={theme.colors.onPrimary} />}
+                    onPress={() => grantSheetRef.current?.present()}
+                  />
+                )}
+              </View>
+            </>
+          ) : null}
         </View>
 
         {/* Business profile */}
@@ -503,6 +633,62 @@ export function UserDetailScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Sticky Block / Unblock action — the account's single most
+          consequential toggle, so it gets its own permanent footer rather
+          than living inside a section. */}
+      <View style={styles.actionFooter}>
+        {blocked ? (
+          <Button
+            label="Unblock User"
+            leftIcon={<ShieldCheck size={theme.sizing.iconSm} color={theme.colors.onPrimary} />}
+            onPress={() => setUnblockConfirmVisible(true)}
+          />
+        ) : (
+          <Button
+            label="Block User"
+            variant="danger"
+            leftIcon={<Ban size={theme.sizing.iconSm} color={theme.colors.onPrimary} />}
+            onPress={() => blockSheetRef.current?.present()}
+          />
+        )}
+      </View>
+
+      <BlockUserSheet
+        ref={blockSheetRef}
+        userName={name}
+        submitting={actionSubmitting}
+        onSubmit={(reason, notes) => void handleBlock(reason, notes)}
+      />
+      <GrantSubscriptionSheet
+        ref={grantSheetRef}
+        submitting={actionSubmitting}
+        onSubmit={(planId, durationDays, notes) =>
+          void handleGrantSubscription(planId, durationDays, notes)
+        }
+      />
+
+      <ConfirmDialog
+        visible={unblockConfirmVisible}
+        tone="primary"
+        icon={ShieldCheck}
+        title="Unblock this user?"
+        message="They'll be able to sign in again. Their listings stay hidden until reactivated manually."
+        confirmLabel="Unblock"
+        loading={actionSubmitting}
+        onConfirm={() => void handleUnblock()}
+        onCancel={() => setUnblockConfirmVisible(false)}
+      />
+      <ConfirmDialog
+        visible={revokeConfirmVisible}
+        tone="danger"
+        title="Revoke subscription?"
+        message="This immediately ends the user's current plan."
+        confirmLabel="Revoke"
+        loading={actionSubmitting}
+        onConfirm={() => void handleRevokeSubscription()}
+        onCancel={() => setRevokeConfirmVisible(false)}
+      />
     </Screen>
   );
 }

@@ -58,8 +58,6 @@ export function useAdminUsers({
           page: pageToLoad,
           size: appConstants.defaultPageSize,
         });
-        console.log('Fetched users page', res.number, 'of', res.totalPages, 'with', res.content.length, 'items');
-        console.log("response:", res);
         if (id !== requestId.current) {
           return;
         }

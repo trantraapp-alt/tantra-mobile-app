@@ -126,8 +126,8 @@ export function createAdminProfileListStyles(theme: AppTheme) {
     // Reviewer name + review date — admin-only context the owner's own card
     // has no need for.
     verifiedRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
       gap: theme.spacing.sm,
       marginTop: theme.spacing.xxs,
     },

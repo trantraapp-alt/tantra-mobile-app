@@ -35,6 +35,9 @@ export const routes = {
     chat: '/(tabs)/chat',
     wishlist: '/(tabs)/wishlist',
     profile: '/(tabs)/profile',
+    // Admin-only tab slots (swapped in for nearby/wishlist — see (tabs)/_layout).
+    users: '/(tabs)/users',
+    categories: '/(tabs)/categories',
   },
   product: (id: string) => `/product/${id}`,
   category: (id: string) => `/category/${id}`,

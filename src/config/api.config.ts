@@ -192,6 +192,16 @@ export const endpoints = {
     // A single user's full detail: activity, subscription, business profile
     // and saved addresses.
     detail: (userId: string) => `/admin/users/${userId}`,
+    // Block (PUT, body: {reason, notes}) / unblock (PUT, no body) an account.
+    block: (userId: string) => `/admin/users/${userId}/block`,
+    unblock: (userId: string) => `/admin/users/${userId}/unblock`,
+    // Grant (POST, body: {planId, durationDays, notes}) / revoke (DELETE, no
+    // body) a user's subscription. Granting while one is active replaces it.
+    subscription: (userId: string) => `/admin/users/${userId}/subscription`,
+  },
+  subscriptions: {
+    // Plan catalog, used to populate the admin's grant-subscription picker.
+    plans: '/subscriptions/plans',
   },
 } as const;
 

@@ -10,8 +10,9 @@ export function createUserDetailScreenStyles(theme: AppTheme) {
       justifyContent: 'center',
       alignItems: 'center',
     },
+    // Extra bottom room so the last section clears the sticky action footer.
     content: {
-      paddingBottom: theme.spacing.xxl,
+      paddingBottom: theme.spacing.xxxl,
     },
     // Identity hero.
     heroCard: {
@@ -123,6 +124,30 @@ export function createUserDetailScreenStyles(theme: AppTheme) {
     },
     addressList: {
       gap: theme.spacing.sm,
+    },
+    // Grant/Change-plan/Revoke row under the subscription card.
+    sectionActions: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.xxs,
+    },
+    // flexBasis is explicitly zeroed rather than using the `flex: 1` shorthand
+    // — React Native (unlike web CSS) keeps a content-based basis under that
+    // shorthand, so "Change Plan" (longer label) was claiming more width than
+    // "Revoke" instead of splitting the row 50/50.
+    sectionActionButton: {
+      flex:1,
+      flexShrink: 1,
+      flexBasis: 0,
+    },
+    // Sticky Block/Unblock footer, pinned under the scroll content.
+    actionFooter: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.border,
+      backgroundColor: theme.colors.card,
     },
   });
 }
